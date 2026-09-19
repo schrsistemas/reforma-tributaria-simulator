@@ -1,9 +1,6 @@
 import type { RuleResolution, RuleResolutionContext, RuleSet } from '@rts/domain';
 
-export function resolveRules(
-  ruleSets: RuleSet[],
-  context: RuleResolutionContext
-): RuleResolution {
+export function resolveRules(ruleSets: RuleSet[], context: RuleResolutionContext): RuleResolution {
   const candidates = ruleSets.filter(set =>
     set.effectiveFrom <= context.referenceDate &&
     (!set.effectiveTo || context.referenceDate <= set.effectiveTo) &&
@@ -11,13 +8,8 @@ export function resolveRules(
     (!context.ruleSetVersion || set.version === context.ruleSetVersion)
   );
 
-  if (candidates.length === 0) {
-    throw new Error('No applicable tax rule set for reference date');
-  }
-
-  if (candidates.length > 1) {
-    throw new Error('Ambiguous tax rule set for reference date');
-  }
+  if (candidates.length === 0) throw new Error('No applicable tax rule set for reference date');
+  if (candidates.length > 1) throw new Error('Ambiguous tax rule set for reference date');
 
   const ruleSet = candidates[0];
   if (ruleSet.status !== 'PUBLISHED' && !context.ruleSetId && !context.ruleSetVersion) {
