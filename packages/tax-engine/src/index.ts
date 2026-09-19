@@ -1,4 +1,4 @@
-import type { FiscalOperation, RoundingMode, TaxResult, TaxRule } from '@rts/domain';
+import type { FiscalOperation, RoundingMode, RoundingPolicy, TaxResult, TaxRule } from '@rts/domain';
 
 type Scaled={value:bigint;scale:number};
 
@@ -35,19 +35,19 @@ function format(value:bigint,scale:number):string{
 }
 function multiply(a:Scaled,b:Scaled):Scaled{return {value:a.value*b.value,scale:a.scale+b.scale};}
 function divideBy100(a:Scaled):Scaled{return {value:a.value,scale:a.scale+2};}
-function money(input:Scaled,policy:{scale:number;mode:RoundingMode}):string{
+function money(input:Scaled,policy:RoundingPolicy):string{
   return format(roundScaled(input.value,input.scale,policy.scale,policy.mode),policy.scale);
 }
 
 export function calculateTax(operation:FiscalOperation,rules:TaxRule[],calculationVersion='0.2.0'):TaxResult{
-  const defaultPolicy={scale:2 as const,mode:'HALF_UP' as const};
+  const defaultPolicy:RoundingPolicy={scale:2,mode:'HALF_UP'};
   const lineValues=operation.items.map(item=>multiply(parseDecimal(item.quantity),parseDecimal(item.unitPrice)));
   const baseScale=Math.max(2,...lineValues.map(v=>v.scale));
   const base=money({value:lineValues.reduce((sum,v)=>sum+v.value*10n**BigInt(baseScale-v.scale),0n),scale:baseScale},defaultPolicy);
   const taxes={IBS:{base,ratePercent:'0.00',amount:'0.00'},CBS:{base,ratePercent:'0.00',amount:'0.00'}} as TaxResult['taxes'];
   const ruleTrace:TaxResult['ruleTrace']=[];
   let total=0n;
-  let resultPolicy=defaultPolicy;
+  let resultPolicy:RoundingPolicy=defaultPolicy;
   for(const tax of ['IBS','CBS'] as const){
     const rule=rules.find(r=>r.tax===tax&&r.validFrom<=operation.issuedAt&&(!r.validTo||operation.issuedAt<=r.validTo));
     if(!rule)continue;
