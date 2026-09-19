@@ -8,6 +8,16 @@ Simulador técnico e plataforma de atualização contínua para IBS, CBS, IS, tr
 
 Transformar fontes fiscais oficiais em um catálogo versionado e auditável que possa alimentar o motor determinístico de cálculo e as integrações operacionais sem misturar interpretação jurídica com código executável.
 
+## Ambiente visual de produção
+
+A superfície visual está publicada em Cloudflare Pages e serve como ponto de teste funcional/visual:
+
+**https://reforma-tributaria-simulator.pages.dev/**
+
+O endereço acima é o endereço estável de produção do projeto. Deployments individuais do Cloudflare podem possuir URLs próprias de preview, mas não substituem o endereço de produção.
+
+A publicação é automatizada por GitHub Actions. O workflow cria o projeto Pages quando necessário, publica `docs/` e verifica automaticamente o endpoint de produção antes de considerar o deploy bem-sucedido.
+
 ## Arquitetura
 
 - **apps/web** — dashboard mobile-first e operação do simulador
@@ -19,8 +29,90 @@ Transformar fontes fiscais oficiais em um catálogo versionado e auditável que 
 - **workers/api** — Cloudflare Worker de entrada
 - **workers/workflows** — processamento durável
 - **workers/queues** — ingestão e processamento assíncrono
-- **docs** — arquitetura, legislação, fontes e decisões
+- **docs** — superfície visual, arquitetura, legislação, fontes e decisões
 - **tests** — testes unitários, integração, contrato e regressão
+
+## Separação de responsabilidades
+
+### Fiscal Domain
+
+É o proprietário de:
+
+- catálogo e versionamento de regras;
+- resolução de RuleSet;
+- cálculo determinístico;
+- snapshots fiscais imutáveis;
+- evidências fiscais;
+- Knowledge Loop;
+- Split Payment e reconciliação;
+- regressão fiscal e gates de publicação.
+
+### Zynkronyx
+
+É o Control Plane / Integration Plane:
+
+- tenant e contexto operacional;
+- autenticação e autorização;
+- integração entre sistemas;
+- workflows operacionais;
+- retries e idempotência;
+- observabilidade e auditoria operacional;
+- conectores externos.
+
+Zynkronyx **não deve duplicar o motor tributário**. Quando uma operação exigir cálculo fiscal, o fluxo deve atravessar o Fiscal Domain por contrato de integração.
+
+## Integração bidirecional
+
+O contrato é transport-neutral e baseado em comandos/eventos versionados.
+
+Comandos principais:
+
+- `FISCAL_CALCULATE`
+- `FISCAL_VALIDATE_DOCUMENT`
+- `FISCAL_RESOLVE_RULES`
+- `FISCAL_CREATE_SPLIT_PAYMENT`
+- `FISCAL_GET_SNAPSHOT`
+
+Eventos principais:
+
+- `FISCAL_SIMULATION_COMPLETED`
+- `FISCAL_RULESET_PUBLISHED`
+- `FISCAL_DOCUMENT_VALIDATED`
+- `FISCAL_SPLIT_PAYMENT_CREATED`
+- `FISCAL_RECONCILIATION_FAILED`
+
+Fluxo de referência:
+
+```text
+ERP / Marketplace / IoT
+        |
+        v
+   Zynkronyx
+        | command
+        v
+  Fiscal Domain
+        | event
+        v
+   Zynkronyx
+        |
+        v
+ERP / Financeiro / Marketplace
+```
+
+O caminho de conhecimento fiscal é separado do caminho operacional:
+
+```text
+Official Sources
+       |
+       v
+Knowledge Loop
+       |
+       v
+Evidence -> Change -> Impact -> Candidate
+       |
+       v
+Regression -> Approval -> RuleSet -> Publication
+```
 
 ## Princípio central: Fiscal Knowledge Loop
 
@@ -52,8 +144,57 @@ A ingestão deve priorizar fontes primárias, especialmente Receita Federal, Com
 - Quando houver divergência entre fontes, manter as evidências e marcar o caso para revisão.
 - O sistema deve poder responder: **"qual regra, de qual fonte e de qual versão produziu este resultado?"**
 
-## Status
+## Infraestrutura zero-cost-first
 
-**Plataforma em evolução contínua.** O roadmap é permanente e orientado por mudanças fiscais, técnicas e governamentais.
+O projeto é desenhado para permanecer executável sem depender de infraestrutura paga:
 
-O próximo estágio estrutural é implementar o **Fiscal Knowledge Loop**: registry de fontes oficiais → ingestão → diff → evidência → revisão → RuleSet → regressão → publicação → auditoria → monitoramento contínuo.
+- GitHub + GitHub Actions;
+- Cloudflare Pages para a superfície visual;
+- Cloudflare Workers para APIs;
+- Cloudflare D1 para persistência transacional;
+- Cloudflare R2 para evidências;
+- Cloudflare Queues para processamento assíncrono;
+- Cloudflare Workflows para processamento durável;
+- equivalentes locais/open source quando necessários para desenvolvimento.
+
+Credenciais e IDs específicos de conta **não** pertencem ao repositório. Secrets de CI devem permanecer no mecanismo de secrets do GitHub.
+
+## Status atual
+
+**Plataforma em evolução contínua.**
+
+Já existe uma superfície visual publicada em produção com:
+
+- Dashboard de simulação;
+- IBS/CBS e total;
+- trace visual do cálculo;
+- Radar Fiscal;
+- representação do Knowledge Loop;
+- visão de Arquitetura;
+- separação Fiscal Domain ↔ Zynkronyx;
+- pipeline de integração;
+- workflow automatizado de publicação no Cloudflare Pages;
+- verificação automática do endpoint de produção.
+
+O motor determinístico, contratos, catálogo de regras, persistência e workflows continuam sendo desenvolvidos independentemente da camada visual.
+
+## Próximo estágio
+
+A evolução estrutural segue esta ordem:
+
+```text
+Fonte oficial
+    -> evidência
+    -> detecção de mudança
+    -> impacto
+    -> candidato de regra
+    -> regressão
+    -> aprovação
+    -> RuleSet publicado
+    -> cálculo
+    -> snapshot
+    -> auditoria
+    -> integração Zynkronyx
+```
+
+A superfície visual é somente a interface de operação/teste. O **Fiscal Domain permanece a fonte de verdade fiscal**.
