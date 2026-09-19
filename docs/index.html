@@ -16,7 +16,7 @@
 <a class="routeLink active" href="#dashboard">Painel</a>
 <a class="routeLink" href="#radar">Radar Fiscal</a>
 <a class="routeLink" href="#sources">Fontes Governamentais</a>
-<a class="routeLink" href="#architecture">Arquitetura</a><a class="routeLink" href="#news">Notícias</a><a class="routeLink" href="#simulators">Simuladores</a><a class="routeLink" href="#backoffice">Gestão</a><a class="routeLink" href="#servicos">Central Empresarial</a><a class="routeLink" href="#obrigacoes">Obrigações</a><a class="routeLink" href="#calendario-obrigacoes">Calendário</a><a class="routeLink" href="#sebrae">Sebrae</a>
+<a class="routeLink" href="#architecture">Arquitetura</a><a class="routeLink" href="#news">Notícias</a><a class="routeLink" href="#simulators">Simuladores</a><a class="routeLink" href="#backoffice">Gestão</a><a class="routeLink" href="#servicos">Central Empresarial</a><a class="routeLink" href="#obrigacoes">Obrigações</a><a class="routeLink" href="#calendario-obrigacoes">Calendário</a><a class="routeLink" href="#fontes-abertas">Dados Abertos</a><a class="routeLink" href="#sebrae">Sebrae</a>
 </nav>
 <div class="quick">
 <a class="quickLink" href="#simulators">▶ Simuladores</a><a class="quickLink" href="#split-payment">⇄ Pagamento dividido (Split Payment)</a>
@@ -49,6 +49,27 @@ Evidência: rastreabilidade da fonte anexada
 Registro Imutável: resultado tributário imutável</div></section>
 </div></section>
 
+<section id="fontes-abertas" class="view"><div class="card"><h1 class="title">Dados Abertos e Integrações Públicas</h1><div class="subtitle">Área para transformar fontes governamentais abertas em consultas, painéis e evidências, sem substituir o sistema oficial.</div><div class="radar">
+<div class="source"><h3>Transferegov.br</h3><p>Transferências, parcerias, transferências especiais e dados estruturados para consulta automatizada.</p><div class="line"><span>Integração</span><span class="pill">API PÚBLICA</span></div></div>
+<div class="source"><h3>Projetos e programas</h3><p>Localizar programa, requisitos, instrumento, órgão responsável, situação e dados de execução quando disponíveis.</p><div class="line"><span>Fluxo</span><span class="pill">PROJETO → EVIDÊNCIA</span></div></div>
+<div class="source"><h3>Obras e execução</h3><p>Preparar o portal para consumir fontes abertas de obras e execução conforme a disponibilização oficial dos módulos.</p><div class="line"><span>Estado</span><span class="pill">EM EXPANSÃO</span></div></div>
+<div class="source"><h3>Dados para empresas</h3><p>Usar dados públicos como contexto de simulações, sem misturar dado público com dado privado da empresa.</p><div class="line"><span>Regra</span><span class="pill">SEPARAÇÃO DE DADOS</span></div></div>
+</div><div class="trace">MODELO DE INTEGRAÇÃO
+Fonte oficial
+  ↓
+Coletor
+  ↓
+Normalização
+  ↓
+Registro da fonte / data / versão
+  ↓
+Consulta
+  ↓
+Simulação ou análise
+  ↓
+Evidência rastreável
+
+Nenhuma API governamental é tratada como autoridade implícita para informações fora de seu escopo.</div></div></section>
 <section id="calendario-obrigacoes" class="view"><div class="card"><h1 class="title">Calendário Inteligente de Obrigações</h1><div class="subtitle">O calendário cruza período, tipo de empresa, documento e fonte. Datas de leiaute e datas de obrigatoriedade são mantidas separadas.</div><div class="metrics"><div class="metric"><small>Referência</small><b>Set/2026</b></div><div class="metric"><small>Fonte</small><b>RFB / CGIBS</b></div><div class="metric"><small>Modo</small><b>Monitoramento</b></div></div>
 <div class="radar">
 <div class="source"><h3>30/09/2026</h3><p>Fim do prazo informado pela Receita Federal para opção pelo Simples Nacional 2027 e escolha do modelo de recolhimento de IBS/CBS para as empresas abrangidas.</p><div class="line"><span>Tipo</span><span class="pill">PRAZO</span></div></div>
