@@ -1,5 +1,5 @@
-const CACHE='rts-mobile-v1';
-const APP=['./','./index.html','./manifest.webmanifest','./icon.svg'];
+const CACHE='rts-mobile-v2';
+const APP=['/','/index.html','/manifest.webmanifest','/icon.svg'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(c=>c.addAll(APP)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(self.clients.claim()));
 self.addEventListener('fetch',event=>{
@@ -8,5 +8,5 @@ self.addEventListener('fetch',event=>{
     const copy=response.clone();
     caches.open(CACHE).then(c=>c.put(event.request,copy));
     return response;
-  }).catch(()=>caches.match('./index.html'))));
+  }).catch(()=>caches.match('/index.html'))));
 });
