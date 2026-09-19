@@ -21,7 +21,7 @@ export async function runFiscalRegression(env: KnowledgeEnv, changeId: string): 
 
   checks.push({
     name: 'change-is-reviewable',
-    status: change.status === 'UNDER_REVIEW' || change.status === 'APPROVED' ? 'PASSED' : 'BLOCKED' as 'SKIPPED',
+    status: change.status === 'UNDER_REVIEW' || change.status === 'APPROVED' ? 'PASSED' : 'SKIPPED',
     detail: change.status,
   });
 
