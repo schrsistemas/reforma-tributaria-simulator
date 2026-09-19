@@ -13,3 +13,4 @@ export * from './lgpd.js';
 export * from './mei.js';
 export * from './rag.js';
 export * from './rag-refinement.js';
+export * from './regulatory-diff.js';
