@@ -33,15 +33,14 @@ export async function collectFiscalSource(env: EvidenceEnv, sourceId: string): P
       headers: { accept: 'text/html,application/xhtml+xml,application/pdf,text/plain;q=0.9,*/*;q=0.5' },
       redirect: 'follow',
     });
-
     if (!response.ok) throw new Error(`SOURCE_HTTP_${response.status}`);
 
     const buffer = await response.arrayBuffer();
     const text = new TextDecoder().decode(buffer);
     const contentHash = await sha256Hex(buffer);
     const normalizedHash = await sha256Hex(new TextEncoder().encode(normalize(text)));
-
-    let status: CollectedEvidence['status'] = source.lastHash === normalizedHash ? 'UNCHANGED' : (source.lastHash ? 'CHANGED' : 'CREATED');
+    const status: CollectedEvidence['status'] =
+      source.lastHash === normalizedHash ? 'UNCHANGED' : (source.lastHash ? 'CHANGED' : 'CREATED');
 
     if (env.DB) {
       const evidenceId = `${source.id}-${normalizedHash.slice(0, 16)}`;
@@ -58,10 +57,30 @@ export async function collectFiscalSource(env: EvidenceEnv, sourceId: string): P
         'INSERT OR IGNORE INTO fiscal_evidence (id,source_id,retrieved_at,canonical_url,content_hash,normalized_hash,content_location,status,created_at) VALUES (?,?,?,?,?,?,?,?,?)'
       ).bind(evidenceId, source.id, retrievedAt, source.officialUrl, contentHash, normalizedHash, contentLocation, status === 'CHANGED' ? 'CHANGED' : 'FETCHED', retrievedAt).run();
 
+      if (status === 'CHANGED') {
+        const previous = await env.DB.prepare(
+          'SELECT id FROM fiscal_evidence WHERE source_id = ? AND normalized_hash <> ? ORDER BY retrieved_at DESC LIMIT 1'
+        ).bind(source.id, normalizedHash).first<{ id: string }>();
+
+        await env.DB.prepare(
+          'INSERT INTO fiscal_changes (id,source_id,previous_evidence_id,current_evidence_id,detected_at,change_type,impact_level,status,created_at) VALUES (?,?,?,?,?,?,?,?,?)'
+        ).bind(
+          crypto.randomUUID(),
+          source.id,
+          previous?.id ?? null,
+          evidenceId,
+          retrievedAt,
+          'CONTENT_CHANGED',
+          'MEDIUM',
+          'UNDER_REVIEW',
+          retrievedAt,
+        ).run();
+      }
+
       await touchSourceCheck(env, source.id, retrievedAt, true, normalizedHash);
     }
 
-    return { sourceId: source.id, contentHash, normalizedHash, retrievedAt, status };
+    return { sourceId: source.id, contentHash, normalizedHash, retrievedAt, status, contentLocation: env.EVIDENCE_BUCKET ? `r2://evidence/${source.id}/${source.id}-${normalizedHash.slice(0, 16)}` : `memory://${source.id}-${normalizedHash.slice(0, 16)}` };
   } catch (error) {
     if (env.DB) await touchSourceCheck(env, source.id, retrievedAt, false);
     throw error;
