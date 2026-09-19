@@ -268,3 +268,8 @@ A primeira família de coletores implementada é HTTP/HTML/JSON/XML. A coleta:
 O agendador do Worker também executa a coleta das fontes governamentais habilitadas. A expansão para PDF, DOU, DOM, RSS, sitemap e APIs específicas deve reutilizar o mesmo contrato de `GovernmentCollector`, sem criar um scraper diferente para cada órgão.
 
 Os documentos externos continuam sendo tratados como **dados não confiáveis**: nenhuma instrução encontrada em conteúdo governamental é executada e nenhuma coleta publica diretamente um RuleSet.
+
+
+### Superfície visual atual
+
+A produção em Cloudflare Pages mantém uma URL estável e agora possui navegação funcional entre Dashboard, Radar Fiscal, Fontes Governamentais e Arquitetura. O catálogo de fontes inclui pesquisa, filtro por jurisdição e abertura da fonte oficial. A interface não depende da API para navegação básica, permitindo inspeção visual enquanto D1/R2/Workers são provisionados.
