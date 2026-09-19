@@ -4,9 +4,6 @@ Cloudflare credentials are never stored in source, README, Wrangler configuratio
 
 Local development uses environment variables or an ignored .env file.
 
-CI uses GitHub Actions encrypted repository or environment secrets:
-
-- CLOUDFLARE_ACCOUNT_ID
-- CLOUDFLARE_API_TOKEN
+CI uses GitHub Actions encrypted repository or environment secrets.
 
 If a token is exposed in chat, logs, commits or screenshots, revoke and rotate it before reuse.
