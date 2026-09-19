@@ -28,7 +28,9 @@ function roundScaled(value:bigint,scale:number,target:number,mode:RoundingMode):
   return sign*(q+(up?1n:0n));
 }
 function format(value:bigint,scale:number):string{
-  const sign=value<0n?'-':''; const abs=value<0n?-value:value; const base=10n**BigInt(scale);
+  const sign=value<0n?'-':''; const abs=value<0n?-value:value;
+  if(scale===0)return sign+abs.toString();
+  const base=10n**BigInt(scale);
   return `${sign}${abs/base}.${(abs%base).toString().padStart(scale,'0')}`;
 }
 function multiply(a:Scaled,b:Scaled):Scaled{return {value:a.value*b.value,scale:a.scale+b.scale};}
