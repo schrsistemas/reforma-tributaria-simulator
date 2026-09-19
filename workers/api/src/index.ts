@@ -1,6 +1,6 @@
 import { executeSimulation, type SimulationRequest } from './simulation.js';
 import { resolvePublishedRuleSet } from './rule-catalog.js';
-import { findById, saveCompleted } from './simulation-repository.js';
+import { findById, findByIdempotency, saveCompleted } from './simulation-repository.js';
 import { createSplitPayment, getSplitPayment } from './split-payment-repository.js';
 import { listFiscalSources, getFiscalSource } from './fiscal-knowledge.js';
 import { collectFiscalSource } from './source-collector.js';
@@ -104,7 +104,7 @@ export default {
     if (request.method === 'POST' && url.pathname === '/api/v1/simulations') {
       try {
         const headers = integrationHeaders(request);
-        const body = await readJson(request) as SimulationRequest & { executionMode?: string };
+        const body = await readJson(request) as SimulationRequest & { executionMode?: 'SCENARIO' | 'PRODUCTION'; ruleSetId?: string; ruleSetVersion?: string };
         if (!headers.idempotencyKey) return json({ error: 'IDEMPOTENCY_KEY_REQUIRED' }, 400, request);
 
         if (body.executionMode === 'PRODUCTION') {
