@@ -1,4 +1,5 @@
-import type { GovernmentCollector, GovernmentSource } from '@rts/domain';
+import type { GovernmentSource } from '@rts/domain';
+import type { GovernmentCollector } from './government-collectors.js';
 import { HttpCollector } from './government-collectors.js';
 import { listGovernmentSources } from './government-source-repository.js';
 
