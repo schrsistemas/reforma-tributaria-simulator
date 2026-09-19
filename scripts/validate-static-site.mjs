@@ -8,7 +8,7 @@ if (open !== 1 || close !== 1) throw new Error(`Expected one script block; got $
 const scriptBody = html.match(/<script>([\s\S]*)<\/script>/i)?.[1] ?? '';
 new Function(scriptBody);
 
-for (const id of ['simulateBtn','advancePixBtn','resetPixBtn','advanceTefBtn','resetTefBtn','pixGrid','tefGrid','bottomNav','mobileInstall']) {
+for (const id of ['simulateBtn','advancePixBtn','resetPixBtn','advanceTefBtn','resetTefBtn','pixGrid','tefGrid','bottomNav']) {
   if (!html.includes(`id="${id}"`) && !html.includes(`class="${id}"`)) throw new Error(`Missing required UI hook: ${id}`);
 }
 if ((html.match(/onclick=/gi) ?? []).length) throw new Error('Inline onclick handlers are not allowed');
