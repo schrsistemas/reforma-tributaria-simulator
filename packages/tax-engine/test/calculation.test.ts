@@ -44,3 +44,19 @@ test('calculates IBS and CBS without floating point arithmetic', () => {
   assert.equal(result.totalTax, '150.00');
   assert.equal(result.ruleTrace.length, 2);
 });
+
+
+test('applies percentage rates as percent, not as a unit multiplier', () => {
+  const result = calculateTax({...operation, grossAmount:'123.45'}, [{
+    ...rules[0], ratePercent:'7.50'
+  }]);
+  assert.equal(result.taxes.IBS.amount, '9.26');
+  assert.equal(result.totalTax, '9.26');
+});
+
+test('supports HALF_EVEN rounding at exact ties', () => {
+  const result = calculateTax({...operation, grossAmount:'1.00', items:[{...operation.items[0], quantity:'1', unitPrice:'1.00'}]}, [{
+    ...rules[0], ratePercent:'0.50', rounding:{scale:0,mode:'HALF_EVEN'}
+  }]);
+  assert.equal(result.taxes.IBS.amount, '0');
+});
