@@ -1,4 +1,4 @@
-const CACHE='rts-mobile-v4';
+const CACHE='rts-mobile-v5';
 const APP=['/','/index.html','/manifest.webmanifest','/icon.svg','/icon-192.svg','/icon-512.svg'];
 
 self.addEventListener('install',event=>{
@@ -20,7 +20,7 @@ self.addEventListener('activate',event=>{
 self.addEventListener('fetch',event=>{
   if(event.request.method!=='GET') return;
   const url=new URL(event.request.url);
-  if(url.origin!==self.location.origin) return;
+  if(url.origin!==self.location.origin || url.pathname.startsWith('/api/')) return;
 
   event.respondWith(
     fetch(event.request)
