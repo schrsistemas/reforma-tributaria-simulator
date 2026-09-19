@@ -7,12 +7,23 @@
 <style>
 :root{--bg:#07111f;--panel:#0c1929;--panel2:#081525;--line:#1b3048;--text:#e7eef8;--muted:#91a6bb;--accent:#5ca9ff;--ok:#64d6a0;--warn:#f0c36a}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 20% 0%,#10243b 0,#07111f 38%,#050c16 100%);color:var(--text);font:14px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}.shell{max-width:1240px;margin:auto;padding:18px}.top{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:16px}.brand{font-weight:900;letter-spacing:.3px;font-size:19px}.muted{color:var(--muted)}.badge,.pill{border:1px solid #28415d;border-radius:999px;padding:5px 9px;font-size:11px;white-space:nowrap}.nav{display:flex;gap:7px;overflow:auto;padding-bottom:15px}.nav button{width:auto;margin:0;padding:9px 14px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);border-radius:9px}.nav button.active{color:#03101c;background:var(--accent);border-color:var(--accent)}.view{display:none}.view.active{display:block}.grid{display:grid;grid-template-columns:1.02fr .98fr;gap:16px}.card{background:linear-gradient(180deg,#0d1b2c,#0a1726);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 14px 40px #0004}.title{font-size:27px;font-weight:850;margin:0 0 6px}.subtitle{color:var(--muted);margin-bottom:18px}h2{font-size:18px;margin:0 0 12px}h3{font-size:14px;margin:0 0 8px}label{display:block;color:var(--muted);font-size:12px;margin:11px 0 5px}input,select{width:100%;background:#06101d;border:1px solid #29415b;color:#fff;border-radius:9px;padding:11px;font-size:15px}button.primary{width:100%;padding:12px;margin-top:15px;border:0;border-radius:9px;background:var(--accent);color:#03101c;font-weight:850;cursor:pointer}.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.metric{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:12px}.metric small{color:var(--muted)}.metric b{display:block;font-size:19px;margin-top:4px}.row{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #172a3e}.row:last-child{border:0}.ok,.warn{margin-top:13px;padding:10px;border-radius:9px}.ok{background:#0b271d;border:1px solid #1c6045;color:#a5e8c7}.warn{background:#2a2110;border:1px solid #765b20;color:#f1d58e}.pipeline{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}.step{padding:10px;border-radius:9px;background:var(--panel2);border:1px solid var(--line);text-align:center;font-size:11px}.radar{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.source{padding:13px;background:var(--panel2);border:1px solid var(--line);border-radius:11px}.source .line{display:flex;justify-content:space-between;gap:8px;margin-top:7px;font-size:12px}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ok);margin-right:6px}.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:12px 0}.kpi{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:12px}.kpi strong{display:block;font-size:21px}.trace{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:#a9bdd0;white-space:pre-wrap;background:#050d17;border:1px solid #16283b;border-radius:10px;padding:12px;margin-top:12px}.arch{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.arch .step{min-height:75px;display:flex;align-items:center;justify-content:center;font-weight:700}.footer{color:#647b91;font-size:11px;text-align:center;padding:20px 0 8px}@media(max-width:820px){.grid{grid-template-columns:1fr}.metrics,.kpis{grid-template-columns:1fr 1fr}.pipeline,.arch{grid-template-columns:1fr 1fr}.radar{grid-template-columns:1fr}}@media(max-width:480px){.shell{padding:12px}.top{align-items:flex-start}.badge{display:none}.title{font-size:23px}.metrics,.kpis{grid-template-columns:1fr}.pipeline{grid-template-columns:1fr 1fr}}
-</style>
+.quick{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:0 0 16px}.quick button{padding:11px;border:1px solid var(--line);border-radius:10px;background:#0b1929;color:var(--text);cursor:pointer;font-weight:700}.quick button:hover{border-color:var(--accent);transform:translateY(-1px)}button{font:inherit}.nav button{cursor:pointer}.pill{padding:3px 7px}@media(max-width:700px){.quick{grid-template-columns:1fr 1fr}.nav{padding-bottom:10px}} </style>
 </head>
 <body>
 <div class="shell">
-<header class="top"><div><div class="brand">REFORMA TRIBUTÁRIA SIMULATOR</div><div class="muted">Fiscal Domain • Sistema fiscal vivo • Visual Control Surface</div></div><span class="badge">ZERO-COST / CLOUDFLARE</span></header>
-<nav class="nav"><button class="active" data-view="dashboard">Dashboard</button><button data-view="radar">Radar Fiscal</button><button data-view="architecture">Arquitetura</button></nav>
+<header class="top"><div><div class="brand">REFORMA TRIBUTÁRIA SIMULATOR</div><div class="muted">Fiscal Domain • Portal fiscal nacional • Control Surface</div></div><span class="badge">ZERO-COST / CLOUDFLARE</span></header>
+<nav class="nav" aria-label="Navegação principal">
+<button class="active" data-view="dashboard">Dashboard</button>
+<button data-view="radar">Radar Fiscal</button>
+<button data-view="sources">Fontes Governamentais</button>
+<button data-view="architecture">Arquitetura</button>
+</nav>
+<div class="quick">
+<button data-view="dashboard">▶ Simular</button>
+<button data-view="radar">◉ Ver Radar</button>
+<button data-view="sources">⌁ Ver fontes</button>
+<button data-view="architecture">⌘ Ver arquitetura</button>
+</div>
 
 <section id="dashboard" class="view active"><div class="grid">
 <section class="card"><h1 class="title">Simulação fiscal</h1><div class="subtitle">Sandbox visual do motor determinístico. Nenhum cálculo depende da interface.</div>
@@ -37,6 +48,20 @@ Snapshot: immutable fiscal result</div></section>
 <div class="source"><h3><span class="dot"></span>Planalto — legislação</h3><div class="line"><span class="muted">Última coleta</span><span>Monitorada</span></div><div class="line"><span class="muted">Estado</span><span>ACTIVE</span></div><div class="line"><span class="muted">Evidência</span><span>Hash registrada</span></div></div></div>
 <div class="warn">A interface já representa o Knowledge Loop. A coleta real e a análise de impacto entram pelo Fiscal Domain/API quando as bindings D1/R2 estiverem configuradas.</div></div></section>
 
+
+<section id="sources" class="view"><div class="card">
+<h1 class="title">Fontes Governamentais</h1>
+<div class="subtitle">Catálogo nacional preparado para fontes federais, estaduais e municipais.</div>
+<div class="kpis"><div class="kpi"><span class="muted">Jurisdições</span><strong>3</strong></div><div class="kpi"><span class="muted">Fontes iniciais</span><strong>7</strong></div><div class="kpi"><span class="muted">HTTPS</span><strong>100%</strong></div><div class="kpi"><span class="muted">Estado</span><strong>REGISTRY</strong></div></div>
+<div class="radar">
+<div class="source"><h3>🇧🇷 Federal</h3><div class="line"><span>Planalto</span><span class="pill">LEGISLAÇÃO</span></div><div class="line"><span>Receita Federal</span><span class="pill">RTC</span></div><div class="line"><span>CGIBS</span><span class="pill">IBS</span></div><div class="line"><span>Ministério da Fazenda</span><span class="pill">NORMAS</span></div></div>
+<div class="source"><h3>🇧🇷 Estadual</h3><div class="line"><span>SEF/SC</span><span class="pill">SC</span></div><div class="line"><span>Legislação estadual</span><span class="pill">ATOS</span></div><div class="line"><span>Texto vigente</span><span class="pill">VIGENTE</span></div></div>
+<div class="source"><h3>🇧🇷 Municipal</h3><div class="line"><span>Diário Municipal</span><span class="pill">DOM</span></div><div class="line"><span>Publicações oficiais</span><span class="pill">PDF/TEXTO</span></div><div class="line"><span>Expansão por provedor</span><span class="pill">ESCALÁVEL</span></div></div>
+<div class="source"><h3>Pipeline de coleta</h3><div class="line"><span>HTTPS → hash</span><span>✓</span></div><div class="line"><span>Evidence → D1/R2</span><span>READY</span></div><div class="line"><span>Change detection</span><span>READY</span></div></div>
+</div>
+<div class="ok">Esta tela é a superfície visual do novo registry. A próxima camada conecta documentos coletados, evidências, alterações e impacto fiscal.</div>
+</div></section>
+
 <section id="architecture" class="view"><div class="grid"><div class="card"><h2>Ownership</h2><div class="row"><span>Fiscal Domain</span><b>Regras + cálculo + snapshot</b></div><div class="row"><span>Zynkronyx</span><b>Controle + integração + workflow</b></div><div class="row"><span>Knowledge Loop</span><b>Evidência → mudança → candidato</b></div><div class="row"><span>Split Payment</span><b>Ledger + reconciliação</b></div></div>
 <div class="card"><h2>Fluxo bidirecional</h2><div class="trace">ERP / Marketplace / IoT
         ↓
@@ -59,7 +84,12 @@ RuleSet → Regression → Publication</div></div></div>
 </div>
 <script>
 const $=id=>document.getElementById(id),n=v=>Number(String(v).replace(',','.'))||0,brl=v=>v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-document.querySelectorAll('.nav button').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));btn.classList.add('active');$(btn.dataset.view).classList.add('active')}));
+function openView(view){
+ document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.view===view));
+ document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x.id===view));
+ window.scrollTo({top:0,behavior:'smooth'});
+}
+document.querySelectorAll('[data-view]').forEach(btn=>btn.addEventListener('click',()=>openView(btn.dataset.view)));
 function simulate(){const b=n($('base').value),i=n($('ibs').value),c=n($('cbs').value),iv=b*i/100,cv=b*c/100,stamp=new Date().toISOString().replace(/[-:TZ.]/g,'').slice(0,14);$('ibsOut').textContent=brl(iv);$('cbsOut').textContent=brl(cv);$('totalOut').textContent=brl(iv+cv);$('ruleset').textContent='SCENARIO-'+stamp.slice(0,8);$('correlation').textContent='visual-'+stamp;$('msg').textContent='Simulação visual executada. IBS + CBS calculados sobre a base informada.';$('trace').textContent='Rule resolution: SCENARIO-DEMO\nCalculation: '+b.toFixed(2)+' × '+i.toFixed(2)+'% + '+b.toFixed(2)+' × '+c.toFixed(2)+'%\nResult: '+brl(iv+cv)+'\nSnapshot: immutable visual result'}
 }
 </script>
