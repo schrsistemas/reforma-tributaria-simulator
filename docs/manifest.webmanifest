@@ -1,15 +1,25 @@
 {
-  "name":"Portal Simulador Facilitador",
-  "short_name":"Simulador",
-  "description":"Portal mobile de simuladores fiscais, empresariais e de pagamentos.",
-  "lang":"pt-BR",
-  "start_url":"./index.html#simulators",
-  "scope":"./",
-  "display":"standalone",
-  "orientation":"portrait",
-  "background_color":"#07111f",
-  "theme_color":"#07111f",
-  "icons":[
-    {"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
+  "name": "Portal Simulador Facilitador",
+  "short_name": "Simulador",
+  "description": "Portal mobile de simuladores fiscais, empresariais e de pagamentos.",
+  "lang": "pt-BR",
+  "start_url": "/#simulators",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#07111f",
+  "theme_color": "#07111f",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "id": "/",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
   ]
 }
