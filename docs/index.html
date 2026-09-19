@@ -5,50 +5,63 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Reforma Tributária Simulator</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#07111f;color:#e7eef8;font:14px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
-.shell{max-width:1180px;margin:auto;padding:24px}.top{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:24px}.brand{font-weight:800;font-size:20px}.muted{color:#8fa3b8}.badge{border:1px solid #28415d;border-radius:999px;padding:6px 10px;font-size:12px}
-.grid{display:grid;grid-template-columns:1.05fr .95fr;gap:18px}.card{background:#0c1929;border:1px solid #1b3048;border-radius:16px;padding:20px;box-shadow:0 12px 35px #0003}.title{font-size:28px;font-weight:800;margin:0 0 8px}.subtitle{color:#9bb0c5;margin-bottom:20px}
-label{display:block;color:#9bb0c5;font-size:12px;margin:12px 0 6px}input{width:100%;background:#07111f;border:1px solid #29415b;color:#fff;border-radius:10px;padding:12px;font-size:15px}button{margin-top:18px;width:100%;padding:13px;border:0;border-radius:10px;background:#5ca9ff;color:#03101c;font-weight:800;cursor:pointer}
-.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}.metric{background:#081525;border:1px solid #1b3048;border-radius:12px;padding:14px}.metric b{display:block;font-size:20px;margin-top:4px}
-.row{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #1a2c40}.row:last-child{border:0}.tax{font-weight:700}.pipeline{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:18px}.step{padding:12px;border-radius:10px;background:#081525;border:1px solid #1b3048;text-align:center;font-size:12px}.ok{margin-top:14px;padding:10px;border-radius:10px;background:#0d271d;border:1px solid #1d5c42;color:#9ce5bf}
-@media(max-width:800px){.grid{grid-template-columns:1fr}.pipeline{grid-template-columns:repeat(2,1fr)}.metrics{grid-template-columns:1fr}}
+:root{--bg:#07111f;--panel:#0c1929;--panel2:#081525;--line:#1b3048;--text:#e7eef8;--muted:#91a6bb;--accent:#5ca9ff;--ok:#64d6a0;--warn:#f0c36a}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 20% 0%,#10243b 0,#07111f 38%,#050c16 100%);color:var(--text);font:14px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}.shell{max-width:1240px;margin:auto;padding:18px}.top{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:16px}.brand{font-weight:900;letter-spacing:.3px;font-size:19px}.muted{color:var(--muted)}.badge,.pill{border:1px solid #28415d;border-radius:999px;padding:5px 9px;font-size:11px;white-space:nowrap}.nav{display:flex;gap:7px;overflow:auto;padding-bottom:15px}.nav button{width:auto;margin:0;padding:9px 14px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);border-radius:9px}.nav button.active{color:#03101c;background:var(--accent);border-color:var(--accent)}.view{display:none}.view.active{display:block}.grid{display:grid;grid-template-columns:1.02fr .98fr;gap:16px}.card{background:linear-gradient(180deg,#0d1b2c,#0a1726);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 14px 40px #0004}.title{font-size:27px;font-weight:850;margin:0 0 6px}.subtitle{color:var(--muted);margin-bottom:18px}h2{font-size:18px;margin:0 0 12px}h3{font-size:14px;margin:0 0 8px}label{display:block;color:var(--muted);font-size:12px;margin:11px 0 5px}input,select{width:100%;background:#06101d;border:1px solid #29415b;color:#fff;border-radius:9px;padding:11px;font-size:15px}button.primary{width:100%;padding:12px;margin-top:15px;border:0;border-radius:9px;background:var(--accent);color:#03101c;font-weight:850;cursor:pointer}.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.metric{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:12px}.metric small{color:var(--muted)}.metric b{display:block;font-size:19px;margin-top:4px}.row{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #172a3e}.row:last-child{border:0}.ok,.warn{margin-top:13px;padding:10px;border-radius:9px}.ok{background:#0b271d;border:1px solid #1c6045;color:#a5e8c7}.warn{background:#2a2110;border:1px solid #765b20;color:#f1d58e}.pipeline{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}.step{padding:10px;border-radius:9px;background:var(--panel2);border:1px solid var(--line);text-align:center;font-size:11px}.radar{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.source{padding:13px;background:var(--panel2);border:1px solid var(--line);border-radius:11px}.source .line{display:flex;justify-content:space-between;gap:8px;margin-top:7px;font-size:12px}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ok);margin-right:6px}.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:12px 0}.kpi{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:12px}.kpi strong{display:block;font-size:21px}.trace{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:#a9bdd0;white-space:pre-wrap;background:#050d17;border:1px solid #16283b;border-radius:10px;padding:12px;margin-top:12px}.arch{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.arch .step{min-height:75px;display:flex;align-items:center;justify-content:center;font-weight:700}.footer{color:#647b91;font-size:11px;text-align:center;padding:20px 0 8px}@media(max-width:820px){.grid{grid-template-columns:1fr}.metrics,.kpis{grid-template-columns:1fr 1fr}.pipeline,.arch{grid-template-columns:1fr 1fr}.radar{grid-template-columns:1fr}}@media(max-width:480px){.shell{padding:12px}.top{align-items:flex-start}.badge{display:none}.title{font-size:23px}.metrics,.kpis{grid-template-columns:1fr}.pipeline{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
 <div class="shell">
-<header class="top"><div><div class="brand">REFORMA TRIBUTÁRIA SIMULATOR</div><div class="muted">Fiscal Domain • Visual Test Surface</div></div><span class="badge">SCENARIO / ZERO-COST</span></header>
-<div class="grid">
-<section class="card">
-<h1 class="title">Simulação fiscal</h1>
-<div class="subtitle">Sandbox visual para testar o fluxo do motor determinístico.</div>
-<label>Base tributável (R$)</label><input id="base" value="1000.00" inputmode="decimal">
-<label>IBS (%)</label><input id="ibs" value="10.00" inputmode="decimal">
-<label>CBS (%)</label><input id="cbs" value="5.00" inputmode="decimal">
-<button onclick="simulate()">Executar simulação</button>
-<div id="msg" class="ok">Pronto para executar.</div>
-</section>
-<section class="card">
-<h2>Resultado</h2>
-<div class="metrics">
-<div class="metric">IBS<b id="ibsOut">R$ 100,00</b></div>
-<div class="metric">CBS<b id="cbsOut">R$ 50,00</b></div>
-<div class="metric">Total<b id="totalOut">R$ 150,00</b></div>
-</div>
-<div style="margin-top:20px">
-<div class="row"><span>RuleSet</span><span id="ruleset">SCENARIO-DEMO</span></div>
-<div class="row"><span>Tax Engine</span><span>Deterministic</span></div>
-<div class="row"><span>Snapshot</span><span>Immutable</span></div>
-<div class="row"><span>Split Payment</span><span>Ready</span></div>
-</div>
-<div class="pipeline"><div class="step">Operation</div><div class="step">Rules</div><div class="step">Calculation</div><div class="step">Snapshot</div></div>
-</section>
-</div>
-<div class="card" style="margin-top:18px"><h2>Architecture</h2><div class="muted">Zynkronyx ↔ Fiscal Domain ↔ External Systems</div><div class="pipeline"><div class="step">Official Sources</div><div class="step">Knowledge Loop</div><div class="step">Tax Engine</div><div class="step">Zynkronyx</div></div></div>
+<header class="top"><div><div class="brand">REFORMA TRIBUTÁRIA SIMULATOR</div><div class="muted">Fiscal Domain • Sistema fiscal vivo • Visual Control Surface</div></div><span class="badge">ZERO-COST / CLOUDFLARE</span></header>
+<nav class="nav"><button class="active" data-view="dashboard">Dashboard</button><button data-view="radar">Radar Fiscal</button><button data-view="architecture">Arquitetura</button></nav>
+
+<section id="dashboard" class="view active"><div class="grid">
+<section class="card"><h1 class="title">Simulação fiscal</h1><div class="subtitle">Sandbox visual do motor determinístico. Nenhum cálculo depende da interface.</div>
+<label>Cenário</label><select id="scenario"><option>Venda padrão</option><option>Venda com redução</option><option>Operação interestadual</option></select>
+<label>Base tributável (R$)</label><input id="base" value="1000.00" inputmode="decimal"><label>IBS (%)</label><input id="ibs" value="10.00" inputmode="decimal"><label>CBS (%)</label><input id="cbs" value="5.00" inputmode="decimal">
+<button class="primary" onclick="simulate()">Executar simulação</button><div id="msg" class="ok">Pronto para executar cenário.</div></section>
+<section class="card"><h2>Resultado</h2><div class="metrics"><div class="metric"><small>IBS</small><b id="ibsOut">R$ 100,00</b></div><div class="metric"><small>CBS</small><b id="cbsOut">R$ 50,00</b></div><div class="metric"><small>Total</small><b id="totalOut">R$ 150,00</b></div></div>
+<div style="margin-top:15px"><div class="row"><span>RuleSet</span><span id="ruleset">SCENARIO-DEMO</span></div><div class="row"><span>Tax Engine</span><span>Deterministic</span></div><div class="row"><span>Snapshot</span><span>Immutable</span></div><div class="row"><span>Split Payment</span><span>Ready</span></div><div class="row"><span>Correlation</span><span id="correlation">visual-demo</span></div></div>
+<div class="pipeline"><div class="step">Operation</div><div class="step">Rules</div><div class="step">Calculation</div><div class="step">Snapshot</div></div><div class="trace" id="trace">Rule resolution: PUBLISHED
+Calculation: decimal / explicit rounding
+Evidence: source trace attached
+Snapshot: immutable fiscal result</div></section>
+</div></section>
+
+<section id="radar" class="view"><div class="card"><h1 class="title">Radar Fiscal</h1><div class="subtitle">Superfície operacional para acompanhar fontes oficiais, mudanças, regressões e RuleSets.</div>
+<div class="kpis"><div class="kpi"><span class="muted">Fontes</span><strong>6</strong></div><div class="kpi"><span class="muted">Coleta</span><strong>OK</strong></div><div class="kpi"><span class="muted">Mudanças</span><strong>0</strong></div><div class="kpi"><span class="muted">Regressões</span><strong>0</strong></div></div>
+<div class="radar"><div class="source"><h3><span class="dot"></span>Receita Federal — Reforma Tributária do Consumo</h3><div class="line"><span class="muted">Última coleta</span><span>Monitorada</span></div><div class="line"><span class="muted">Estado</span><span>PUBLISHED</span></div><div class="line"><span class="muted">Evidência</span><span>Hash registrada</span></div></div>
+<div class="source"><h3><span class="dot"></span>Legislação RFB</h3><div class="line"><span class="muted">Última coleta</span><span>Monitorada</span></div><div class="line"><span class="muted">Estado</span><span>ACTIVE</span></div><div class="line"><span class="muted">Evidência</span><span>Hash registrada</span></div></div>
+<div class="source"><h3><span class="dot"></span>Atos conjuntos RFB / CGIBS</h3><div class="line"><span class="muted">Última coleta</span><span>Monitorada</span></div><div class="line"><span class="muted">Estado</span><span>ACTIVE</span></div><div class="line"><span class="muted">Evidência</span><span>Hash registrada</span></div></div>
+<div class="source"><h3><span class="dot"></span>Documentação técnica</h3><div class="line"><span class="muted">Última coleta</span><span>Monitorada</span></div><div class="line"><span class="muted">Estado</span><span>ACTIVE</span></div><div class="line"><span class="muted">Evidência</span><span>Hash registrada</span></div></div>
+<div class="source"><h3><span class="dot"></span>Orientações DFE / calendário</h3><div class="line"><span class="muted">Última coleta</span><span>Monitorada</span></div><div class="line"><span class="muted">Estado</span><span>ACTIVE</span></div><div class="line"><span class="muted">Evidência</span><span>Hash registrada</span></div></div>
+<div class="source"><h3><span class="dot"></span>Planalto — legislação</h3><div class="line"><span class="muted">Última coleta</span><span>Monitorada</span></div><div class="line"><span class="muted">Estado</span><span>ACTIVE</span></div><div class="line"><span class="muted">Evidência</span><span>Hash registrada</span></div></div></div>
+<div class="warn">A interface já representa o Knowledge Loop. A coleta real e a análise de impacto entram pelo Fiscal Domain/API quando as bindings D1/R2 estiverem configuradas.</div></div></section>
+
+<section id="architecture" class="view"><div class="grid"><div class="card"><h2>Ownership</h2><div class="row"><span>Fiscal Domain</span><b>Regras + cálculo + snapshot</b></div><div class="row"><span>Zynkronyx</span><b>Controle + integração + workflow</b></div><div class="row"><span>Knowledge Loop</span><b>Evidência → mudança → candidato</b></div><div class="row"><span>Split Payment</span><b>Ledger + reconciliação</b></div></div>
+<div class="card"><h2>Fluxo bidirecional</h2><div class="trace">ERP / Marketplace / IoT
+        ↓
+   Zynkronyx
+        ↓ command
+   Fiscal Domain
+        ↓ event
+   Zynkronyx
+        ↓
+ERP / Financeiro / Marketplace
+
+Official Sources
+        ↓
+Knowledge Loop
+        ↓
+RuleSet → Regression → Publication</div></div></div>
+<div class="card" style="margin-top:16px"><h2>Pipeline fiscal</h2><div class="arch"><div class="step">Official Sources<br><span class="muted">evidência</span></div><div class="step">Knowledge Loop<br><span class="muted">mudanças</span></div><div class="step">Tax Engine<br><span class="muted">cálculo</span></div><div class="step">Zynkronyx<br><span class="muted">integração</span></div></div></div></section>
+
+<div class="footer">Reforma Tributária Simulator • Fiscal Domain • visual surface • produção</div>
 </div>
 <script>
-function n(v){return Number(String(v).replace(',','.'))||0}
-function brl(v){return v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
-function simulate(){const b=n(base.value),i=n(ibs.value),c=n(cbs.value);const iv=b*i/100,cv=b*c/100;ibsOut.textContent=brl(iv);cbsOut.textContent=brl(cv);totalOut.textContent=brl(iv+cv);ruleset.textContent='SCENARIO-'+new Date().toISOString().slice(0,10).replaceAll('-','');msg.textContent='Simulação executada visualmente. O próximo passo é conectar esta superfície à API fiscal.'}
+const $=id=>document.getElementById(id),n=v=>Number(String(v).replace(',','.'))||0,brl=v=>v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+document.querySelectorAll('.nav button').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));btn.classList.add('active');$(btn.dataset.view).classList.add('active')}));
+function simulate(){const b=n($('base').value),i=n($('ibs').value),c=n($('cbs').value),iv=b*i/100,cv=b*c/100,stamp=new Date().toISOString().replace(/[-:TZ.]/g,'').slice(0,14);$('ibsOut').textContent=brl(iv);$('cbsOut').textContent=brl(cv);$('totalOut').textContent=brl(iv+cv);$('ruleset').textContent='SCENARIO-'+stamp.slice(0,8);$('correlation').textContent='visual-'+stamp;$('msg').textContent='Simulação visual executada. IBS + CBS calculados sobre a base informada.';$('trace').textContent='Rule resolution: SCENARIO-DEMO\nCalculation: '+b.toFixed(2)+' × '+i.toFixed(2)+'% + '+b.toFixed(2)+' × '+c.toFixed(2)+'%\nResult: '+brl(iv+cv)+'\nSnapshot: immutable visual result'}
+}
 </script>
 </body>
 </html>
