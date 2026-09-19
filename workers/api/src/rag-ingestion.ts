@@ -1,0 +1,5 @@
+export interface IngestInput { sourceId:string; url:string; title:string; jurisdiction:string; publishedAt:string; effectiveFrom?:string; effectiveTo?:string; version:string; content:string; }
+export interface IngestResult { documentId:string; contentHash:string; chunkIds:string[]; changed:boolean; }
+export function normalizeDocumentText(text:string){return text.replace(/\r\n/g,'\n').replace(/[ \t]+/g,' ').replace(/\n{3,}/g,'\n\n').trim();}
+export function chunkDocument(text:string,maxChars=1800,overlap=250){const clean=normalizeDocumentText(text);const out:string[]=[];let start=0;while(start<clean.length){const end=Math.min(clean.length,start+maxChars);out.push(clean.slice(start,end));if(end===clean.length)break;start=Math.max(start+1,end-overlap);}return out;}
+export async function hashDocument(content:string){const bytes=new TextEncoder().encode(normalizeDocumentText(content));const digest=await crypto.subtle.digest('SHA-256',bytes);return Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,'0')).join('');}
