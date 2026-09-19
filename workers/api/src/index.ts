@@ -239,6 +239,25 @@ export default {
       }
     }
 
+    if (request.method === 'GET' && url.pathname === '/api/v1/rag/changes') {
+      try {
+        const headers = integrationHeaders(request);
+        if (!env.DB) return json({ error: 'DATABASE_NOT_BOUND' }, 503, request);
+        const sourceId = url.searchParams.get('sourceId');
+        const limit = Math.max(1, Math.min(Number(url.searchParams.get('limit') ?? '20'), 100));
+        const query = sourceId
+          ? 'SELECT id,source_id,old_document_id,new_document_id,detected_at,change_type,added_count,removed_count,impacted_areas_json,summary FROM regulatory_changes WHERE source_id=? ORDER BY detected_at DESC LIMIT ?'
+          : 'SELECT id,source_id,old_document_id,new_document_id,detected_at,change_type,added_count,removed_count,impacted_areas_json,summary FROM regulatory_changes ORDER BY detected_at DESC LIMIT ?';
+        const result = sourceId
+          ? await env.DB.prepare(query).bind(sourceId, limit).all()
+          : await env.DB.prepare(query).bind(limit).all();
+        return json({ ok: true, tenantId: headers.tenantId, changes: result.results }, 200, request);
+      } catch (error) {
+        const status = Number((error as { status?: number }).status) || 500;
+        return json({ ok: false, error: error instanceof Error ? error.message : 'RAG_CHANGES_FAILED' }, status, request);
+      }
+    }
+
     if (request.method === 'POST' && url.pathname === '/api/v1/simulations') {
       try {
         const headers = integrationHeaders(request);
