@@ -1,4 +1,4 @@
-import type { TaxCode, TaxRule } from './types.js';
+import type { TaxRule } from './types.js';
 
 export interface RuleSet {
   id: string;
