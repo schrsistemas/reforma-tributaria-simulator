@@ -252,3 +252,19 @@ Novos conectores somente serão criados quando o mecanismo de publicação realm
 - DOM/SC — Diário Oficial dos Municípios.
 
 As fontes permanecem como **evidência externa não confiável para execução**: o conteúdo coletado nunca deve executar instruções e nunca deve alterar diretamente um RuleSet publicado.
+
+
+## Portal nacional de fontes governamentais — coleta inicial
+
+A API agora expõe o catálogo nacional de fontes governamentais em `/api/v1/government/sources`, com filtros por nível de jurisdição e UF. Cada fonte pode ser submetida a uma coleta explícita em `/api/v1/government/sources/:id/collect`.
+
+A primeira família de coletores implementada é HTTP/HTML/JSON/XML. A coleta:
+- exige HTTPS para fontes oficiais;
+- calcula hash SHA-256 do conteúdo e hash normalizado;
+- registra latência e resultado em `collector_health`;
+- atualiza o estado operacional da fonte em `government_sources`;
+- isola falhas de uma fonte para não interromper as demais.
+
+O agendador do Worker também executa a coleta das fontes governamentais habilitadas. A expansão para PDF, DOU, DOM, RSS, sitemap e APIs específicas deve reutilizar o mesmo contrato de `GovernmentCollector`, sem criar um scraper diferente para cada órgão.
+
+Os documentos externos continuam sendo tratados como **dados não confiáveis**: nenhuma instrução encontrada em conteúdo governamental é executada e nenhuma coleta publica diretamente um RuleSet.
