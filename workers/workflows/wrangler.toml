@@ -1,0 +1,11 @@
+name = "reforma-tributaria-simulator-workflows"
+main = "src/index.ts"
+compatibility_date = "2026-09-19"
+
+[[workflows]]
+name = "fiscal-simulation"
+binding = "SIMULATION_WORKFLOW"
+class_name = "FiscalSimulationWorkflow"
+
+[observability]
+enabled = true
