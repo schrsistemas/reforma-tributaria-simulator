@@ -4,6 +4,8 @@ import { findById, findByIdempotency, saveCompleted } from './simulation-reposit
 import { createSplitPayment, getSplitPayment } from './split-payment-repository.js';
 import { listFiscalSources, getFiscalSource } from './fiscal-knowledge.js';
 import { collectFiscalSource } from './source-collector.js';
+import { listGovernmentSources } from './government-source-repository.js';
+import { collectGovernmentSource, collectEnabledGovernmentSources } from './government-collection.js';
 
 export interface Env {
   VERSION: string;
@@ -66,7 +68,7 @@ export default {
       return json({
         service: 'reforma-tributaria-simulator',
         apiVersion: 'v1',
-        capabilities: ['simulation', 'tax-engine', 'split-payment', 'fiscal-knowledge'],
+        capabilities: ['simulation', 'tax-engine', 'split-payment', 'fiscal-knowledge', 'government-source-registry'],
         execution: { explicitScenario: true, durableWorkflow: Boolean(env.SIMULATION_WORKFLOW) },
       }, 200, request);
     }
@@ -76,6 +78,37 @@ export default {
     } catch (error) {
       const status = Number((error as { status?: number }).status) || 500;
       return json({ ok: false, error: error instanceof Error ? error.message : 'AUTHENTICATION_FAILED' }, status, request);
+    }
+
+    if (request.method === 'GET' && url.pathname === '/api/v1/government/sources') {
+      try {
+        integrationHeaders(request);
+        const jurisdictionLevel = url.searchParams.get('jurisdictionLevel') as 'FEDERAL' | 'STATE' | 'MUNICIPAL' | null;
+        const stateCode = url.searchParams.get('stateCode') ?? undefined;
+        const sources = await listGovernmentSources(env, {
+          jurisdictionLevel: jurisdictionLevel ?? undefined,
+          stateCode,
+        });
+        return json({ ok: true, sources }, 200, request);
+      } catch (error) {
+        const status = Number((error as { status?: number }).status) || 500;
+        return json({ ok: false, error: error instanceof Error ? error.message : 'GOVERNMENT_SOURCE_REGISTRY_FAILED' }, status, request);
+      }
+    }
+
+    if (request.method === 'POST' && url.pathname.startsWith('/api/v1/government/sources/') && url.pathname.endsWith('/collect')) {
+      try {
+        integrationHeaders(request);
+        const parts = url.pathname.split('/');
+        const sourceId = decodeURIComponent(parts[parts.length - 2]);
+        const sources = await listGovernmentSources(env);
+        const source = sources.find(item => item.id === sourceId);
+        if (!source) return json({ ok: false, error: 'GOVERNMENT_SOURCE_NOT_FOUND' }, 404, request);
+        return json(await collectGovernmentSource(env, source), 200, request);
+      } catch (error) {
+        const status = Number((error as { status?: number }).status) || 500;
+        return json({ ok: false, error: error instanceof Error ? error.message : 'GOVERNMENT_COLLECTION_FAILED' }, status, request);
+      }
     }
 
     if (request.method === 'GET' && url.pathname === '/api/v1/fiscal-sources') {
@@ -245,5 +278,6 @@ export default {
         // A single unavailable source must not prevent other sources from being collected.
       }
     }
+    try { await collectEnabledGovernmentSources(env); } catch { /* keep scheduler resilient */ }
   },
 };
