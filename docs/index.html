@@ -167,6 +167,17 @@ function simulate(){try{
  $('trace').textContent='Rule resolution: SCENARIO-DEMO\nCalculation: '+b.toFixed(2)+' × '+i.toFixed(2)+'% + '+b.toFixed(2)+' × '+c.toFixed(2)+'%\nResult: '+brl(iv+cv)+'\nSnapshot: immutable visual result\nCompany: '+$('company').value+'\nCRT: '+$('crt').value+' | UF: '+$('uf').value+' → '+$('destUf').value+'\nOperation: '+$('ncm').value+' | '+$('cfop').value+'\nTEF: pre-configured / simulated';
  }catch(e){$('msg').textContent=e.message;$('msg').className='warn';}
 }
-`);});</script>
+let deferredInstallPrompt=null;
+function setupPwa(){
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  const installBtn=document.getElementById('installBtn'), mobile=document.getElementById('mobileInstall'), mobileBtn=document.getElementById('mobileInstallBtn');
+  const show=()=>{if(installBtn)installBtn.classList.add('show');if(mobile)mobile.classList.add('show');};
+  const install=async()=>{if(!deferredInstallPrompt)return;deferredInstallPrompt.prompt();await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;if(installBtn)installBtn.classList.remove('show');if(mobile)mobile.classList.remove('show');};
+  window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstallPrompt=e;show();});
+  window.addEventListener('appinstalled',()=>{deferredInstallPrompt=null;if(installBtn)installBtn.classList.remove('show');if(mobile)mobile.classList.remove('show');});
+  if(installBtn)installBtn.addEventListener('click',install);
+  if(mobileBtn)mobileBtn.addEventListener('click',install);
+}
+setupPwa();</script>
 </body>
 </html>
