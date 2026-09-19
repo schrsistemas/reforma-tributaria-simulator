@@ -1,0 +1,20 @@
+INSERT OR IGNORE INTO government_authorities
+(id,country_code,jurisdiction_level,state_code,municipality_code,name,authority_type,official_domain,enabled,created_at,updated_at)
+VALUES
+('BR-PR','BR','FEDERAL',NULL,NULL,'Presidência da República / Planalto','EXECUTIVE','planalto.gov.br',1,datetime('now'),datetime('now')),
+('BR-RFB','BR','FEDERAL',NULL,NULL,'Receita Federal do Brasil','TAX_AUTHORITY','gov.br/receitafederal',1,datetime('now'),datetime('now')),
+('BR-CGIBS','BR','FEDERAL',NULL,NULL,'Comitê Gestor do IBS','TAX_AUTHORITY','cgibs.gov.br',1,datetime('now'),datetime('now')),
+('BR-MF','BR','FEDERAL',NULL,NULL,'Ministério da Fazenda','MINISTRY','gov.br/fazenda',1,datetime('now'),datetime('now')),
+('BR-SC-SEF','BR','STATE','SC',NULL,'Secretaria de Estado da Fazenda de Santa Catarina','STATE_TAX_AUTHORITY','sef.sc.gov.br',1,datetime('now'),datetime('now')),
+('BR-SC-DOM','BR','MUNICIPAL','SC',NULL,'Diário Oficial dos Municípios de Santa Catarina','OFFICIAL_PUBLISHER','diariomunicipal.sc.gov.br',1,datetime('now'),datetime('now'));
+
+INSERT OR IGNORE INTO government_sources
+(id,authority_id,name,source_type,document_types,collector_type,official_url,discovery_url,api_url,rss_url,collection_method,cadence,priority,enabled,health_status,created_at,updated_at)
+VALUES
+('BR-PR-LEG','BR-PR','Base da Legislação Federal','LEGISLATION','LAW,COMPLEMENTARY_LAW,DECREE,ORDINANCE,RESOLUTION,NORMATIVE_INSTRUCTION','HTML','https://www4.planalto.gov.br/legislacao/portal-legis/busca-avancada','https://www4.planalto.gov.br/legislacao',NULL,NULL,'HTTP','DAILY',100,1,'UNKNOWN',datetime('now'),datetime('now')),
+('BR-RFB-RTC','BR-RFB','Reforma Tributária do Consumo — Legislação','TAX_REFORM','LAW,ACT,RESOLUTION,TECHNICAL_NOTE,GUIDANCE','HTML','https://www.gov.br/receitafederal/pt-br/acesso-a-informacao/acoes-e-programas/programas-e-atividades/reforma-tributaria-do-consumo/legislacao','https://www.gov.br/receitafederal/pt-br/acesso-a-informacao/acoes-e-programas/programas-e-atividades/reforma-tributaria-do-consumo',NULL,NULL,'HTTP','DAILY',100,1,'UNKNOWN',datetime('now'),datetime('now')),
+('BR-RFB-ATOS','BR-RFB','Atos Conjuntos RFB/CGIBS','JOINT_ACTS','ACT,TECHNICAL_NOTE,GUIDANCE','HTML','https://www.gov.br/receitafederal/pt-br/acesso-a-informacao/acoes-e-programas/programas-e-atividades/reforma-tributaria-do-consumo/legislacao/atos-conjuntos','https://www.gov.br/receitafederal/pt-br/acesso-a-informacao/acoes-e-programas/programas-e-atividades/reforma-tributaria-do-consumo/legislacao',NULL,NULL,'HTTP','DAILY',100,1,'UNKNOWN',datetime('now'),datetime('now')),
+('BR-RFB-ORIENT-2026','BR-RFB','Orientações da Reforma Tributária 2026','GUIDANCE','GUIDANCE,TECHNICAL_NOTE,SCHEMA','HTML','https://www.gov.br/receitafederal/pt-br/acesso-a-informacao/acoes-e-programas/programas-e-atividades/reforma-tributaria-do-consumo/orientacoes-da-reforma-tributaria','https://www.gov.br/receitafederal/pt-br/acesso-a-informacao/acoes-e-programas/programas-e-atividades/reforma-tributaria-do-consumo',NULL,NULL,'HTTP','DAILY',95,1,'UNKNOWN',datetime('now'),datetime('now')),
+('BR-DADOS-API','BR-MF','Catálogo de APIs Governamentais / Dados Abertos','OPEN_DATA_API','OTHER','REST_API','https://www.gov.br/conecta/catalogo/apis/api-portal-de-dados-abertos','https://www.gov.br/conecta/catalogo/apis','https://dados.gov.br/swagger-ui/index.html',NULL,'HTTP','WEEKLY',70,1,'UNKNOWN',datetime('now'),datetime('now')),
+('BR-SC-SEF-LEG','BR-SC-SEF','Legislação Tributária de Santa Catarina','STATE_TAX_LEGISLATION','LAW,DECREE,ORDINANCE,TECHNICAL_NOTE,RESOLUTION','HTML','https://www.sef.sc.gov.br/legislacoes','https://legislacao.sef.sc.gov.br/consulta/',NULL,NULL,'HTTP','DAILY',90,1,'UNKNOWN',datetime('now'),datetime('now')),
+('BR-SC-DOM','BR-SC-DOM','Diário Oficial dos Municípios de Santa Catarina','MUNICIPAL_OFFICIAL_JOURNAL','LAW,DECREE,ORDINANCE,RESOLUTION,OFFICIAL_NOTICE','DOM','https://diariomunicipal.sc.gov.br/','https://diariomunicipal.sc.gov.br/?r=site%2Fpage&view=entidades',NULL,NULL,'HTTP','DAILY',85,1,'UNKNOWN',datetime('now'),datetime('now'));
