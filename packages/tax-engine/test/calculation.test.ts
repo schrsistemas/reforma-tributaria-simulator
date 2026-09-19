@@ -45,7 +45,7 @@ test('calculates IBS and CBS without floating point arithmetic', () => {
 });
 
 test('applies percentage rates as percent, not as a unit multiplier', () => {
-  const result = calculateTax({...operation, grossAmount:'123.45'}, [{...rules[0], ratePercent:'7.50'}]);
+  const result = calculateTax({...operation, items:[{...operation.items[0], quantity:'1', unitPrice:'123.45'}]}, [{...rules[0], ratePercent:'7.50'}]);
   assert.equal(result.taxes.IBS.amount, '9.26');
   assert.equal(result.totalTax, '9.26');
 });
