@@ -51,3 +51,16 @@ export interface TaxAmount { base:DecimalString; ratePercent:DecimalString; amou
 export interface RuleTrace { ruleId:string; tax:TaxCode; source:string; version:string; }
 export interface PaymentReference { transactionId:string; grossAmount:DecimalString; installments:number; }
 export interface SplitAllocation { paymentId:string; tax:TaxCode; amount:DecimalString; status:'PENDING'|'SETTLED'|'REVERSED'; }
+
+export type SplitPaymentStatus='CREATED'|'ALLOCATED'|'PARTIALLY_SETTLED'|'SETTLED'|'REVERSED';
+
+export interface SplitPaymentSettlement {
+  paymentId:string;
+  operationId:string;
+  grossAmount:DecimalString;
+  supplierNetAmount:DecimalString;
+  allocations:SplitAllocation[];
+  status:SplitPaymentStatus;
+  reconciled:boolean;
+}
+
