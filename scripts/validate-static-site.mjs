@@ -16,3 +16,5 @@ if (/CLOUDFLARE_(?:API_TOKEN|ACCOUNT_ID)\s*=\s*[^$\s]{4,}/i.test(html)) throw ne
 if (!html.includes('PORTAL SIMULADOR FACILITADOR')) throw new Error('Facilitator portal title missing');
 
 console.log('Static portal validation passed.');
+
+// CI trigger: keep validation aligned with the single-install-button PWA.
