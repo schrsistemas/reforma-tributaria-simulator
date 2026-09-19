@@ -5,3 +5,4 @@ export * from './integration.js';
 export * from './message.js';
 
 export * from './government.js';
+export * from './tef.js';
