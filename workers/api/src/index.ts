@@ -8,6 +8,7 @@ import { listGovernmentSources } from './government-source-repository.js';
 import { collectGovernmentSource, collectEnabledGovernmentSources } from './government-collection.js';
 import { createTef, getTef, transitionTefRecord } from './tef-repository.js';
 import { createPix, getPix, transitionPixRecord } from './pix-repository.js';
+import { searchRag } from './rag-repository.js';
 
 export interface Env {
   VERSION: string;
@@ -219,6 +220,22 @@ export default {
       } catch (error) {
         const status = Number((error as { status?: number }).status) || 400;
         return json({ ok: false, error: error instanceof Error ? error.message : 'TEF_TRANSITION_FAILED' }, status, request);
+      }
+    }
+
+
+    if (request.method === 'GET' && url.pathname === '/api/v1/rag/search') {
+      try {
+        const headers = integrationHeaders(request);
+        if (!env.DB) return json({ error: 'DATABASE_NOT_BOUND' }, 503, request);
+        const query = (url.searchParams.get('q') ?? '').trim();
+        if (!query) return json({ error: 'RAG_QUERY_REQUIRED' }, 400, request);
+        const topK = Number(url.searchParams.get('topK') ?? '5');
+        const asOf = url.searchParams.get('asOf') ?? undefined;
+        return json({ ok: true, ...await searchRag(env.DB, query, topK, asOf), tenantId: headers.tenantId }, 200, request);
+      } catch (error) {
+        const status = Number((error as { status?: number }).status) || 500;
+        return json({ ok: false, error: error instanceof Error ? error.message : 'RAG_SEARCH_FAILED' }, status, request);
       }
     }
 
