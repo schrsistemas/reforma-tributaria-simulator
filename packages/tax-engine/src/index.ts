@@ -32,6 +32,7 @@ function format(value:bigint,scale:number):string{
   return `${sign}${abs/base}.${(abs%base).toString().padStart(scale,'0')}`;
 }
 function multiply(a:Scaled,b:Scaled):Scaled{return {value:a.value*b.value,scale:a.scale+b.scale};}
+function divideBy100(a:Scaled):Scaled{return {value:a.value,scale:a.scale+2};}
 function money(input:Scaled,policy:{scale:number;mode:RoundingMode}):string{
   return format(roundScaled(input.value,input.scale,policy.scale,policy.mode),policy.scale);
 }
@@ -40,7 +41,6 @@ export function calculateTax(operation:FiscalOperation,rules:TaxRule[],calculati
   const defaultPolicy={scale:2 as const,mode:'HALF_UP' as const};
   const lineValues=operation.items.map(item=>multiply(parseDecimal(item.quantity),parseDecimal(item.unitPrice)));
   const baseScale=Math.max(2,...lineValues.map(v=>v.scale));
-  const baseRaw=lineValues.reduce((sum,v)=>sum+rescale(v,v.scale),0n);
   const base=money({value:lineValues.reduce((sum,v)=>sum+v.value*10n**BigInt(baseScale-v.scale),0n),scale:baseScale},defaultPolicy);
   const taxes={IBS:{base,ratePercent:'0.00',amount:'0.00'},CBS:{base,ratePercent:'0.00',amount:'0.00'}} as TaxResult['taxes'];
   const ruleTrace:TaxResult['ruleTrace']=[];
@@ -53,7 +53,7 @@ export function calculateTax(operation:FiscalOperation,rules:TaxRule[],calculati
     const rate=parseDecimal(rule.ratePercent);
     const baseDecimal=parseDecimal(base);
     const raw=multiply(baseDecimal,rate);
-    const amount=money({value:raw.value,scale:raw.scale+2},policy);
+    const amount=money(divideBy100(raw),policy);
     taxes[tax]={base,ratePercent:rule.ratePercent,amount};
     total+=rescale(parseDecimal(amount),2);
     ruleTrace.push({ruleId:rule.id,tax,source:rule.source,version:rule.version});
