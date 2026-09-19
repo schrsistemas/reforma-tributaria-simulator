@@ -1,0 +1,6 @@
+export interface RagCandidate { id:string; documentId:string; text:string; score:number; sourceUrl:string; title:string; publishedAt?:string; effectiveFrom?:string; effectiveTo?:string; }
+export function normalizeForSearch(value:string){return value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim();}
+export function tokenize(value:string){return normalizeForSearch(value).split(' ').filter(x=>x.length>2);}
+export function lexicalScore(query:string,text:string){const q=tokenize(query),t=new Set(tokenize(text));if(!q.length)return 0;let exact=0;for(const w of q)if(t.has(w))exact++;return exact/q.length;}
+export function rerank(query:string,candidates:RagCandidate[]){return candidates.map(c=>({...c,score:Math.min(1,c.score*0.7+lexicalScore(query,c.text)*0.3)})).sort((a,b)=>b.score-a.score);}
+export function temporalMatch(c:RagCandidate,asOf?:string){if(!asOf)return true;const d=Date.parse(asOf),from=c.effectiveFrom?Date.parse(c.effectiveFrom):Number.NEGATIVE_INFINITY,to=c.effectiveTo?Date.parse(c.effectiveTo):Number.POSITIVE_INFINITY;return d>=from&&d<=to;}
