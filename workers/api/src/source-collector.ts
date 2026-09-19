@@ -38,7 +38,7 @@ export async function collectFiscalSource(env: EvidenceEnv, sourceId: string): P
     const buffer = await response.arrayBuffer();
     const text = new TextDecoder().decode(buffer);
     const contentHash = await sha256Hex(buffer);
-    const normalizedHash = await sha256Hex(new TextEncoder().encode(normalize(text)));
+    const normalizedHash = await sha256Hex(new TextEncoder().encode(normalize(text)).buffer as ArrayBuffer);
     const status: CollectedEvidence['status'] =
       source.lastHash === normalizedHash ? 'UNCHANGED' : (source.lastHash ? 'CHANGED' : 'CREATED');
 
