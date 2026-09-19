@@ -3,7 +3,7 @@
   "short_name": "Simulador",
   "description": "Portal mobile de simuladores fiscais, empresariais e de pagamentos.",
   "lang": "pt-BR",
-  "start_url": "/#simulators",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
