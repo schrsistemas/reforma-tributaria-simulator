@@ -3,6 +3,7 @@ import type { GovernmentCollector } from './government-collectors.js';
 import { HttpCollector } from './government-collectors.js';
 import { listGovernmentSources } from './government-source-repository.js';
 import { hashDocument, chunkDocument } from './rag-ingestion.js';
+import { diffLines, impactedAreas } from '@rts/domain';
 
 interface Env { DB?: D1Database; }
 const collectors: GovernmentCollector[] = [new HttpCollector()];
@@ -18,6 +19,9 @@ async function ingestGovernmentEvidence(env: Env, source: GovernmentSource, resu
   const contentHash = await hashDocument(result.text);
   const existing = await env.DB.prepare('SELECT id,content_hash FROM rag_documents WHERE source_id=? ORDER BY published_at DESC LIMIT 1').bind(source.id).first<{id:string;content_hash:string}>();
   if (existing?.content_hash === contentHash) return { ingested: false, reason: 'UNCHANGED', documentId: existing.id };
+  const previous = existing ? await env.DB.prepare('SELECT id FROM rag_documents WHERE id=?').bind(existing.id).first<{id:string}>() : null;
+  const previousChunks = previous ? await env.DB.prepare('SELECT text FROM rag_chunks WHERE document_id=? ORDER BY ordinal').bind(previous.id).all<{text:string}>() : { results: [] as Array<{text:string}> };
+  const previousText = previousChunks.results.map(x=>x.text).join('\n');
   const documentId = crypto.randomUUID();
   const now = new Date().toISOString();
   await env.DB.prepare('INSERT INTO rag_documents (id,source_id,title,jurisdiction,published_at,source_url,content_hash,version,created_at) VALUES (?,?,?,?,?,?,?,?,?)')
@@ -26,6 +30,12 @@ async function ingestGovernmentEvidence(env: Env, source: GovernmentSource, resu
   for (let i=0;i<chunks.length;i++) {
     await env.DB.prepare('INSERT INTO rag_chunks (id,document_id,ordinal,text,token_count,metadata_json) VALUES (?,?,?,?,?,?)')
       .bind(crypto.randomUUID(),documentId,i,chunks[i],chunks[i].split(/\s+/).length,JSON.stringify({sourceId:source.id,ordinal:i})).run();
+  }
+  if (previous?.id) {
+    const diff = diffLines(previousText, result.text);
+    const areas = impactedAreas(result.text);
+    await env.DB.prepare('INSERT INTO regulatory_changes (id,source_id,old_document_id,new_document_id,detected_at,change_type,added_count,removed_count,impacted_areas_json,summary) VALUES (?,?,?,?,?,?,?,?,?,?)')
+      .bind(crypto.randomUUID(),source.id,previous.id,documentId,now,diff.changed?'CONTENT_CHANGED':'CONTENT_UNCHANGED',diff.added,diff.removed,JSON.stringify(areas),diff.changed ? `Alteração detectada: +${diff.added} / -${diff.removed} linhas; áreas: ${areas.join(', ') || 'não classificadas'}.` : 'Nenhuma alteração textual material detectada.').run();
   }
   return { ingested: true, documentId, chunkCount: chunks.length };
 }
