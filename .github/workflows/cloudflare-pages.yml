@@ -13,8 +13,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy docs --project-name=reforma-tributaria-simulator --branch=main
+
+      - name: Install Wrangler outside repository workspace
+        run: npm install --global wrangler@4
+
+      - name: Deploy visual site
+        run: wrangler pages deploy "$GITHUB_WORKSPACE/docs" --project-name=reforma-tributaria-simulator --branch=main
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
