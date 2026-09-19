@@ -38,8 +38,10 @@ function money(input:Scaled,policy:{scale:number;mode:RoundingMode}):string{
 
 export function calculateTax(operation:FiscalOperation,rules:TaxRule[],calculationVersion='0.2.0'):TaxResult{
   const defaultPolicy={scale:2 as const,mode:'HALF_UP' as const};
-  const baseRaw=operation.items.reduce((sum,item)=>sum+multiply(parseDecimal(item.quantity),parseDecimal(item.unitPrice)).value*10n**BigInt(Math.max(0,2-(parseDecimal(item.quantity).scale+parseDecimal(item.unitPrice).scale))),0n);
-  const base=money({value:baseRaw,scale:2},defaultPolicy);
+  const lineValues=operation.items.map(item=>multiply(parseDecimal(item.quantity),parseDecimal(item.unitPrice)));
+  const baseScale=Math.max(2,...lineValues.map(v=>v.scale));
+  const baseRaw=lineValues.reduce((sum,v)=>sum+rescale(v,v.scale),0n);
+  const base=money({value:lineValues.reduce((sum,v)=>sum+v.value*10n**BigInt(baseScale-v.scale),0n),scale:baseScale},defaultPolicy);
   const taxes={IBS:{base,ratePercent:'0.00',amount:'0.00'},CBS:{base,ratePercent:'0.00',amount:'0.00'}} as TaxResult['taxes'];
   const ruleTrace:TaxResult['ruleTrace']=[];
   let total=0n;
