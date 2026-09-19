@@ -42,6 +42,7 @@ export async function fetchOfficialText(source: GovernmentSource, context: Colle
     contentHash,
     normalizedHash,
     contentLocation: source.officialUrl,
+    text: content,
   };
 }
 
