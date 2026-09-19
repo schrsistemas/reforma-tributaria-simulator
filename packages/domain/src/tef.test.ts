@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { canTransitionTef, transitionTef, tefStatusIsTerminal } from './tef.js';
+import { canTransitionTef, transitionTef, tefStatusIsTerminal } from './tef.ts';
 
 test('TEF happy path', () => {
   let status = 'INITIATED' as const;
