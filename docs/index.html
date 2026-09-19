@@ -16,7 +16,7 @@
 <a class="routeLink active" href="#dashboard">Painel</a>
 <a class="routeLink" href="#radar">Radar Fiscal</a>
 <a class="routeLink" href="#sources">Fontes Governamentais</a>
-<a class="routeLink" href="#architecture">Arquitetura</a><a class="routeLink" href="#news">Notícias</a><a class="routeLink" href="#simulators">Simuladores</a><a class="routeLink" href="#backoffice">Gestão</a><a class="routeLink" href="#servicos">Central Empresarial</a><a class="routeLink" href="#obrigacoes">Obrigações</a><a class="routeLink" href="#sebrae">Sebrae</a>
+<a class="routeLink" href="#architecture">Arquitetura</a><a class="routeLink" href="#news">Notícias</a><a class="routeLink" href="#simulators">Simuladores</a><a class="routeLink" href="#backoffice">Gestão</a><a class="routeLink" href="#servicos">Central Empresarial</a><a class="routeLink" href="#obrigacoes">Obrigações</a><a class="routeLink" href="#calendario-obrigacoes">Calendário</a><a class="routeLink" href="#sebrae">Sebrae</a>
 </nav>
 <div class="quick">
 <a class="quickLink" href="#simulators">▶ Simuladores</a><a class="quickLink" href="#split-payment">⇄ Pagamento dividido (Split Payment)</a>
@@ -49,6 +49,17 @@ Evidência: rastreabilidade da fonte anexada
 Registro Imutável: resultado tributário imutável</div></section>
 </div></section>
 
+<section id="calendario-obrigacoes" class="view"><div class="card"><h1 class="title">Calendário Inteligente de Obrigações</h1><div class="subtitle">O calendário cruza período, tipo de empresa, documento e fonte. Datas de leiaute e datas de obrigatoriedade são mantidas separadas.</div><div class="metrics"><div class="metric"><small>Referência</small><b>Set/2026</b></div><div class="metric"><small>Fonte</small><b>RFB / CGIBS</b></div><div class="metric"><small>Modo</small><b>Monitoramento</b></div></div>
+<div class="radar">
+<div class="source"><h3>30/09/2026</h3><p>Fim do prazo informado pela Receita Federal para opção pelo Simples Nacional 2027 e escolha do modelo de recolhimento de IBS/CBS para as empresas abrangidas.</p><div class="line"><span>Tipo</span><span class="pill">PRAZO</span></div></div>
+<div class="source"><h3>01/10/2026</h3><p>Marco de documentos e declarações previsto no cronograma oficial da Reforma Tributária do Consumo, incluindo NFS-e/NFCom e outros itens conforme operação abrangida.</p><div class="line"><span>Tipo</span><span class="pill">OBRIGAÇÃO</span></div></div>
+<div class="source"><h3>01/12/2026</h3><p>Novo marco de documentos fiscais previsto no cronograma oficial, com itens adicionais conforme operações e documentos abrangidos.</p><div class="line"><span>Tipo</span><span class="pill">OBRIGAÇÃO</span></div></div>
+<div class="source"><h3>01/01/2027</h3><p>Marco importante para Simples Nacional, Duimp, NF-e de importação, DeRE 3ª fase e NF-e de combustíveis, conforme o cronograma publicado.</p><div class="line"><span>Tipo</span><span class="pill">OBRIGAÇÃO</span></div></div>
+</div>
+<div class="trace">REGRA DE EVIDÊNCIA
+fonte oficial → ato/documento → publicação → vigência/obrigatoriedade → empresa afetada → impacto → simulação → evidência
+
+O portal não trata uma data de leiaute como se fosse automaticamente a data de obrigação.</div></div></section>
 <section id="obrigacoes" class="view"><div class="card"><h1 class="title">Central de Obrigações</h1><div class="subtitle">Visão organizada das obrigações que podem afetar a empresa. O portal separa informação oficial, simulação e evidência; não presume uma obrigação sem fonte e vigência.</div><div class="radar">
 <div class="source"><h3>Fiscal e tributário</h3><p>NF-e, NFC-e, NFS-e, CT-e, NFCom, DeRE, Duimp, IBS, CBS, Simples Nacional e documentos complementares.</p><div class="line"><span>Fonte principal</span><span class="pill">RFB / CGIBS</span></div></div>
 <div class="source"><h3>Trabalhista e RH</h3><p>Folha, jornada, férias, 13º, afastamentos, encargos e calendário de obrigações trabalhistas, conforme regime aplicável.</p><div class="line"><span>Estado</span><span class="pill">INFORMATIVO</span></div></div>
