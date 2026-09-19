@@ -134,7 +134,6 @@ function selectSimulator(type){
     if(trace) trace.textContent='Simulator: '+type.toUpperCase()+'\nMode: VISUAL DEMO\nNo real financial transaction';
   });
 }
-<script>
 const $=id=>document.getElementById(id),n=v=>Number(String(v).replace(',','.'))||0,brl=v=>v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 function route(){
  const id=location.hash.slice(1)||'dashboard';
