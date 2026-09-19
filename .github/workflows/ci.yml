@@ -14,8 +14,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -32,7 +30,7 @@ jobs:
       - name: Check committed files for obvious credential assignments
         shell: bash
         run: |
-          if git grep -nE 'CLOUDFLARE_API_TOKEN=.{4,}|CLOUDFLARE_ACCOUNT_ID=.{4,}' -- ':!docs/security/secrets.md' ':!.env.example'; then
+          if git grep -nE 'CLOUDFLARE_(API_TOKEN|ACCOUNT_ID)[[:space:]]*=[[:space:]]*[^$][^[:space:]]{3,}' -- ':!.env.example' ':!docs/security/secrets.md' ':!.github/workflows/ci.yml'; then
             echo "Possible credential committed"
             exit 1
           fi
