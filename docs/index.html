@@ -350,5 +350,5 @@ window.addEventListener('online',updateConnectionStatus);window.addEventListener
  btn.addEventListener('click',run); run();
 })();
 </script></script>
-</body>
+<script>(function(){const b=document.getElementById('auditButtons');if(!b)return;b.addEventListener('click',()=>{const all=[...document.querySelectorAll('button,a')];const bad=all.filter(x=>{const h=x.getAttribute('href');const d=x.getAttribute('data-simulator');return x.tagName==='A'&&!h||x.tagName==='BUTTON'&&!x.id&&!d});document.getElementById('auditResult').innerHTML='<div class="source"><h3>Auditoria executada</h3><p>Controles sem destino identificável: '+bad.length+'</p><div class="line"><span>Critério</span><span class="pill">'+(bad.length?'REVISAR':'OK')+'</span></div></div>';});})();</script></body>
 </html>
