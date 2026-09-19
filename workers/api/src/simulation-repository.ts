@@ -9,7 +9,7 @@ export interface SimulationRecord {
 type Row={id:string;tenant_id:string;operation_id:string;status:string;calculation_version:string|null;ruleset_id:string|null;ruleset_version:string|null;result_json:string|null;correlation_id:string;created_at:string;completed_at:string|null};
 
 function map(row:Row):SimulationRecord{
-  return {...row,tenantId:row.tenant_id,calculationVersion:row.calculation_version,rulesetId:row.ruleset_id,rulesetVersion:row.ruleset_version,result:row.result_json?JSON.parse(row.result_json) as TaxResult:null,correlationId:row.correlation_id,createdAt:row.created_at,completedAt:row.completed_at};
+  return {...row,operationId:row.operation_id,tenantId:row.tenant_id,calculationVersion:row.calculation_version,rulesetId:row.ruleset_id,rulesetVersion:row.ruleset_version,result:row.result_json?JSON.parse(row.result_json) as TaxResult:null,correlationId:row.correlation_id,createdAt:row.created_at,completedAt:row.completed_at};
 }
 
 export async function findByIdempotency(db:D1Database,tenantId:string,key:string,operation:string){
