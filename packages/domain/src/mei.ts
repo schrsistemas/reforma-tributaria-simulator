@@ -1,0 +1,3 @@
+export interface MeiProfile { id:string; tenantId:string; fictitiousName:string; occupationCode:string; annualRevenue:number; employees:number; municipality:string; state:string; }
+export interface MeiSimulation { profileId:string; monthlyRevenue:number; annualProjection:number; annualLimit:number; dasEstimate:number; status:'WITHIN_SCENARIO'|'ABOVE_SIMULATED_LIMIT'; }
+export const MEI_SIMULATED_ANNUAL_LIMIT=81000;
