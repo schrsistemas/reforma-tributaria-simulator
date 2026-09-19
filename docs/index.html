@@ -16,7 +16,7 @@
 <a class="routeLink active" href="#dashboard">Painel</a>
 <a class="routeLink" href="#radar">Radar Fiscal</a>
 <a class="routeLink" href="#sources">Fontes Governamentais</a>
-<a class="routeLink" href="#architecture">Arquitetura</a><a class="routeLink" href="#news">Notícias</a><a class="routeLink" href="#simulators">Simuladores</a><a class="routeLink" href="#backoffice">Gestão</a><a class="routeLink" href="#servicos">Central Empresarial</a><a class="routeLink" href="#obrigacoes">Obrigações</a><a class="routeLink" href="#calendario-obrigacoes">Calendário</a><a class="routeLink" href="#fontes-abertas">Dados Abertos</a><a class="routeLink" href="#sebrae">Sebrae</a>
+<a class="routeLink" href="#architecture">Arquitetura</a><a class="routeLink" href="#news">Notícias</a><a class="routeLink" href="#simulators">Simuladores</a><a class="routeLink" href="#backoffice">Gestão</a><a class="routeLink" href="#servicos">Central Empresarial</a><a class="routeLink" href="#obrigacoes">Obrigações</a><a class="routeLink" href="#calendario-obrigacoes">Calendário</a><a class="routeLink" href="#calendario-empresa">Calendário por empresa</a><a class="routeLink" href="#fontes-abertas">Dados Abertos</a><a class="routeLink" href="#sebrae">Sebrae</a>
 </nav>
 <div class="quick">
 <a class="quickLink" href="#simulators">▶ Simuladores</a><a class="quickLink" href="#split-payment">⇄ Pagamento dividido (Split Payment)</a>
@@ -49,7 +49,13 @@ Evidência: rastreabilidade da fonte anexada
 Registro Imutável: resultado tributário imutável</div></section>
 </div></section>
 
-<section id="fontes-abertas" class="view"><div class="card"><h1 class="title">Dados Abertos e Integrações Públicas</h1><div class="subtitle">Área para transformar fontes governamentais abertas em consultas, painéis e evidências, sem substituir o sistema oficial.</div><div class="radar">
+<section id="calendario-empresa" class="view"><div class="card"><h1 class="title">Calendário por Empresa</h1><div class="subtitle">Filtre obrigações pela situação simulada da empresa. As datas são referência; a fonte oficial prevalece.</div><div class="formGrid">
+<label>Regime<select id="obRegime"><option value="simples">Simples Nacional</option><option value="normal">Regime regular</option><option value="mei">MEI</option></select></label>
+<label>Atividade<select id="obAtividade"><option value="servicos">Serviços</option><option value="comercio">Comércio</option><option value="transporte">Transporte</option><option value="misto">Mista</option></select></label>
+<label>Documento<select id="obDocumento"><option value="todos">Todos</option><option value="nfse">NFS-e</option><option value="nfe">NF-e / NFC-e</option><option value="cte">CT-e / MDF-e</option></select></label>
+<label>Período<select id="obPeriodo"><option value="2026">2026</option><option value="2027">2027</option></select></label>
+</div><button class="primary" id="filtrarObrigacoes" type="button">Calcular obrigações</button><div id="resultadoObrigacoes" class="radar"></div><div class="trace">REGRA DE EVIDÊNCIA
+Fonte oficial → ato/documento → data → público afetado → condição → impacto → simulação → evidência</div></div></section><section id="fontes-abertas" class="view"><div class="card"><h1 class="title">Dados Abertos e Integrações Públicas</h1><div class="subtitle">Área para transformar fontes governamentais abertas em consultas, painéis e evidências, sem substituir o sistema oficial.</div><div class="radar">
 <div class="source"><h3>Transferegov.br</h3><p>Transferências, parcerias, transferências especiais e dados estruturados para consulta automatizada.</p><div class="line"><span>Integração</span><span class="pill">API PÚBLICA</span></div></div>
 <div class="source"><h3>Projetos e programas</h3><p>Localizar programa, requisitos, instrumento, órgão responsável, situação e dados de execução quando disponíveis.</p><div class="line"><span>Fluxo</span><span class="pill">PROJETO → EVIDÊNCIA</span></div></div>
 <div class="source"><h3>Obras e execução</h3><p>Preparar o portal para consumir fontes abertas de obras e execução conforme a disponibilização oficial dos módulos.</p><div class="line"><span>Estado</span><span class="pill">EM EXPANSÃO</span></div></div>
@@ -325,6 +331,24 @@ window.addEventListener('online',updateConnectionStatus);window.addEventListener
  document.querySelectorAll('[data-project-action]').forEach(function(btn){btn.addEventListener('click',function(){var flow=document.getElementById('projectFlow');var labels={buscar:'Busca → fonte oficial → programa encontrado',requisitos:'Programa → requisitos → documentos → prazo',simular:'Dados do projeto → cenário → simulação → evidência',acompanhar:'Projeto → atualização → situação → evidência'};if(flow)flow.innerHTML='<span>'+labels[btn.dataset.projectAction]+'</span>';});});
 
  document.querySelectorAll('[data-lgpd]').forEach(function(btn){btn.addEventListener('click',function(){var flow=document.getElementById('lgpdFlow');var labels={mapa:'Dados → finalidade → armazenamento → retenção',bases:'Finalidade → hipótese legal → evidência → responsável',direitos:'Titular → solicitação → validação → resposta → evidência',incidente:'Incidente → avaliação → contenção → comunicação → encerramento'};if(flow)flow.innerHTML='<span>'+labels[btn.dataset.lgpd]+'</span>';});});
-</script>
+<script>
+(function(){
+ const btn=document.getElementById('filtrarObrigacoes');
+ if(!btn)return;
+ const out=document.getElementById('resultadoObrigacoes');
+ const cards=[
+  {date:'01/10/2026',title:'NFS-e',types:['nfse'],acts:['servicos','misto'],reg:['normal','mei','simples'],note:'Obrigatoriedade geral prevista para serviços sujeitos ao ISS; no Simples, a NFS-e Nacional possui regra específica a partir de 01/11/2026.'},
+  {date:'01/11/2026',title:'NFS-e Nacional — Simples',types:['nfse'],acts:['servicos','misto'],reg:['simples'],note:'ME e EPP optantes do Simples devem utilizar o Emissor Nacional da NFS-e.'},
+  {date:'01/01/2027',title:'Documentos fiscais — Simples',types:['nfe','nfse'],acts:['servicos','comercio','misto'],reg:['simples'],note:'Cronograma de documentos fiscais dos contribuintes do Simples Nacional.'},
+  {date:'03/08/2026',title:'CT-e / MDF-e',types:['cte'],acts:['transporte','misto'],reg:['normal','simples'],note:'Obrigatoriedade para as operações abrangidas pelo cronograma oficial.'}
+ ];
+ function run(){
+  const reg=document.getElementById('obRegime').value, act=document.getElementById('obAtividade').value, doc=document.getElementById('obDocumento').value, year=document.getElementById('obPeriodo').value;
+  const found=cards.filter(x=>x.date.endsWith(year)&&x.reg.includes(reg)&&x.acts.includes(act)&&(doc==='todos'||x.types.includes(doc)));
+  out.innerHTML=found.length?found.map(x=>'<div class="source"><h3>'+x.date+' · '+x.title+'</h3><p>'+x.note+'</p><div class="line"><span>Fonte</span><span class="pill">RFB / CGIBS</span></div></div>').join(''):'<div class="source"><h3>Nenhuma obrigação encontrada</h3><p>O filtro atual não encontrou uma obrigação demonstrativa. Isso não significa dispensa legal.</p></div>';
+ }
+ btn.addEventListener('click',run); run();
+})();
+</script></script>
 </body>
 </html>
