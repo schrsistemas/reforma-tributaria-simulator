@@ -5,5 +5,5 @@
   "type":"module",
   "scripts":{"typecheck":"tsc --noEmit"},
   "dependencies":{"@rts/domain":"workspace:*","@rts/tax-engine":"workspace:*"},
-  "devDependencies":{"@cloudflare/workers-types":"latest","typescript":"latest","wrangler":"latest"}
+  "devDependencies":{"@cloudflare/workers-types":"latest","@types/node":"latest","typescript":"latest","wrangler":"latest"}
 }
