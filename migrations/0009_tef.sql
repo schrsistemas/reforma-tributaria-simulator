@@ -1,6 +1,7 @@
 -- TEF is the simulated payment rail. Fiscal calculation remains owned by the Fiscal Domain.
 CREATE TABLE IF NOT EXISTS tef_transactions (
   id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL,
   operation_id TEXT NOT NULL,
   idempotency_key TEXT NOT NULL UNIQUE,
   provider TEXT NOT NULL,
@@ -18,6 +19,7 @@ CREATE TABLE IF NOT EXISTS tef_transactions (
   updated_at TEXT NOT NULL
 );
 
+CREATE INDEX IF NOT EXISTS idx_tef_transactions_tenant_operation ON tef_transactions(tenant_id, operation_id);
 CREATE INDEX IF NOT EXISTS idx_tef_transactions_operation ON tef_transactions(operation_id);
 CREATE INDEX IF NOT EXISTS idx_tef_transactions_status ON tef_transactions(status);
 CREATE INDEX IF NOT EXISTS idx_tef_transactions_snapshot ON tef_transactions(fiscal_snapshot_id);
