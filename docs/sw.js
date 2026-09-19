@@ -1,5 +1,5 @@
-const CACHE='rts-mobile-v2';
-const APP=['/','/index.html','/manifest.webmanifest','/icon.svg'];
+const CACHE='rts-mobile-v3';
+const APP=['/','/index.html','/manifest.webmanifest','/icon.svg','/icon-192.svg','/icon-512.svg'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(c=>c.addAll(APP)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(self.clients.claim()));
 self.addEventListener('fetch',event=>{
