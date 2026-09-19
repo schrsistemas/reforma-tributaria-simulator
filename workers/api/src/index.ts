@@ -1,6 +1,7 @@
 import { executeSimulation, type SimulationRequest } from './simulation.js';
 import { resolvePublishedRuleSet } from './rule-catalog.js';
 import { findById, saveCompleted } from './simulation-repository.js';
+import { createSplitPayment, getSplitPayment } from './split-payment-repository.js';
 
 export interface Env {
   VERSION: string;
@@ -48,6 +49,8 @@ export default {async fetch(request:Request,env:Env):Promise<Response>{
       return json({ok:false,error:error instanceof Error?error.message:'SIMULATION_FAILED'},status,request);
     }
   }
+  if(request.method==='POST'&&url.pathname==='/api/v1/split-payments'){try{const headers=integrationHeaders(request);if(!env.DB)return json({error:'DATABASE_NOT_BOUND'},503,request);const body=await readJson(request) as {paymentId:string;operationId:string;calculationVersion:string;grossAmount:string;taxes:{IBS?:string;CBS?:string}};if(!body.paymentId||!body.operationId||!body.grossAmount)return json({error:'PAYMENT_FIELDS_REQUIRED'},400,request);const result=await createSplitPayment(env.DB,{...body,tenantId:headers.tenantId,correlationId:headers.correlationId,idempotencyKey:headers.idempotencyKey,taxes:body.taxes??{}});return json({ok:true,...result,correlationId:headers.correlationId},result.replayed?200:201,request)}catch(error){const status=Number((error as {status?:number}).status)||400;return json({ok:false,error:error instanceof Error?error.message:'SPLIT_PAYMENT_FAILED'},status,request)}}
+  if(request.method==='GET'&&url.pathname.startsWith('/api/v1/split-payments/')){try{const headers=integrationHeaders(request);if(!env.DB)return json({error:'DATABASE_NOT_BOUND'},503,request);const id=url.pathname.split('/').pop()!;const result=await getSplitPayment(env.DB,headers.tenantId,id);if(!result)return json({error:'SPLIT_PAYMENT_NOT_FOUND'},404,request);return json({ok:true,...result},200,request)}catch(error){const status=Number((error as {status?:number}).status)||500;return json({ok:false,error:error instanceof Error?error.message:'SPLIT_PAYMENT_LOOKUP_FAILED'},status,request)}}
   if(request.method==='GET'&&url.pathname.startsWith('/api/v1/simulations/')){ try{ const headers=integrationHeaders(request); if(!env.DB) return json({error:'DATABASE_NOT_BOUND'},503,request); const id=url.pathname.split('/').pop()!; const record=await findById(env.DB,headers.tenantId,id); if(!record) return json({error:'SIMULATION_NOT_FOUND'},404,request); return json({ok:true,simulation:record},200,request); }catch(error){ const status=Number((error as {status?:number}).status)||500; return json({ok:false,error:error instanceof Error?error.message:'SIMULATION_LOOKUP_FAILED'},status,request); } }
   return json({error:'NOT_FOUND'},404,request);
 }};
