@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reforma Tributária Simulator</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#07111f;color:#e7eef8;font:14px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+.shell{max-width:1180px;margin:auto;padding:24px}.top{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:24px}.brand{font-weight:800;font-size:20px}.muted{color:#8fa3b8}.badge{border:1px solid #28415d;border-radius:999px;padding:6px 10px;font-size:12px}
+.grid{display:grid;grid-template-columns:1.05fr .95fr;gap:18px}.card{background:#0c1929;border:1px solid #1b3048;border-radius:16px;padding:20px;box-shadow:0 12px 35px #0003}.title{font-size:28px;font-weight:800;margin:0 0 8px}.subtitle{color:#9bb0c5;margin-bottom:20px}
+label{display:block;color:#9bb0c5;font-size:12px;margin:12px 0 6px}input{width:100%;background:#07111f;border:1px solid #29415b;color:#fff;border-radius:10px;padding:12px;font-size:15px}button{margin-top:18px;width:100%;padding:13px;border:0;border-radius:10px;background:#5ca9ff;color:#03101c;font-weight:800;cursor:pointer}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}.metric{background:#081525;border:1px solid #1b3048;border-radius:12px;padding:14px}.metric b{display:block;font-size:20px;margin-top:4px}
+.row{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #1a2c40}.row:last-child{border:0}.tax{font-weight:700}.pipeline{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:18px}.step{padding:12px;border-radius:10px;background:#081525;border:1px solid #1b3048;text-align:center;font-size:12px}.ok{margin-top:14px;padding:10px;border-radius:10px;background:#0d271d;border:1px solid #1d5c42;color:#9ce5bf}
+@media(max-width:800px){.grid{grid-template-columns:1fr}.pipeline{grid-template-columns:repeat(2,1fr)}.metrics{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="shell">
+<header class="top"><div><div class="brand">REFORMA TRIBUTÁRIA SIMULATOR</div><div class="muted">Fiscal Domain • Visual Test Surface</div></div><span class="badge">SCENARIO / ZERO-COST</span></header>
+<div class="grid">
+<section class="card">
+<h1 class="title">Simulação fiscal</h1>
+<div class="subtitle">Sandbox visual para testar o fluxo do motor determinístico.</div>
+<label>Base tributável (R$)</label><input id="base" value="1000.00" inputmode="decimal">
+<label>IBS (%)</label><input id="ibs" value="10.00" inputmode="decimal">
+<label>CBS (%)</label><input id="cbs" value="5.00" inputmode="decimal">
+<button onclick="simulate()">Executar simulação</button>
+<div id="msg" class="ok">Pronto para executar.</div>
+</section>
+<section class="card">
+<h2>Resultado</h2>
+<div class="metrics">
+<div class="metric">IBS<b id="ibsOut">R$ 100,00</b></div>
+<div class="metric">CBS<b id="cbsOut">R$ 50,00</b></div>
+<div class="metric">Total<b id="totalOut">R$ 150,00</b></div>
+</div>
+<div style="margin-top:20px">
+<div class="row"><span>RuleSet</span><span id="ruleset">SCENARIO-DEMO</span></div>
+<div class="row"><span>Tax Engine</span><span>Deterministic</span></div>
+<div class="row"><span>Snapshot</span><span>Immutable</span></div>
+<div class="row"><span>Split Payment</span><span>Ready</span></div>
+</div>
+<div class="pipeline"><div class="step">Operation</div><div class="step">Rules</div><div class="step">Calculation</div><div class="step">Snapshot</div></div>
+</section>
+</div>
+<div class="card" style="margin-top:18px"><h2>Architecture</h2><div class="muted">Zynkronyx ↔ Fiscal Domain ↔ External Systems</div><div class="pipeline"><div class="step">Official Sources</div><div class="step">Knowledge Loop</div><div class="step">Tax Engine</div><div class="step">Zynkronyx</div></div></div>
+</div>
+<script>
+function n(v){return Number(String(v).replace(',','.'))||0}
+function brl(v){return v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
+function simulate(){const b=n(base.value),i=n(ibs.value),c=n(cbs.value);const iv=b*i/100,cv=b*c/100;ibsOut.textContent=brl(iv);cbsOut.textContent=brl(cv);totalOut.textContent=brl(iv+cv);ruleset.textContent='SCENARIO-'+new Date().toISOString().slice(0,10).replaceAll('-','');msg.textContent='Simulação executada visualmente. O próximo passo é conectar esta superfície à API fiscal.'}
+</script>
+</body>
+</html>
