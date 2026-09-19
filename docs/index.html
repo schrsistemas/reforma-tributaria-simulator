@@ -53,7 +53,7 @@ Snapshot: immutable fiscal result</div></section>
 <button class="source actionCard" type="button" data-simulator="reforma"><h3>Reforma Tributária</h3><div class="line"><span>IBS / CBS / transição</span><span class="pill">ABRIR SIMULADOR →</span></div></button>
 <button class="source actionCard" type="button" data-simulator="empresa"><h3>Empresa</h3><div class="line"><span>MEI / Simples / regime normal</span><span class="pill">ABRIR SIMULADOR →</span></div></button>
 <button class="source actionCard" type="button" data-simulator="pagamentos"><h3>Pagamentos</h3><div class="line"><span>PIX / TEF / cartões / MDR</span><span class="pill">ABRIR SIMULADOR →</span></div></button>
-<button class="source actionCard" type="button" data-simulator="fintech"><h3>Fintech</h3><div class="line"><span>Recebíveis / split / antecipação</span><span class="pill">ABRIR SIMULADOR →</span></div></button>
+<button class="source actionCard" type="button" data-simulator="fintech"><h3>Fintech</h3><div class="line"><span>Recebíveis / split / antecipação</span><span class="pill">ABRIR SIMULADOR →</span></div></button><button class="source actionCard" type="button" data-simulator="split"><h3>Split Payment</h3><div class="line"><span>IBS / CBS / fornecedor / reconciliação</span><span class="pill">ABRIR SPLIT →</span></div></button>
 </div></div></section>
 
 <section id="split-payment" class="view"><div class="grid">
@@ -149,13 +149,14 @@ function selectSimulator(type){
       reforma:['Simulação fiscal — Reforma Tributária','Venda padrão','Reforma Tributária selecionada. IBS/CBS e transição serão simulados com os parâmetros exibidos.'],
       empresa:['Simulação fiscal — Empresa','Venda padrão','Simulador de empresa selecionado. CRT, UF e operação permanecem editáveis.'],
       pagamentos:['Simulação fiscal — Pagamentos','Venda padrão','Simulador de pagamentos selecionado. O cálculo fiscal permanece separado do fluxo PIX/TEF.'],
-      fintech:['Simulação fiscal — Fintech','Operação interestadual','Simulador fintech selecionado. Abrindo o Split Payment operacional simulado.']
+      fintech:['Simulação fiscal — Fintech','Operação interestadual','Simulador fintech selecionado. Abrindo o Split Payment operacional simulado.'],
+      split:['Split Payment','Venda padrão','Split Payment operacional selecionado.']
     };
     const p=presets[type]||presets.reforma;
     if(title) title.textContent=p[0];
     if(scenario) scenario.value=p[1];
     if(msg) msg.textContent=p[2];
-    if(trace) trace.textContent='Simulator: '+type.toUpperCase()+'\nMode: VISUAL DEMO\nNo real financial transaction'; if(type==='fintech') location.hash='split-payment';
+    if(trace) trace.textContent='Simulator: '+type.toUpperCase()+'\nMode: VISUAL DEMO\nNo real financial transaction'; if(type==='fintech'||type==='split') location.hash='split-payment';
   });
 }
 const $=id=>document.getElementById(id),brl=v=>Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
