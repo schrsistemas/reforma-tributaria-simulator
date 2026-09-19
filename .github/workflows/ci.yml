@@ -32,7 +32,7 @@ jobs:
       - name: Check committed files for obvious credential assignments
         shell: bash
         run: |
-          if git grep -nE 'CLOUDFLARE_API_TOKEN=.+|CLOUDFLARE_ACCOUNT_ID=.+(?!$)' -- ':!docs/security/secrets.md' ':!.env.example'; then
+          if git grep -nE 'CLOUDFLARE_API_TOKEN=.{4,}|CLOUDFLARE_ACCOUNT_ID=.{4,}' -- ':!docs/security/secrets.md' ':!.env.example'; then
             echo "Possible credential committed"
             exit 1
           fi
