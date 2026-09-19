@@ -241,7 +241,7 @@ function simulate(){try{
 }
 let deferredInstallPrompt=null;
 function setupPwa(){
-  if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js',{scope:'/',updateViaCache:'none'}).then(reg=>reg.update()).catch(()=>{});
   const installBtn=document.getElementById('installBtn'), mobile=document.getElementById('mobileInstall'), mobileBtn=document.getElementById('mobileInstallBtn'), info=document.getElementById('installInfo'), infoBtn=document.getElementById('installInfoBtn');
   const show=()=>{if(installBtn)installBtn.classList.add('show');if(mobile)mobile.classList.add('show');if(info)info.classList.add('show');};
   const install=async()=>{if(!deferredInstallPrompt){if(info)info.classList.add('show');return;}deferredInstallPrompt.prompt();await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;if(installBtn)installBtn.classList.remove('show');if(mobile)mobile.classList.remove('show');};
@@ -259,6 +259,13 @@ document.querySelectorAll('.bottomNav button[data-route]').forEach(btn=>btn.addE
 $('base').addEventListener('input',()=>{if(tefIndex===0)renderTef()});
 $('ibs').addEventListener('input',()=>{if(tefIndex===0)renderTef()});
 $('cbs').addEventListener('input',()=>{if(tefIndex===0)renderTef()});
-renderPix();renderTef();renderSplit();setupPwa();</script>
+renderPix();renderTef();renderSplit();setupPwa();
+function updateConnectionStatus(){
+ const online=navigator.onLine;
+ const s=document.getElementById('simStatus');
+ if(s && !s.textContent.startsWith('PIX:') && !s.textContent.startsWith('TEF:')) s.textContent=online?'Online • dados e atualizações disponíveis':'Offline • interface local disponível; operações/API aguardam conexão';
+ document.documentElement.dataset.connection=online?'online':'offline';
+}
+window.addEventListener('online',updateConnectionStatus);window.addEventListener('offline',updateConnectionStatus);updateConnectionStatus();</script>
 </body>
 </html>
