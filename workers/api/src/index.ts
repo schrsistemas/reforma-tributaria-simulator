@@ -7,6 +7,7 @@ import { collectFiscalSource } from './source-collector.js';
 import { listGovernmentSources } from './government-source-repository.js';
 import { collectGovernmentSource, collectEnabledGovernmentSources } from './government-collection.js';
 import { createTef, getTef, transitionTefRecord } from './tef-repository.js';
+import { createPix, getPix, transitionPixRecord } from './pix-repository.js';
 
 export interface Env {
   VERSION: string;
@@ -69,7 +70,7 @@ export default {
       return json({
         service: 'reforma-tributaria-simulator',
         apiVersion: 'v1',
-        capabilities: ['simulation', 'tax-engine', 'split-payment', 'tef', 'fiscal-knowledge', 'government-source-registry'],
+        capabilities: ['simulation', 'tax-engine', 'split-payment', 'tef', 'pix', 'fiscal-knowledge', 'government-source-registry'],
         execution: { explicitScenario: true, durableWorkflow: Boolean(env.SIMULATION_WORKFLOW) },
       }, 200, request);
     }
@@ -147,6 +148,25 @@ export default {
         const status = Number((error as { status?: number }).status) || 500;
         return json({ ok: false, error: error instanceof Error ? error.message : 'SOURCE_REGISTRY_FAILED' }, status, request);
       }
+    }
+
+    if (request.method === 'POST' && url.pathname === '/api/v1/pix/transactions') {
+      try {
+        const headers=integrationHeaders(request); if(!headers.idempotencyKey)return json({error:'IDEMPOTENCY_KEY_REQUIRED'},400,request);
+        if(!env.DB)return json({error:'DATABASE_NOT_BOUND'},503,request);
+        const body=await readJson(request) as {operationId:string;amountMinor:number;provider?:string};
+        if(!body.operationId||!Number.isInteger(body.amountMinor)||body.amountMinor<0)return json({error:'PIX_FIELDS_REQUIRED'},400,request);
+        const result=await createPix(env.DB,{tenantId:headers.tenantId,operationId:body.operationId,idempotencyKey:headers.idempotencyKey,amountMinor:body.amountMinor,correlationId:headers.correlationId,provider:body.provider});
+        return json({ok:true,...result,correlationId:headers.correlationId},result.replayed?200:201,request);
+      }catch(error){const status=Number((error as {status?:number}).status)||400;return json({ok:false,error:error instanceof Error?error.message:'PIX_CREATE_FAILED'},status,request);}
+    }
+    if(request.method==='GET'&&url.pathname.startsWith('/api/v1/pix/transactions/')){
+      try{const h=integrationHeaders(request);if(!env.DB)return json({error:'DATABASE_NOT_BOUND'},503,request);const id=decodeURIComponent(url.pathname.split('/').pop()!);const transaction=await getPix(env.DB,h.tenantId,id);if(!transaction)return json({error:'PIX_TRANSACTION_NOT_FOUND'},404,request);return json({ok:true,transaction},200,request);}
+      catch(error){const status=Number((error as {status?:number}).status)||400;return json({ok:false,error:error instanceof Error?error.message:'PIX_LOOKUP_FAILED'},status,request);}
+    }
+    if(request.method==='POST'&&url.pathname.startsWith('/api/v1/pix/transactions/')&&url.pathname.endsWith('/transition')){
+      try{const h=integrationHeaders(request);if(!env.DB)return json({error:'DATABASE_NOT_BOUND'},503,request);const parts=url.pathname.split('/');const id=decodeURIComponent(parts[parts.length-2]);const body=await readJson(request) as {to:import('@rts/domain').PixTransactionStatus};if(!body.to)return json({error:'PIX_TARGET_STATUS_REQUIRED'},400,request);const transaction=await transitionPixRecord(env.DB,h.tenantId,id,body.to,h.correlationId);if(!transaction)return json({error:'PIX_TRANSACTION_NOT_FOUND'},404,request);return json({ok:true,transaction,correlationId:h.correlationId},200,request);}
+      catch(error){const status=Number((error as {status?:number}).status)||400;return json({ok:false,error:error instanceof Error?error.message:'PIX_TRANSITION_FAILED'},status,request);}
     }
 
     if (request.method === 'POST' && url.pathname === '/api/v1/tef/transactions') {
