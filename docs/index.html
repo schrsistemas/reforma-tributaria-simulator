@@ -274,18 +274,6 @@ function updateConnectionStatus(){
  if(s && !s.textContent.startsWith('PIX:') && !s.textContent.startsWith('TEF:')) s.textContent=online?'Online • dados e atualizações disponíveis':'Offline • interface local disponível; operações/API aguardam conexão';
  document.documentElement.dataset.connection=online?'online':'offline';
 }
-window.addEventListener('online',updateConnectionStatus);window.addEventListener('offline',updateConnectionStatus);updateConnectionStatus();<script>
-(function(){
- const b=document.getElementById('transSearchBtn'),r=document.getElementById('transResult');
- if(!b||!r)return;
- b.addEventListener('click',function(){
-  const org=document.getElementById('transOrg').value.trim()||'todos os órgãos';
-  const fornecedor=document.getElementById('transFornecedor').value.trim()||'todos os fornecedores';
-  const periodo=document.getElementById('transPeriodo').value||'2026-09';
-  const categoria=document.getElementById('transCategoria').value;
-  r.innerHTML='<span>Consulta preparada</span><span>•</span><span>'+categoria+'</span><span>•</span><span>'+periodo+'</span><span>•</span><span>'+org+'</span><span>•</span><span>'+fornecedor+'</span>';
- });
-})();
-</script></script>
+window.addEventListener('online',updateConnectionStatus);window.addEventListener('offline',updateConnectionStatus);updateConnectionStatus();</script>
 </body>
 </html>
