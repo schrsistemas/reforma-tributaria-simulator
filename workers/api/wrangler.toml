@@ -3,16 +3,26 @@ main = "src/index.ts"
 compatibility_date = "2026-09-19"
 
 [vars]
-VERSION = "0.3.0"
+VERSION = "0.4.0"
 
-[[workflows]]
-name = "fiscal-simulation"
-binding = "SIMULATION_WORKFLOW"
-class_name = "FiscalSimulationWorkflow"
-script_name = "reforma-tributaria-simulator-workflows"
+[triggers]
+crons = ["0 3 * * *"]
 
-[[d1_databases]]
-binding = "DB"
-database_name = "reforma-tributaria-simulator"
-database_id = "REPLACE_WITH_CLOUDFLARE_D1_DATABASE_ID"
-migrations_dir = "../../migrations"
+# Add these bindings after creating the free-tier Cloudflare resources.
+# The repository intentionally does not contain account-specific resource IDs.
+#
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "reforma-tributaria-simulator"
+# database_id = "<D1_DATABASE_ID>"
+# migrations_dir = "../../migrations"
+#
+# [[r2_buckets]]
+# binding = "EVIDENCE_BUCKET"
+# bucket_name = "reforma-tributaria-evidence"
+#
+# [[workflows]]
+# name = "fiscal-simulation"
+# binding = "SIMULATION_WORKFLOW"
+# class_name = "FiscalSimulationWorkflow"
+# script_name = "reforma-tributaria-simulator-workflows"
