@@ -39,11 +39,7 @@ O sistema deve operar continuamente neste ciclo:
 
 ## Fontes oficiais prioritárias
 
-A ingestão deve priorizar fontes primárias, especialmente Receita Federal, Comitê Gestor do IBS, Ministério da Fazenda, Planalto e portais oficiais de documentos fiscais. A Receita Federal mantém uma área específica de Reforma Tributária do Consumo com legislação, documentos fiscais, notícias e documentação técnica. citeturn0search13
-
-Em 18/09/2026, por exemplo, a Receita Federal atualizou o cronograma de documentos fiscais eletrônicos, demonstrando por que o catálogo não pode ser estático. O cronograma distingue publicação de leiaute e início de obrigatoriedade e informa que datas previstas podem sofrer ajustes técnicos ou operacionais. citeturn0search4turn0search8
-
-O próprio regramento do Split Payment também evoluiu: a legislação compilada já registra alterações introduzidas pela LC 227/2026, incluindo regras de vinculação entre operação/documento fiscal e transação de pagamento. citeturn0search3turn0search6
+A ingestão deve priorizar fontes primárias, especialmente Receita Federal, Comitê Gestor do IBS, Ministério da Fazenda, Planalto e portais oficiais de documentos fiscais.
 
 ## Regras de segurança fiscal
 
