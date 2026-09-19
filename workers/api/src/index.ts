@@ -1,7 +1,9 @@
 import { executeSimulation, type SimulationRequest } from './simulation.js';
+import { resolvePublishedRuleSet } from './rule-catalog.js';
 
 export interface Env {
   VERSION: string;
+  DB?: D1Database;
   SIMULATION_WORKFLOW?: WorkflowBinding;
 }
 interface WorkflowBinding { create(options:{id?:string;params:unknown}):Promise<{id:string;status:string}>; }
@@ -32,7 +34,7 @@ export default {async fetch(request:Request,env:Env):Promise<Response>{
     try{
       const headers=integrationHeaders(request);
       const body=await readJson(request) as SimulationRequest & {executionMode?:string};
-      if(body.executionMode==='PRODUCTION') return json({error:'RULE_CATALOG_NOT_BOUND',message:'Production execution requires the published RuleSet catalog binding.'},503,request);
+      if(body.executionMode==='PRODUCTION'){ const operation=body.operation; if(!operation?.issuedAt) return json({error:'REFERENCE_DATE_REQUIRED'},400,request); const ruleSet=await resolvePublishedRuleSet(env,operation.issuedAt,body.ruleSetId,body.ruleSetVersion); const result=executeSimulation({operation,rules:ruleSet.rules,calculationVersion:ruleSet.version}); return json({ok:true,simulationId:result.simulationId,status:result.status,ruleSet:{id:ruleSet.id,version:ruleSet.version},result:result.result,correlationId:headers.correlationId},200,request); }
       if(body.executionMode!=='SCENARIO') return json({error:'EXECUTION_MODE_REQUIRED',allowed:['SCENARIO','PRODUCTION']},400,request);
       if(env.SIMULATION_WORKFLOW){
         const instance=await env.SIMULATION_WORKFLOW.create({id:headers.idempotencyKey,params:{...body,tenantId:headers.tenantId,correlationId:headers.correlationId,idempotencyKey:headers.idempotencyKey}});
