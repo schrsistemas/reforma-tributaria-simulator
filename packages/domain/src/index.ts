@@ -6,3 +6,4 @@ export * from './message.js';
 
 export * from './government.js';
 export * from './tef.js';
+export * from './pix.js';
