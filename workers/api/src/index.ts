@@ -3,12 +3,14 @@ import { resolvePublishedRuleSet } from './rule-catalog.js';
 import { findById, saveCompleted } from './simulation-repository.js';
 import { createSplitPayment, getSplitPayment } from './split-payment-repository.js';
 import { listFiscalSources, getFiscalSource } from './fiscal-knowledge.js';
+import { collectFiscalSource } from './source-collector.js';
 
 export interface Env {
   VERSION: string;
   DB?: D1Database;
   SIMULATION_WORKFLOW?: WorkflowBinding;
   INTEGRATION_TOKEN?: string;
+  EVIDENCE_BUCKET?: R2Bucket;
 }
 interface WorkflowBinding { create(options:{id?:string;params:unknown}):Promise<{id:string;status:string}>; }
 
@@ -41,6 +43,8 @@ async function readJson(request:Request){
 
 export default {async fetch(request:Request,env:Env):Promise<Response>{
   const url=new URL(request.url);
+  // HTTP API remains separate from the scheduled collector. The collector never
+  // receives an external request without authentication.
   if(request.method==='GET'&&url.pathname==='/health') return json({status:'ok',service:'reforma-tributaria-simulator',version:env.VERSION??'dev'},200,request);
   if(request.method==='GET'&&url.pathname==='/api/v1') return json({service:'reforma-tributaria-simulator',apiVersion:'v1',capabilities:['simulation','tax-engine','split-payment','fiscal-knowledge'],execution:{explicitScenario:true,durableWorkflow:Boolean(env.SIMULATION_WORKFLOW)}},200,request);
   try { authenticate(request,env); } catch(error) { const status=Number((error as {status?:number}).status)||500; return json({ok:false,error:error instanceof Error?error.message:'AUTHENTICATION_FAILED'},status,request); }
@@ -98,7 +102,19 @@ export default {async fetch(request:Request,env:Env):Promise<Response>{
   }
 
   if(request.method==='POST'&&url.pathname==='/api/v1/split-payments'){
-    try{const headers=integrationHeaders(request);if(!headers.idempotencyKey)return json({error:'IDEMPOTENCY_KEY_REQUIRED'},400,request);if(!env.DB)return json({error:'DATABASE_NOT_BOUND'},503,request);const body=await readJson(request) as {paymentId:string;operationId:string;calculationVersion:string;grossAmount:string;taxes:{IBS?:string;CBS?:string}};if(!body.paymentId||!body.operationId||!body.grossAmount)return json({error:'PAYMENT_FIELDS_REQUIRED'},400,request);const result=await createSplitPayment(env.DB,{...body,tenantId:headers.tenantId,correlationId:headers.correlationId,idempotencyKey:headers.idempotencyKey,taxes:body.taxes??{}});return json({ok:true,...result,correlationId:headers.correlationId},result.replayed?200:201,request)}catch(error){const status=Number((error as {status?:number}).status)||400;return json({ok:false,error:error instanceof Error?error.message:'SPLIT_PAYMENT_FAILED'},status,request)}}
+    try{const headers=integrationHeaders(request);if(!headers.idempotencyKey)return json({error:'IDEMPOTENCY_KEY_REQUIRED'},400,request);if(!env.DB)return json({error:'DATABASE_NOT_BOUND'},503,request);const body=await readJson(request) as {paymentId:string;operationId:string;calculationVersion:string;grossAmount:string;taxes:{IBS?:string;CBS?:string},
+  async scheduled(_event: ScheduledEvent, env: Env, _ctx: ExecutionContext) {
+    if (!env.DB) return;
+    const sources = await listFiscalSources(env);
+    for (const source of sources) {
+      try {
+        await collectFiscalSource({ DB: env.DB, EVIDENCE_BUCKET: env.EVIDENCE_BUCKET }, source.id);
+      } catch {
+        // A single unavailable source must not prevent other sources from being collected.
+      }
+    }
+  },
+};if(!body.paymentId||!body.operationId||!body.grossAmount)return json({error:'PAYMENT_FIELDS_REQUIRED'},400,request);const result=await createSplitPayment(env.DB,{...body,tenantId:headers.tenantId,correlationId:headers.correlationId,idempotencyKey:headers.idempotencyKey,taxes:body.taxes??{}});return json({ok:true,...result,correlationId:headers.correlationId},result.replayed?200:201,request)}catch(error){const status=Number((error as {status?:number}).status)||400;return json({ok:false,error:error instanceof Error?error.message:'SPLIT_PAYMENT_FAILED'},status,request)}}
   if(request.method==='GET'&&url.pathname.startsWith('/api/v1/split-payments/')){try{const headers=integrationHeaders(request);if(!env.DB)return json({error:'DATABASE_NOT_BOUND'},503,request);const id=url.pathname.split('/').pop()!;const result=await getSplitPayment(env.DB,headers.tenantId,id);if(!result)return json({error:'SPLIT_PAYMENT_NOT_FOUND'},404,request);return json({ok:true,...result},200,request)}catch(error){const status=Number((error as {status?:number}).status)||500;return json({ok:false,error:error instanceof Error?error.message:'SPLIT_PAYMENT_LOOKUP_FAILED'},status,request)}}
   if(request.method==='GET'&&url.pathname.startsWith('/api/v1/simulations/')){try{const headers=integrationHeaders(request);if(!env.DB)return json({error:'DATABASE_NOT_BOUND'},503,request);const id=url.pathname.split('/').pop()!;const record=await findById(env.DB,headers.tenantId,id);if(!record)return json({error:'SIMULATION_NOT_FOUND'},404,request);return json({ok:true,simulation:record},200,request)}catch(error){const status=Number((error as {status?:number}).status)||500;return json({ok:false,error:error instanceof Error?error.message:'SIMULATION_LOOKUP_FAILED'},status,request)}}
   return json({error:'NOT_FOUND'},404,request);
