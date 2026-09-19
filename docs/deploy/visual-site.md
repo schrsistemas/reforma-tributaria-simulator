@@ -1,9 +1,18 @@
 # Visual Site
 
-The first visual test surface is published through GitHub Pages at:
+The visual test surface is intended to run on **Cloudflare Pages**, not GitHub Pages.
 
-https://schrsistemas.github.io/reforma-tributaria-simulator/
+Expected public URL after the first successful deployment:
 
-The site is intentionally static and free. The web application can later point to the deployed fiscal API through its public environment configuration without changing the visual frontend.
+https://reforma-tributaria-simulator.pages.dev/
 
-GitHub Pages is a presentation/test surface, not the fiscal source of truth.
+Deployment is performed by `.github/workflows/cloudflare-pages.yml`.
+
+Required GitHub repository secrets:
+
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ACCOUNT_ID`
+
+The Cloudflare Pages project name is `reforma-tributaria-simulator`.
+
+The site is intentionally static and free-tier-first. Cloudflare Pages is only the presentation/test surface; the Fiscal Domain remains the source of truth for calculations and fiscal knowledge.
