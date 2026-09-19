@@ -150,7 +150,15 @@ let tefIndex=0;const tefStates=['INITIATED','AUTHORIZING','AUTHORIZED','CAPTURED
 function filterSources(){const q=($('sourceSearch').value||'').toLowerCase().trim(), scope=$('sourceScope').value;let visible=0;document.querySelectorAll('.sourceCard').forEach(card=>{const okScope=scope==='ALL'||card.dataset.scope===scope, okText=!q||card.dataset.text.includes(q)||card.innerText.toLowerCase().includes(q);const show=okScope&&okText;card.hidden=!show;if(show)visible++;});$('sourceEmpty').hidden=visible!==0;$('sourceCount').textContent=visible;}$('sourceSearch').addEventListener('input',filterSources);$('sourceScope').addEventListener('change',filterSources);
 
 $('crt').addEventListener('change',()=>{$('crtLabel').textContent=$('crt').value+' · '+$('crt').selectedOptions[0].text.replace(/^\d+ · /,'');});$('uf').addEventListener('change',()=>{$('ufLabel').textContent=$('uf').value;});
-function simulate(){const b=n($('base').value),i=n($('ibs').value),c=n($('cbs').value),iv=b*i/100,cv=b*c/100,stamp=new Date().toISOString().replace(/[-:TZ.]/g,'').slice(0,14);$('ibsOut').textContent=brl(iv);$('cbsOut').textContent=brl(cv);$('totalOut').textContent=brl(iv+cv);$('ruleset').textContent='SCENARIO-'+stamp.slice(0,8);$('correlation').textContent='visual-'+stamp;$('msg').textContent='Simulação completa executada com perfil empresarial, CRT, UF, operação, cálculo IBS/CBS e TEF fictício pré-configurado.';$('trace').textContent='Rule resolution: SCENARIO-DEMO\nCalculation: '+b.toFixed(2)+' × '+i.toFixed(2)+'% + '+b.toFixed(2)+' × '+c.toFixed(2)+'%\nResult: '+brl(iv+cv)+'\nSnapshot: immutable visual result\nCompany: '+$('company').value+'\nCRT: '+$('crt').value+' | UF: '+$('uf').value+' → '+$('destUf').value+'\nOperation: '+$('ncm').value+' | '+$('cfop').value+'\nTEF: pre-configured / simulated'}
+function simulate(){try{
+ const b=n($('base').value),i=n($('ibs').value),c=n($('cbs').value);
+ if(!Number.isFinite(b)||b<0||!Number.isFinite(i)||i<0||!Number.isFinite(c)||c<0)throw new Error('Informe base, IBS e CBS com valores numéricos válidos.');
+ const iv=b*i/100,cv=b*c/100,stamp=new Date().toISOString().replace(/[-:TZ.]/g,'').slice(0,14);
+ $('ibsOut').textContent=brl(iv);$('cbsOut').textContent=brl(cv);$('totalOut').textContent=brl(iv+cv);
+ $('ruleset').textContent='SCENARIO-'+stamp.slice(0,8);$('correlation').textContent='visual-'+stamp;
+ $('msg').textContent='Simulação completa executada. Resultado visual e fictício; nenhum documento ou pagamento real foi emitido.';
+ $('trace').textContent='Rule resolution: SCENARIO-DEMO\nCalculation: '+b.toFixed(2)+' × '+i.toFixed(2)+'% + '+b.toFixed(2)+' × '+c.toFixed(2)+'%\nResult: '+brl(iv+cv)+'\nSnapshot: immutable visual result\nCompany: '+$('company').value+'\nCRT: '+$('crt').value+' | UF: '+$('uf').value+' → '+$('destUf').value+'\nOperation: '+$('ncm').value+' | '+$('cfop').value+'\nTEF: pre-configured / simulated';
+ }catch(e){$('msg').textContent=e.message;$('msg').className='warn';}
 }
 </script>
 </body>
