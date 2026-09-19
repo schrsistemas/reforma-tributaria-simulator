@@ -34,7 +34,7 @@ jobs:
         run: |
           for i in 1 2 3 4 5 6; do
             if curl --fail --silent --show-error --location --max-time 15 https://reforma-tributaria-simulator.pages.dev/ >/tmp/pages.html; then
-              grep -q "REFORMA TRIBUTÁRIA SIMULATOR" /tmp/pages.html
+              grep -q "PORTAL SIMULADOR FACILITADOR" /tmp/pages.html
               echo "Production site is reachable."
               exit 0
             fi
