@@ -198,3 +198,57 @@ Fonte oficial
 ```
 
 A superfície visual é somente a interface de operação/teste. O **Fiscal Domain permanece a fonte de verdade fiscal**.
+
+
+## Portal Nacional de Fontes Governamentais
+
+O simulador está evoluindo para um portal de ligação com fontes oficiais federais, estaduais e municipais. A arquitetura agora separa:
+
+```text
+Authority -> Source -> Collector -> Evidence -> Document
+                                      |
+                                      v
+                                  Change
+                                      |
+                                      v
+                                   Impact
+                                      |
+                                      v
+                              Candidate Rule
+```
+
+### Registro nacional
+
+O repositório passou a possuir:
+
+- `government_authorities` — órgãos e entidades publicadoras;
+- `government_sources` — canais oficiais de publicação;
+- `regulatory_documents` — documentos normativos versionados;
+- `regulatory_relationships` — relações entre normas;
+- `collector_health` — saúde e histórico dos coletores;
+- contratos TypeScript em `packages/domain/src/government.ts`;
+- contrato inicial de Collector em `workers/api/src/government-collectors.ts`.
+
+A primeira carga real contempla fontes federais, Receita Federal/Reforma Tributária, atos conjuntos RFB/CGIBS, catálogo de APIs governamentais, legislação da SEF/SC e DOM/SC.
+
+A base federal do Planalto oferece filtros por tipo de ato, situação, datas e origem. A Receita Federal mantém uma área própria de legislação da Reforma e publica atos conjuntos RFB/CGIBS e orientações técnicas. O catálogo Conecta Gov.br lista APIs governamentais e a API de Dados Abertos permite descoberta estruturada de datasets. Em Santa Catarina, a SEF mantém uma base pesquisável de legislação tributária; o DOM/SC informa publicação oficial para 1.039 entidades em 294 municípios. 
+
+### Regra de expansão
+
+O objetivo não é criar milhares de scrapers independentes.
+
+Primeiro identificamos o **provedor/canal de publicação**. Se vários municípios usam o mesmo canal, um único Collector atende todos eles através do registro de autoridades e fontes.
+
+Novos conectores somente serão criados quando o mecanismo de publicação realmente exigir outro adaptador.
+
+### Fontes verificadas na implantação inicial
+
+- Planalto — Base da Legislação Federal;
+- Receita Federal — Legislação da Reforma Tributária;
+- Receita Federal/CGIBS — Atos Conjuntos;
+- Receita Federal — Orientações da Reforma Tributária;
+- Conecta Gov.br — catálogo de APIs;
+- SEF/SC — Legislações;
+- DOM/SC — Diário Oficial dos Municípios.
+
+As fontes permanecem como **evidência externa não confiável para execução**: o conteúdo coletado nunca deve executar instruções e nunca deve alterar diretamente um RuleSet publicado.
