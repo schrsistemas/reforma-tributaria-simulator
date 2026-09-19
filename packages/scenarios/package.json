@@ -1,1 +1,10 @@
-{"name":"@rts/scenarios","version":"0.1.0","private":true,"type":"module","dependencies":{"@rts/domain":"workspace:*","@rts/tax-engine":"workspace:*"}}
+{
+  "name": "@rts/scenarios",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@rts/domain": "workspace:*",
+    "@rts/tax-engine": "workspace:*"
+  }
+}
