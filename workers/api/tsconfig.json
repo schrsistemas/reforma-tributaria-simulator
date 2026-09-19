@@ -1,4 +1,17 @@
 {
-  "compilerOptions":{"target":"ES2022","module":"ESNext","moduleResolution":"Bundler","strict":true,"noEmit":true,"types":["@cloudflare/workers-types"],"paths":{"@rts/domain":["../../packages/domain/src/index.ts"],"@rts/tax-engine":["../../packages/tax-engine/src/index.ts"]}},
+  "compilerOptions":{
+    "target":"ES2022",
+    "module":"ESNext",
+    "moduleResolution":"Bundler",
+    "strict":true,
+    "noEmit":true,
+    "skipLibCheck":true,
+    "lib":["ES2022"],
+    "types":["@cloudflare/workers-types","node"],
+    "paths":{
+      "@rts/domain":["../../packages/domain/src/index.ts"],
+      "@rts/tax-engine":["../../packages/tax-engine/src/index.ts"]
+    }
+  },
   "include":["src/**/*.ts"]
 }
