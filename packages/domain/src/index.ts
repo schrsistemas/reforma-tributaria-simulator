@@ -7,3 +7,7 @@ export * from './message.js';
 export * from './government.js';
 export * from './tef.js';
 export * from './pix.js';
+export * from './payment.js';
+export * from './legal.js';
+export * from './lgpd.js';
+export * from './mei.js';
