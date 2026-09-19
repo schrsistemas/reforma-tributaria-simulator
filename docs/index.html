@@ -11,14 +11,14 @@
 </head>
 <body>
 <div class="shell">
-<header class="top"><div><div class="brand">PORTAL SIMULADOR FACILITADOR</div><div class="muted">Fiscal Domain • Simulação empresarial • Control Surface</div></div><div style="display:flex;gap:8px;align-items:center"><button id="installBtn" class="installBtn" type="button">＋ Instalar</button><span class="badge">ZERO-COST / CLOUDFLARE</span></div></header>
+<header class="top"><div><div class="brand">PORTAL SIMULADOR FACILITADOR</div><div class="muted">Fiscal Domain • Simulação empresarial • Control Surface</div></div><div style="display:flex;gap:8px;align-items:center"><button id="installBtn" class="installBtn" type="button">＋ Instalar aplicativo</button><span class="badge">ZERO-COST / CLOUDFLARE</span></div></header>
 <nav class="nav" aria-label="Navegação principal">
 <a class="routeLink active" href="#dashboard">Dashboard</a>
 <a class="routeLink" href="#radar">Radar Fiscal</a>
 <a class="routeLink" href="#sources">Fontes Governamentais</a>
 <a class="routeLink" href="#architecture">Arquitetura</a><a class="routeLink" href="#news">Notícias</a><a class="routeLink" href="#simulators">Simuladores</a><a class="routeLink" href="#backoffice">Gestão</a><a class="routeLink" href="#sebrae">Sebrae</a>
 </nav>
-<div id="mobileInstall" class="mobileInstall"><strong>Portal Simulador Facilitador</strong><span class="muted">Instale no celular para abrir como aplicativo, com tela própria e suporte offline do shell.</span><button id="mobileInstallBtn" type="button">Instalar no celular</button></div><div class="quick">
+<div id="installInfo" class="mobileInstall"><strong>Instalar em qualquer dispositivo</strong><span class="muted">No computador, tablet ou celular, use um navegador compatível com aplicativos web (PWA). Chrome/Edge exibem o botão de instalação; no iPhone/iPad use Compartilhar → Adicionar à Tela de Início.</span><button id="installInfoBtn" type="button">Instalar / adicionar à tela inicial</button></div><div id="mobileInstall" class="mobileInstall"><strong>Portal Simulador Facilitador</strong><span class="muted">Instale no celular para abrir como aplicativo, com tela própria e suporte offline do shell.</span><button id="mobileInstallBtn" type="button">Instalar no celular</button></div><div class="quick">
 <a class="quickLink" href="#simulators">▶ Simuladores</a>
 <a class="quickLink" href="#radar">◉ Ver Radar</a>
 <a class="quickLink" href="#sources">⌁ Ver fontes</a>
@@ -205,13 +205,14 @@ function simulate(){try{
 let deferredInstallPrompt=null;
 function setupPwa(){
   if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
-  const installBtn=document.getElementById('installBtn'), mobile=document.getElementById('mobileInstall'), mobileBtn=document.getElementById('mobileInstallBtn');
+  const installBtn=document.getElementById('installBtn'), mobile=document.getElementById('mobileInstall'), mobileBtn=document.getElementById('mobileInstallBtn'), info=document.getElementById('installInfo'), infoBtn=document.getElementById('installInfoBtn');
   const show=()=>{if(installBtn)installBtn.classList.add('show');if(mobile)mobile.classList.add('show');};
-  const install=async()=>{if(!deferredInstallPrompt)return;deferredInstallPrompt.prompt();await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;if(installBtn)installBtn.classList.remove('show');if(mobile)mobile.classList.remove('show');};
+  const install=async()=>{if(!deferredInstallPrompt){if(info)info.classList.add('show');return;}deferredInstallPrompt.prompt();await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;if(installBtn)installBtn.classList.remove('show');if(mobile)mobile.classList.remove('show');};
   window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstallPrompt=e;show();});
-  window.addEventListener('appinstalled',()=>{deferredInstallPrompt=null;if(installBtn)installBtn.classList.remove('show');if(mobile)mobile.classList.remove('show');});
+  window.addEventListener('appinstalled',()=>{deferredInstallPrompt=null;if(installBtn)installBtn.classList.remove('show');if(mobile)mobile.classList.remove('show');if(info)info.classList.remove('show');});
   if(installBtn)installBtn.addEventListener('click',install);
   if(mobileBtn)mobileBtn.addEventListener('click',install);
+  if(infoBtn)infoBtn.addEventListener('click',install);
 }
 document.querySelectorAll('.actionCard[data-simulator]').forEach(btn=>btn.addEventListener('click',()=>selectSimulator(btn.dataset.simulator)));
 $('simulateBtn').addEventListener('click',simulate);
