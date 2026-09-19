@@ -34,6 +34,6 @@ export interface RegulatoryDocument {
 
 export interface CollectorResult {
   sourceId:string; fetchedAt:string; httpStatus?:number; contentType?:string;
-  contentHash:string; normalizedHash:string; title?:string;
+  contentHash:string; normalizedHash:string; text?:string; title?:string;
   officialIdentifier?:string; publicationDate?:string; contentLocation:string;
 }
