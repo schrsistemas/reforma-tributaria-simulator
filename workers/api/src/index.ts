@@ -1,7 +1,7 @@
 import { executeSimulation, type SimulationRequest } from './simulation.js';
 import { resolvePublishedRuleSet } from './rule-catalog.js';
 import { findById, findByIdempotency, saveCompleted } from './simulation-repository.js';
-import { createSplitPayment, getSplitPayment } from './split-payment-repository.js';
+import { createSplitPayment, getSplitPayment, settleSplitPayment, reverseSplitPayment, reconcileSplitPayment } from './split-payment-repository.js';
 import { listFiscalSources, getFiscalSource } from './fiscal-knowledge.js';
 import { collectFiscalSource } from './source-collector.js';
 import { listGovernmentSources } from './government-source-repository.js';
@@ -372,6 +372,57 @@ export default {
       } catch (error) {
         const status = Number((error as { status?: number }).status) || 500;
         return json({ ok: false, error: error instanceof Error ? error.message : 'SPLIT_PAYMENT_LOOKUP_FAILED' }, status, request);
+      }
+    }
+
+    if (request.method === 'POST' && url.pathname.startsWith('/api/v1/split-payments/') && url.pathname.endsWith('/settle')) {
+      try {
+        const headers = integrationHeaders(request);
+        if (!headers.idempotencyKey) return json({ error: 'IDEMPOTENCY_KEY_REQUIRED' }, 400, request);
+        if (!env.DB) return json({ error: 'DATABASE_NOT_BOUND' }, 503, request);
+        const parts = url.pathname.split('/');
+        const id = decodeURIComponent(parts[parts.length - 2]);
+        const body = await readJson(request) as { tax?: import('@rts/domain').TaxCode; supplier?: boolean };
+        if (!body.tax && !body.supplier) return json({ error: 'SETTLEMENT_TARGET_REQUIRED' }, 400, request);
+        const result = await settleSplitPayment(env.DB, {
+          tenantId: headers.tenantId, paymentId: id, tax: body.tax, supplier: Boolean(body.supplier),
+          correlationId: headers.correlationId, idempotencyKey: headers.idempotencyKey,
+        });
+        if (!result) return json({ error: 'SPLIT_PAYMENT_NOT_FOUND' }, 404, request);
+        return json({ ok: true, ...result, correlationId: headers.correlationId }, 200, request);
+      } catch (error) {
+        const status = Number((error as { status?: number }).status) || 400;
+        return json({ ok: false, error: error instanceof Error ? error.message : 'SPLIT_PAYMENT_SETTLEMENT_FAILED' }, status, request);
+      }
+    }
+
+    if (request.method === 'POST' && url.pathname.startsWith('/api/v1/split-payments/') && url.pathname.endsWith('/reverse')) {
+      try {
+        const headers = integrationHeaders(request);
+        if (!headers.idempotencyKey) return json({ error: 'IDEMPOTENCY_KEY_REQUIRED' }, 400, request);
+        if (!env.DB) return json({ error: 'DATABASE_NOT_BOUND' }, 503, request);
+        const id = decodeURIComponent(url.pathname.split('/').pop() === 'reverse' ? url.pathname.split('/').slice(-2,-1)[0] : '');
+        const result = await reverseSplitPayment(env.DB, { tenantId: headers.tenantId, paymentId: id, correlationId: headers.correlationId, idempotencyKey: headers.idempotencyKey });
+        if (!result) return json({ error: 'SPLIT_PAYMENT_NOT_FOUND' }, 404, request);
+        return json({ ok: true, ...result, correlationId: headers.correlationId }, 200, request);
+      } catch (error) {
+        const status = Number((error as { status?: number }).status) || 400;
+        return json({ ok: false, error: error instanceof Error ? error.message : 'SPLIT_PAYMENT_REVERSAL_FAILED' }, status, request);
+      }
+    }
+
+    if (request.method === 'POST' && url.pathname.startsWith('/api/v1/split-payments/') && url.pathname.endsWith('/reconcile')) {
+      try {
+        const headers = integrationHeaders(request);
+        if (!headers.idempotencyKey) return json({ error: 'IDEMPOTENCY_KEY_REQUIRED' }, 400, request);
+        if (!env.DB) return json({ error: 'DATABASE_NOT_BOUND' }, 503, request);
+        const id = decodeURIComponent(url.pathname.split('/').slice(-2,-1)[0]);
+        const result = await reconcileSplitPayment(env.DB, { tenantId: headers.tenantId, paymentId: id, correlationId: headers.correlationId, idempotencyKey: headers.idempotencyKey });
+        if (!result) return json({ error: 'SPLIT_PAYMENT_NOT_FOUND' }, 404, request);
+        return json({ ok: true, ...result, correlationId: headers.correlationId }, 200, request);
+      } catch (error) {
+        const status = Number((error as { status?: number }).status) || 400;
+        return json({ ok: false, error: error instanceof Error ? error.message : 'SPLIT_PAYMENT_RECONCILIATION_FAILED' }, status, request);
       }
     }
 
