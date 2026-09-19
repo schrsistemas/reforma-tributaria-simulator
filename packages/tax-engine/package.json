@@ -1,1 +1,13 @@
-{"name":"@rts/tax-engine","version":"0.1.0","private":true,"type":"module","main":"src/index.ts","scripts":{"test":"node --test"},"dependencies":{"@rts/domain":"workspace:*"}}
+{
+  "name": "@rts/tax-engine",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "test": "node --experimental-strip-types --test"
+  },
+  "dependencies": {
+    "@rts/domain": "workspace:*"
+  }
+}
