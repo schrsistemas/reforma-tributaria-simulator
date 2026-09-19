@@ -143,7 +143,12 @@ function selectSimulator(type){
     if(trace) trace.textContent='Simulator: '+type.toUpperCase()+'\nMode: VISUAL DEMO\nNo real financial transaction';
   });
 }
-const $=id=>document.getElementById(id),brl=v=>Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});\nfunction parseDecimal(v){const s=String(v??'').trim().replace(/\\s/g,'').replace(/\\.(?=\\d{3}(?:\\D|$))/g,'').replace(',','.');if(s==='')return NaN;return Number(s);}
+const $=id=>document.getElementById(id),brl=v=>Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+function parseDecimal(v){
+ const s=String(v??'').trim().replace(/\s/g,'').replace(/\.(?=\d{3}(?:\D|$))/g,'').replace(',','.');
+ if(s==='') return NaN;
+ return Number(s);
+}
 function route(){
  const requested=location.hash.slice(1)||'dashboard';
  const valid=document.getElementById(requested)?requested:'dashboard';
@@ -155,8 +160,35 @@ function route(){
 }
 window.addEventListener('hashchange',route);
 route();
-let pixIndex=0;const pixStates=['CREATED','QR_READY','PENDING','PAID'];let pixTxid='SIMPIX-DEMO';function renderPix(){const states=document.querySelectorAll('#pixGrid .tefState');states.forEach((x,i)=>x.classList.toggle('on',i===pixIndex));$('pixTrace').textContent='PIX status: '+pixStates[pixIndex]+'\nProvider: SIM-PIX\nTXID: '+pixTxid+'\nE2E: '+(pixIndex>=3?'E2E-SIM-'+Date.now().toString(36).toUpperCase():'pending')+'\nQR Code: simulated / non-bankable';}function advancePix(){if(pixIndex<pixStates.length-1){pixIndex++;if(pixIndex===1)pixTxid='SIMPIX-'+Date.now().toString(36).toUpperCase()}renderPix()}function resetPix(){pixIndex=0;pixTxid='SIMPIX-DEMO';renderPix()}
-let tefIndex=0;const tefStates=['INITIATED','AUTHORIZING','AUTHORIZED','CAPTURED','SETTLED'];let tefNsu='—',tefAuth='—';function renderTef(){document.querySelectorAll('#tefGrid .tefState').forEach((x,i)=>x.classList.toggle('on',i===tefIndex));const amount=Number($('base').value.replace(',','.'))*(1+Number($('ibs').value.replace(',','.'))/100+Number($('cbs').value.replace(',','.'))/100);$('tefTrace').textContent='TEF status: '+tefStates[tefIndex]+'\nAmount: '+brl(amount)+'\nProvider: SIM-TEF | Terminal: TERM-001\nNSU: '+tefNsu+' | Authorization: '+tefAuth+'\nCorrelation: '+$('correlation').textContent+'\nSettlement: '+(tefIndex===4?'simulated settled':'pending');}function advanceTef(){if(tefIndex<tefStates.length-1){tefIndex++;if(tefIndex===2){const seed=Date.now().toString().slice(-8);tefNsu='NSU'+seed;tefAuth='AUTH'+seed.slice(-6)}}renderTef()}function resetTef(){tefIndex=0;tefNsu='—';tefAuth='—';renderTef()}
+let pixIndex=0;const pixStates=['CREATED','QR_READY','PENDING','PAID'];let pixTxid='SIMPIX-DEMO';function renderPix(){
+ const states=document.querySelectorAll('#pixGrid .tefState');
+ states.forEach((x,i)=>x.classList.toggle('on',i===pixIndex));
+ const b=$('advancePixBtn');if(b)b.disabled=pixIndex===pixStates.length-1;
+ $('pixTrace').textContent=[
+  'PIX status: '+pixStates[pixIndex],
+  'Provider: SIM-PIX',
+  'TXID: '+pixTxid,
+  'E2E: '+(pixIndex>=3?'E2E-SIM-'+Date.now().toString(36).toUpperCase():'pending'),
+  'QR Code: simulated / non-bankable'
+ ].join('\n');
+ $('simStatus').textContent='PIX: '+pixStates[pixIndex]+' • fluxo local fictício';
+}
+function advancePix(){if(pixIndex<pixStates.length-1){pixIndex++;if(pixIndex===1)pixTxid='SIMPIX-'+Date.now().toString(36).toUpperCase()}renderPix()}function resetPix(){pixIndex=0;pixTxid='SIMPIX-DEMO';renderPix()}
+let tefIndex=0;const tefStates=['INITIATED','AUTHORIZING','AUTHORIZED','CAPTURED','SETTLED'];let tefNsu='—',tefAuth='—';function renderTef(){
+ document.querySelectorAll('#tefGrid .tefState').forEach((x,i)=>x.classList.toggle('on',i===tefIndex));
+ const amount=parseDecimal($('base').value)*(1+parseDecimal($('ibs').value)/100+parseDecimal($('cbs').value)/100);
+ const b=$('advanceTefBtn');if(b)b.disabled=tefIndex===tefStates.length-1;
+ $('tefTrace').textContent=[
+  'TEF status: '+tefStates[tefIndex],
+  'Amount: '+(Number.isFinite(amount)?brl(amount):'valor inválido'),
+  'Provider: SIM-TEF | Terminal: TERM-001',
+  'NSU: '+tefNsu+' | Authorization: '+tefAuth,
+  'Correlation: '+$('correlation').textContent,
+  'Settlement: '+(tefIndex===4?'simulated settled':'pending')
+ ].join('\n');
+ $('simStatus').textContent='TEF: '+tefStates[tefIndex]+' • fluxo local fictício';
+}
+function advanceTef(){if(tefIndex<tefStates.length-1){tefIndex++;if(tefIndex===2){const seed=Date.now().toString().slice(-8);tefNsu='NSU'+seed;tefAuth='AUTH'+seed.slice(-6)}}renderTef()}function resetTef(){tefIndex=0;tefNsu='—';tefAuth='—';renderTef()}
 function filterSources(){const q=($('sourceSearch').value||'').toLowerCase().trim(), scope=$('sourceScope').value;let visible=0;document.querySelectorAll('.sourceCard').forEach(card=>{const okScope=scope==='ALL'||card.dataset.scope===scope, okText=!q||card.dataset.text.includes(q)||card.innerText.toLowerCase().includes(q);const show=okScope&&okText;card.hidden=!show;if(show)visible++;});$('sourceEmpty').hidden=visible!==0;$('sourceCount').textContent=visible;}$('sourceSearch').addEventListener('input',filterSources);$('sourceScope').addEventListener('change',filterSources);
 
 $('crt').addEventListener('change',()=>{$('crtLabel').textContent=$('crt').value+' · '+$('crt').selectedOptions[0].text.replace(/^\d+ · /,'');});$('uf').addEventListener('change',()=>{$('ufLabel').textContent=$('uf').value;});
