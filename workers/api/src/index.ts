@@ -96,6 +96,20 @@ export default {
       }
     }
 
+    if (request.method === 'GET' && url.pathname.startsWith('/api/v1/government/sources/')) {
+      try {
+        integrationHeaders(request);
+        const sourceId = decodeURIComponent(url.pathname.split('/').pop()!);
+        const sources = await listGovernmentSources(env);
+        const source = sources.find(item => item.id === sourceId);
+        if (!source) return json({ ok: false, error: 'GOVERNMENT_SOURCE_NOT_FOUND' }, 404, request);
+        return json({ ok: true, source }, 200, request);
+      } catch (error) {
+        const status = Number((error as { status?: number }).status) || 500;
+        return json({ ok: false, error: error instanceof Error ? error.message : 'GOVERNMENT_SOURCE_REGISTRY_FAILED' }, status, request);
+      }
+    }
+
     if (request.method === 'POST' && url.pathname.startsWith('/api/v1/government/sources/') && url.pathname.endsWith('/collect')) {
       try {
         integrationHeaders(request);
