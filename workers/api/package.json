@@ -1,6 +1,9 @@
 {
-  "name": "@rts/api-worker",
-  "private": true,
-  "version": "0.1.0",
-  "type": "module"
+  "name":"@rts/api-worker",
+  "private":true,
+  "version":"0.1.0",
+  "type":"module",
+  "scripts":{"typecheck":"tsc --noEmit"},
+  "dependencies":{"@rts/domain":"workspace:*","@rts/tax-engine":"workspace:*"},
+  "devDependencies":{"@cloudflare/workers-types":"latest","typescript":"latest","wrangler":"latest"}
 }
