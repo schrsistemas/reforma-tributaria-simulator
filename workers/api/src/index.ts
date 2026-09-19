@@ -6,6 +6,7 @@ import { listFiscalSources, getFiscalSource } from './fiscal-knowledge.js';
 import { collectFiscalSource } from './source-collector.js';
 import { listGovernmentSources } from './government-source-repository.js';
 import { collectGovernmentSource, collectEnabledGovernmentSources } from './government-collection.js';
+import { createTef, getTef, transitionTefRecord } from './tef-repository.js';
 
 export interface Env {
   VERSION: string;
@@ -68,7 +69,7 @@ export default {
       return json({
         service: 'reforma-tributaria-simulator',
         apiVersion: 'v1',
-        capabilities: ['simulation', 'tax-engine', 'split-payment', 'fiscal-knowledge', 'government-source-registry'],
+        capabilities: ['simulation', 'tax-engine', 'split-payment', 'tef', 'fiscal-knowledge', 'government-source-registry'],
         execution: { explicitScenario: true, durableWorkflow: Boolean(env.SIMULATION_WORKFLOW) },
       }, 200, request);
     }
@@ -145,6 +146,59 @@ export default {
       } catch (error) {
         const status = Number((error as { status?: number }).status) || 500;
         return json({ ok: false, error: error instanceof Error ? error.message : 'SOURCE_REGISTRY_FAILED' }, status, request);
+      }
+    }
+
+    if (request.method === 'POST' && url.pathname === '/api/v1/tef/transactions') {
+      try {
+        const headers = integrationHeaders(request);
+        if (!headers.idempotencyKey) return json({ error: 'IDEMPOTENCY_KEY_REQUIRED' }, 400, request);
+        if (!env.DB) return json({ error: 'DATABASE_NOT_BOUND' }, 503, request);
+        const body = await readJson(request) as { operationId: string; amountMinor: number; type?: 'SALE'|'REFUND'|'CANCELLATION'|'REVERSAL'; provider?: string; terminalId?: string };
+        if (!body.operationId || !Number.isInteger(body.amountMinor) || body.amountMinor < 0) {
+          return json({ error: 'TEF_FIELDS_REQUIRED' }, 400, request);
+        }
+        const result = await createTef(env.DB, {
+          tenantId: headers.tenantId, operationId: body.operationId, idempotencyKey: headers.idempotencyKey,
+          provider: body.provider ?? 'SIM-TEF', terminalId: body.terminalId ?? 'TERM-001',
+          type: body.type ?? 'SALE', amountMinor: body.amountMinor, correlationId: headers.correlationId,
+        });
+        return json({ ok: true, ...result, correlationId: headers.correlationId }, result.replayed ? 200 : 201, request);
+      } catch (error) {
+        const status = Number((error as { status?: number }).status) || 400;
+        return json({ ok: false, error: error instanceof Error ? error.message : 'TEF_CREATE_FAILED' }, status, request);
+      }
+    }
+
+    if (request.method === 'GET' && url.pathname.startsWith('/api/v1/tef/transactions/')) {
+      try {
+        const headers = integrationHeaders(request);
+        if (!env.DB) return json({ error: 'DATABASE_NOT_BOUND' }, 503, request);
+        const parts = url.pathname.split('/');
+        const id = decodeURIComponent(parts[parts.length - 1]);
+        const transaction = await getTef(env.DB, headers.tenantId, id);
+        if (!transaction) return json({ error: 'TEF_TRANSACTION_NOT_FOUND' }, 404, request);
+        return json({ ok: true, transaction }, 200, request);
+      } catch (error) {
+        const status = Number((error as { status?: number }).status) || 400;
+        return json({ ok: false, error: error instanceof Error ? error.message : 'TEF_LOOKUP_FAILED' }, status, request);
+      }
+    }
+
+    if (request.method === 'POST' && url.pathname.startsWith('/api/v1/tef/transactions/') && url.pathname.endsWith('/transition')) {
+      try {
+        const headers = integrationHeaders(request);
+        if (!env.DB) return json({ error: 'DATABASE_NOT_BOUND' }, 503, request);
+        const parts = url.pathname.split('/');
+        const id = decodeURIComponent(parts[parts.length - 2]);
+        const body = await readJson(request) as { to: import('@rts/domain').TefTransactionStatus };
+        if (!body.to) return json({ error: 'TEF_TARGET_STATUS_REQUIRED' }, 400, request);
+        const transaction = await transitionTefRecord(env.DB, headers.tenantId, id, body.to, headers.correlationId);
+        if (!transaction) return json({ error: 'TEF_TRANSACTION_NOT_FOUND' }, 404, request);
+        return json({ ok: true, transaction, correlationId: headers.correlationId }, 200, request);
+      } catch (error) {
+        const status = Number((error as { status?: number }).status) || 400;
+        return json({ ok: false, error: error instanceof Error ? error.message : 'TEF_TRANSITION_FAILED' }, status, request);
       }
     }
 
