@@ -18,3 +18,6 @@ The Cloudflare Pages project name is `reforma-tributaria-simulator`.
 The site is intentionally static
 
 Deployment verification is performed from GitHub Actions after each main-branch change. and free-tier-first. Cloudflare Pages is only the presentation/test surface; the Fiscal Domain remains the source of truth for calculations and fiscal knowledge.
+
+
+<!-- Cloudflare deployment verification checkpoint -->
