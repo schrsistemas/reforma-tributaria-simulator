@@ -9,3 +9,8 @@ class_name = "FiscalSimulationWorkflow"
 
 [observability]
 enabled = true
+
+[[workflows]]
+name = "split-payment"
+binding = "SPLIT_PAYMENT_WORKFLOW"
+class_name = "SplitPaymentWorkflow"
