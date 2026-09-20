@@ -71,7 +71,7 @@ export default {
       return json({
         service: 'reforma-tributaria-simulator',
         apiVersion: 'v1',
-        capabilities: ['simulation', 'tax-engine', 'split-payment', 'tef', 'pix', 'fiscal-knowledge', 'government-source-registry'],
+        capabilities: ['simulation', 'tax-engine', 'split-payment', 'tef', 'pix', 'fiscal-knowledge', 'government-source-registry', 'official-consumption-calculator'],
         execution: { explicitScenario: true, durableWorkflow: Boolean(env.SIMULATION_WORKFLOW) },
       }, 200, request);
     }
@@ -81,6 +81,33 @@ export default {
     } catch (error) {
       const status = Number((error as { status?: number }).status) || 500;
       return json({ ok: false, error: error instanceof Error ? error.message : 'AUTHENTICATION_FAILED' }, status, request);
+    }
+
+    if (request.method === 'POST' && url.pathname === '/api/v1/official-calculator/regime-geral') {
+      try {
+        integrationHeaders(request);
+        const body = await readJson(request);
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 15000);
+        try {
+          const response = await fetch('https://piloto-cbs.tributos.gov.br/servico/calculadora-consumo/api/calculadora/regime-geral', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json', 'accept': 'application/json' },
+            body: JSON.stringify(body),
+            signal: controller.signal,
+          });
+          const text = await response.text();
+          const headers = new Headers({ 'content-type': response.headers.get('content-type') ?? 'application/json', 'cache-control': 'no-store' });
+          const correlationId = request.headers.get('X-Correlation-Id');
+          if (correlationId) headers.set('X-Correlation-Id', correlationId);
+          return new Response(text, { status: response.status, headers });
+        } finally {
+          clearTimeout(timeout);
+        }
+      } catch (error) {
+        const status = error instanceof Error && error.name === 'AbortError' ? 504 : (Number((error as { status?: number }).status) || 502);
+        return json({ ok: false, error: error instanceof Error ? error.message : 'OFFICIAL_CALCULATOR_UNAVAILABLE' }, status, request);
+      }
     }
 
     if (request.method === 'GET' && url.pathname === '/api/v1/government/sources') {
