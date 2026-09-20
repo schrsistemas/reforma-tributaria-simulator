@@ -320,7 +320,8 @@ function setupPwa(){
   if(installBtn)installBtn.addEventListener('click',install);
 }
 document.querySelectorAll('.actionCard[data-simulator]').forEach(btn=>btn.addEventListener('click',()=>selectSimulator(btn.dataset.simulator)));
-$('simulateBtn').addEventListener('click',simulate);\nconst transSearchBtn=document.getElementById('transSearchBtn');
+$('simulateBtn').addEventListener('click',simulate);
+const transSearchBtn=document.getElementById('transSearchBtn');
 if(transSearchBtn){
   transSearchBtn.addEventListener('click',()=>{
     const org=document.getElementById('transOrg')?.value.trim()||'Todos os órgãos';
