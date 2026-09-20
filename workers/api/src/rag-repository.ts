@@ -10,3 +10,10 @@ export async function searchRag(db:D1Database,query:string,topK=5,asOf?:string):
  const answer=hits.length?'Evidências recuperadas para: "'+query+'". A resposta deve ser construída exclusivamente a partir das fontes recuperadas e respeitar a vigência indicada.':'Não há evidência suficiente no índice RAG para responder com segurança.';
  return {answer,hits,confidence,grounded:true,generatedAt:new Date().toISOString()};
 }
+
+export async function getRagDocument(db:D1Database,documentId:string){
+ const row=await db.prepare('SELECT id,title,source_url,published_at,effective_from,effective_to,version,content_hash,source_id FROM rag_documents WHERE id=?').bind(documentId).first<Record<string,unknown>>();
+ if(!row)return null;
+ const chunks=await db.prepare('SELECT id,ordinal,text FROM rag_chunks WHERE document_id=? ORDER BY ordinal').bind(documentId).all<Record<string,unknown>>();
+ return {documentId:String(row.id),title:String(row.title),sourceUrl:String(row.source_url),publishedAt:String(row.published_at??''),effectiveFrom:row.effective_from?String(row.effective_from):undefined,effectiveTo:row.effective_to?String(row.effective_to):undefined,version:String(row.version),contentHash:String(row.content_hash),sourceId:String(row.source_id),chunks:chunks.results.map(x=>({chunkId:String(x.id),ordinal:Number(x.ordinal),text:String(x.text)}))};
+}
