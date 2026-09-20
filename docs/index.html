@@ -16,7 +16,7 @@
 <a class="routeLink active" href="#dashboard">Painel</a>
 <a class="routeLink" href="#radar">Radar Fiscal</a>
 <a class="routeLink" href="#sources">Fontes Governamentais</a>
-<a class="routeLink" href="#architecture">Arquitetura</a><a class="routeLink" href="#news">Notícias</a><a class="routeLink" href="#simulators">Simuladores</a><a class="routeLink" href="#calculadora-consumo">Calculadora de Consumo</a><a class="routeLink" href="#backoffice">Gestão</a><a class="routeLink" href="#servicos">Central Empresarial</a><a class="routeLink" href="#obrigacoes">Obrigações</a><a class="routeLink" href="#calendario-obrigacoes">Calendário</a><a class="routeLink" href="#calendario-empresa">Calendário por empresa</a><a class="routeLink" href="#fontes-abertas">Dados Abertos</a><a class="routeLink" href="#sebrae">Sebrae</a>
+<a class="routeLink" href="#architecture">Arquitetura</a><a class="routeLink" href="#ia-conhecimento">IA e Conhecimento</a><a class="routeLink" href="#news">Notícias</a><a class="routeLink" href="#simulators">Simuladores</a><a class="routeLink" href="#calculadora-consumo">Calculadora de Consumo</a><a class="routeLink" href="#backoffice">Gestão</a><a class="routeLink" href="#servicos">Central Empresarial</a><a class="routeLink" href="#obrigacoes">Obrigações</a><a class="routeLink" href="#calendario-obrigacoes">Calendário</a><a class="routeLink" href="#calendario-empresa">Calendário por empresa</a><a class="routeLink" href="#fontes-abertas">Dados Abertos</a><a class="routeLink" href="#sebrae">Sebrae</a>
 </nav>
 <div class="quick">
 <a class="quickLink" href="#simulators">▶ Simuladores</a><a class="quickLink" href="#calculadora-consumo">▣ Calculadora de Consumo</a><a class="quickLink" href="#split-payment">⇄ Pagamento dividido (Split Payment)</a>
@@ -102,6 +102,26 @@ O portal não trata uma data de leiaute como se fosse automaticamente a data de 
 <div class="source"><h3>Comércio exterior</h3><p>Importação, Duimp, NF-e de importação, classificação e impactos tributários da operação.</p><div class="line"><span>Estado</span><span class="pill">MONITORAR</span></div></div>
 <div class="source"><h3>Transparência e governo</h3><p>Contratos, licitações, despesas, receitas, transferências, projetos públicos e dados abertos.</p><div class="line"><span>Estado</span><span class="pill">FONTE OFICIAL</span></div></div>
 </div><div class="warn">Regra do portal: cada informação operacional deve carregar fonte, data de publicação, vigência quando existir e nível de evidência. O simulador não substitui orientação profissional nem ato oficial.</div></div></section>
+<section id="ia-conhecimento" class="view"><div class="grid"><section class="card"><h1 class="title">IA, RAG e MCP</h1><div class="subtitle">Camada de conhecimento auditável para apoiar o domínio fiscal sem substituir o motor tributário determinístico.</div><div class="pipeline"><div class="step">Fonte oficial</div><div class="step">RAG</div><div class="step">MCP</div><div class="step">LLM</div></div><div class="ok">Regra: o LLM explica e recupera evidências. O cálculo e a publicação de regras permanecem controlados pelo domínio fiscal.</div><div class="row"><span>Recuperação</span><b>Híbrida + filtros de vigência</b></div><div class="row"><span>Conhecimento</span><b>Versionado e citado</b></div><div class="row"><span>Ferramentas MCP</span><b>Allowlist / contratos</b></div><div class="row"><span>Fine-tuning</span><b>Somente após avaliação</b></div></section><section class="card"><h2>Esteira de refinamento</h2><div class="trace">FONTE OFICIAL
+↓
+COLETA / HASH / METADADOS
+↓
+CHUNK + ÍNDICE
+↓
+RECUPERAÇÃO HÍBRIDA
+↓
+RERANKING
+↓
+CONTEXTO COM EVIDÊNCIAS
+↓
+MCP
+↓
+LLM
+↓
+VALIDAÇÃO
+↓
+RESPOSTA AUDITÁVEL</div><a class="source" href="https://github.com/schrsistemas/reforma-tributaria-simulator/blob/main/docs/AI_RAG_MCP_LLM.md" target="_blank" rel="noopener">Abrir documentação técnica RAG / MCP / LLM</a></section></div></section>
+
 <section id="simulators" class="view"><div class="card"><h1 class="title">Hub de Simuladores</h1><div class="subtitle">Escolha o domínio. Todos os cenários desta interface são fictícios e não executam operações financeiras ou fiscais reais.</div><div class="radar">
 <button class="source actionCard" type="button" data-simulator="reforma"><h3>Reforma Tributária</h3><div class="line"><span>IBS / CBS / transição</span><span class="pill">ABRIR SIMULADOR →</span></div></button>
 <button class="source actionCard" type="button" data-simulator="empresa"><h3>Empresa</h3><div class="line"><span>MEI / Simples / regime normal</span><span class="pill">ABRIR SIMULADOR →</span></div></button>
