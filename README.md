@@ -273,3 +273,27 @@ Os documentos externos continuam sendo tratados como **dados não confiáveis**:
 ### Superfície visual atual
 
 A produção em Cloudflare Pages mantém uma URL estável e agora possui navegação funcional entre Dashboard, Radar Fiscal, Fontes Governamentais e Arquitetura. O catálogo de fontes inclui pesquisa, filtro por jurisdição e abertura da fonte oficial. A interface não depende da API para navegação básica, permitindo inspeção visual enquanto D1/R2/Workers são provisionados.
+
+## IA fiscal: RAG, MCP e LLM
+
+A camada de IA segue uma arquitetura RAG-first. Fontes oficiais são capturadas, versionadas, hashadas e indexadas como evidência. O RAG recupera contexto; MCP expõe ferramentas controladas; o LLM explica e auxilia tarefas de classificação; o motor fiscal determinístico continua responsável pelo cálculo.
+
+Ferramentas MCP previstas:
+
+- `fiscal.search_evidence`
+- `fiscal.get_document`
+- `fiscal.resolve_ruleset`
+- `fiscal.calculate`
+- `fiscal.compare_calculation`
+- `fiscal.get_split_payment_rules`
+- `fiscal.get_snapshot`
+
+Fine-tuning não é usado para memorizar legislação. Pode ser aplicado posteriormente em tarefas estáveis e mensuráveis, sempre subordinado ao catálogo de evidências e ao RuleSet versionado.
+
+Documentação:
+
+- [IA — RAG, MCP e LLM](docs/IA-RAG-MCP.md)
+- [RAG Fiscal](docs/RAG-FISCAL.md)
+- [MCP Fiscal](docs/MCP-FISCAL.md)
+- [Fine-tuning de LLM](docs/LLM-FINETUNING.md)
+- [Operação de IA Fiscal](docs/AI-OPERATIONS.md)
