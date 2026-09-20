@@ -22,3 +22,12 @@ export function assertGrounded(answer:LlmAnswerContract):void {
  if(answer.grounded && answer.evidence.length===0) throw new Error('Resposta marcada como fundamentada sem evidência.');
  if(answer.snapshotId && !answer.rulesetId) throw new Error('Snapshot exige RuleSet associado.');
 }
+export interface McpRequestEnvelope<T=unknown> { requestId:string; correlationId:string; toolName:string; tenantId?:string; actorId?:string; input:T; requestedAt:string; }
+export interface McpResponseEnvelope<T=unknown> { requestId:string; correlationId:string; outcome:'SUCCESS'|'ERROR'|'DENIED'; result?:T; errorCode?:string; warnings:string[]; finishedAt:string; }
+export interface LlmEvaluationCase { id:string; question:string; expectedEvidenceIds:string[]; expectedRulesetId?:string; expectedFacts:string[]; asOf?:string; }
+export interface LlmEvaluationResult { caseId:string; retrievedEvidenceIds:string[]; grounded:boolean; factualErrors:number; temporalErrors:number; deterministicMatch?:boolean; latencyMs:number; }
+export interface FineTuneCandidate { id:string; task:'CLASSIFICATION'|'EXTRACTION'|'ROUTING'|'IMPACT_CLASSIFICATION'; input:string; target:string; evidenceIds:string[]; datasetVersion:string; approved:boolean; }
+export function assertMcpEnvelope<T>(request:McpRequestEnvelope<T>):void {
+ if(!request.requestId||!request.correlationId||!request.toolName) throw new Error('MCP_REQUEST_METADATA_REQUIRED');
+ if(!request.input) throw new Error('MCP_INPUT_REQUIRED');
+}
