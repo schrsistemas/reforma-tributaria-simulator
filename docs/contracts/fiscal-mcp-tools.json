@@ -1,0 +1,26 @@
+{
+  "contract_version": "1.0.0",
+  "domain": "fiscal",
+  "tools": [
+    {"name":"fiscal.search_knowledge","purpose":"Buscar evidências oficiais","read_only":true},
+    {"name":"fiscal.get_source","purpose":"Obter fonte e metadados","read_only":true},
+    {"name":"fiscal.resolve_rules","purpose":"Resolver conjunto de regras vigente","read_only":true},
+    {"name":"fiscal.calculate","purpose":"Executar cálculo determinístico","read_only":true},
+    {"name":"fiscal.validate_document","purpose":"Validar documento fiscal","read_only":true},
+    {"name":"fiscal.create_snapshot","purpose":"Persistir registro imutável","read_only":false},
+    {"name":"fiscal.simulate_split_payment","purpose":"Simular segregação e liquidação","read_only":true},
+    {"name":"fiscal.compare_official_calculator","purpose":"Comparar resultado informado da calculadora oficial","read_only":true},
+    {"name":"fiscal.get_regulatory_changes","purpose":"Consultar mudanças regulatórias","read_only":true}
+  ],
+  "response": {
+    "required": ["status","contract_version","correlation_id","result","evidence","warnings","timestamp"]
+  },
+  "llm_policy": {
+    "may_explain": true,
+    "may_retrieve": true,
+    "may_suggest_rule_candidate": true,
+    "may_publish_rule": false,
+    "may_calculate_tax": false,
+    "may_invent_evidence": false
+  }
+}
