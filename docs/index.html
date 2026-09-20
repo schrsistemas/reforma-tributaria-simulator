@@ -123,7 +123,7 @@ O portal não trata uma data de leiaute como se fosse automaticamente a data de 
 <div class="tef"><h3>Alocações</h3><div class="row"><span>IBS</span><b id="splitIbsState">PENDENTE</b></div><div class="row"><span>CBS</span><b id="splitCbsState">PENDENTE</b></div><div class="row"><span>Fornecedor</span><b id="splitSupplierState">PENDENTE</b></div>
 <div class="tefActions"><button id="settleSplitIbs" type="button">Liquidar IBS</button><button id="settleSplitCbs" type="button">Liquidar CBS</button><button id="settleSplitSupplier" type="button">Liquidar fornecedor</button></div>
 <div class="tefActions"><button id="reconcileSplit" type="button">Reconciliar</button><button id="reverseSplit" type="button">Reverter</button><button id="resetSplit" type="button">Reiniciar</button></div></div>
-<div class="trace" id="splitTrace">PAYMENT_CRIADO
+<div class="source"><h3>Fluxo por parcela</h3><div id="splitSchedule" class="trace">A tabela será calculada a partir dos parâmetros informados.</div></div><div class="trace" id="splitTrace">PAYMENT_CRIADO
 ALLOCATION_CRIADO
 Status: CRIADO
 Reconciliação: pendente
@@ -285,6 +285,8 @@ function reconcileSplit(){const g=parseDecimal($('splitGross').value)||0,i=parse
 function reverseSplit(){splitState.status='REVERTIDO';splitState.ibs='REVERTIDO';splitState.cbs='REVERTIDO';splitState.supplier='REVERTIDO';splitState.reconciled=false;renderSplit();}
 function resetSplit(){splitState={ibs:'PENDENTE',cbs:'PENDENTE',supplier:'PENDENTE',status:'CRIADO',reconciled:false};$('splitPaymentId').textContent='SIM-SPLIT-DEMO';$('splitMsg').textContent='Pronto. Valores são fictícios.';$('splitMsg').className='ok';renderSplit();}
 
+
+function renderSplitSchedule(){const out=$('splitSchedule');if(!out)return;const g=parseDecimal($('splitGross')?.value)||0,i=parseDecimal($('splitIbs')?.value)||0,c=parseDecimal($('splitCbs')?.value)||0,n=Math.max(1,Math.min(60,Number($('splitInstallments')?.value)||1)),mode=$('splitMode')?.value||'avista';const rows=[];for(let k=1;k<=n;k++){const pct=100/n,rg=g*pct/100,ri=i*pct/100,rc=c*pct/100,rn=Math.max(0,rg-ri-rc);rows.push('<div class="row"><span>Parcela '+k+' · '+pct.toLocaleString('pt-BR',{maximumFractionDigits:2})+'%</span><span>Bruto '+splitMoney(rg)+' · IBS '+splitMoney(ri)+' · CBS '+splitMoney(rc)+' · Líquido '+splitMoney(rn)+'</span></div>');}out.innerHTML='<strong>'+ (mode==='avista'?'LIQUIDAÇÃO À VISTA':'CRONOGRAMA SIMULADO')+'</strong>'+rows.join('')+'<small>Valores proporcionais para demonstração; a liquidação efetiva depende das regras e do meio de pagamento aplicáveis.</small>';}
 function filterSources(){const q=($('sourceSearch').value||'').toLowerCase().trim(), scope=$('sourceScope').value;let visible=0;document.querySelectorAll('.sourceCard').forEach(card=>{const okScope=scope==='ALL'||card.dataset.scope===scope, okText=!q||card.dataset.text.includes(q)||card.innerText.toLowerCase().includes(q);const show=okScope&&okText;card.hidden=!show;if(show)visible++;});$('sourceEmpty').hidden=visible!==0;$('sourceCount').textContent=visible;}$('sourceSearch').addEventListener('input',filterSources);$('sourceScope').addEventListener('change',filterSources);
 
 $('crt').addEventListener('change',()=>{$('crtLabel').textContent=$('crt').value+' · '+$('crt').selectedOptions[0].text.replace(/^\d+ · /,'');});$('uf').addEventListener('change',()=>{$('ufLabel').textContent=$('uf').value;});
@@ -340,12 +342,12 @@ if(transSearchBtn){
   });
 }
 $('advancePixBtn').addEventListener('click',advancePix);$('resetPixBtn').addEventListener('click',resetPix);
-$('advanceTefBtn').addEventListener('click',advanceTef);$('resetTefBtn').addEventListener('click',resetTef);$('splitCreateBtn').addEventListener('click',createSplit);$('settleSplitIbs').addEventListener('click',()=>settleSplitTax('IBS'));$('settleSplitCbs').addEventListener('click',()=>settleSplitTax('CBS'));$('settleSplitSupplier').addEventListener('click',settleSplitSupplier);$('reconcileSplit').addEventListener('click',reconcileSplit);$('reverseSplit').addEventListener('click',reverseSplit);$('resetSplit').addEventListener('click',resetSplit);['splitGross','splitIbs','splitCbs','splitMode','splitInstallments','splitCurrentPercent'].forEach(id=>$(id).addEventListener('input',()=>{renderSplit();renderSplitCashFlow();}));
+$('advanceTefBtn').addEventListener('click',advanceTef);$('resetTefBtn').addEventListener('click',resetTef);$('splitCreateBtn').addEventListener('click',createSplit);$('settleSplitIbs').addEventListener('click',()=>settleSplitTax('IBS'));$('settleSplitCbs').addEventListener('click',()=>settleSplitTax('CBS'));$('settleSplitSupplier').addEventListener('click',settleSplitSupplier);$('reconcileSplit').addEventListener('click',reconcileSplit);$('reverseSplit').addEventListener('click',reverseSplit);$('resetSplit').addEventListener('click',resetSplit);['splitGross','splitIbs','splitCbs','splitMode','splitInstallments','splitCurrentPercent'].forEach(id=>$(id).addEventListener('input',()=>{renderSplit();renderSplitCashFlow();renderSplitSchedule();}));
 document.querySelectorAll('.bottomNav button[data-route]').forEach(btn=>btn.addEventListener('click',()=>{location.hash=btn.dataset.route;if(btn.dataset.focus==='pix')setTimeout(()=>document.getElementById('pixGrid')?.scrollIntoView({behavior:'smooth',block:'center'}),80);}));
 $('base').addEventListener('input',()=>{if(tefIndex===0)renderTef()});
 $('ibs').addEventListener('input',()=>{if(tefIndex===0)renderTef()});
 $('cbs').addEventListener('input',()=>{if(tefIndex===0)renderTef()});
-renderPix();renderTef();renderSplit();renderSplitCashFlow();setupPwa();
+renderPix();renderTef();renderSplit();renderSplitCashFlow();renderSplitSchedule();setupPwa();
 function updateConnectionStatus(){
  const online=navigator.onLine;
  const s=document.getElementById('simStatus');
