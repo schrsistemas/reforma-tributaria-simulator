@@ -83,6 +83,49 @@ export default {
       return json({ ok: false, error: error instanceof Error ? error.message : 'AUTHENTICATION_FAILED' }, status, request);
     }
 
+    if (request.method === 'GET' && url.pathname === '/api/v1/mcp/tools') {
+      return json({
+        ok: true,
+        protocol: 'MCP-compatible fiscal tool catalog',
+        tools: [
+          { name: 'fiscal.search_evidence', transport: 'POST /api/v1/mcp/call', status: 'AVAILABLE' },
+          { name: 'fiscal.resolve_ruleset', transport: 'POST /api/v1/mcp/call', status: 'AVAILABLE' },
+          { name: 'fiscal.calculate', transport: 'POST /api/v1/simulations', status: 'AVAILABLE' },
+          { name: 'fiscal.compare_calculation', transport: 'POST /api/v1/official-calculator/regime-geral', status: 'AVAILABLE' },
+          { name: 'fiscal.get_split_payment_rules', transport: 'POST /api/v1/mcp/call', status: 'CONTRACT' },
+          { name: 'fiscal.get_snapshot', transport: 'GET /api/v1/simulations/:id', status: 'AVAILABLE' }
+        ]
+      }, 200, request);
+    }
+
+    if (request.method === 'POST' && url.pathname === '/api/v1/mcp/call') {
+      try {
+        const headers = integrationHeaders(request);
+        if (!env.DB) return json({ ok: false, error: 'DATABASE_NOT_BOUND' }, 503, request);
+        const body = await readJson(request) as { requestId?: string; correlationId?: string; toolName?: string; input?: Record<string, unknown> };
+        const requestId = body.requestId ?? crypto.randomUUID();
+        const correlationId = body.correlationId ?? headers.correlationId;
+        const toolName = body.toolName;
+        const input = body.input ?? {};
+        if (!toolName) return json({ requestId, correlationId, outcome: 'ERROR', errorCode: 'MCP_TOOL_REQUIRED', warnings: [], finishedAt: new Date().toISOString() }, 400, request);
+        if (toolName === 'fiscal.search_evidence') {
+          const query = String(input.query ?? '').trim();
+          if (!query) return json({ requestId, correlationId, outcome: 'ERROR', errorCode: 'RAG_QUERY_REQUIRED', warnings: [], finishedAt: new Date().toISOString() }, 400, request);
+          const result = await searchRag(env.DB, query, Number(input.limit ?? 5), input.asOf ? String(input.asOf) : undefined);
+          return json({ requestId, correlationId, outcome: 'SUCCESS', result, warnings: result.confidence === 'LOW' ? ['EVIDENCE_CONFIDENCE_LOW'] : [], finishedAt: new Date().toISOString() }, 200, request);
+        }
+        if (toolName === 'fiscal.resolve_ruleset') {
+          const referenceDate = String(input.asOf ?? new Date().toISOString().slice(0, 10));
+          const result = await resolvePublishedRuleSet(env, referenceDate, input.rulesetId ? String(input.rulesetId) : undefined, input.version ? String(input.version) : undefined);
+          return json({ requestId, correlationId, outcome: 'SUCCESS', result, warnings: [], finishedAt: new Date().toISOString() }, 200, request);
+        }
+        return json({ requestId, correlationId, outcome: 'ERROR', errorCode: 'MCP_TOOL_NOT_IMPLEMENTED', warnings: ['Use /api/v1/mcp/tools for the current catalog.'], finishedAt: new Date().toISOString() }, 501, request);
+      } catch (error) {
+        const status = Number((error as { status?: number }).status) || 500;
+        return json({ ok: false, outcome: 'ERROR', errorCode: error instanceof Error ? error.message : 'MCP_CALL_FAILED', warnings: [], finishedAt: new Date().toISOString() }, status, request);
+      }
+    }
+
     if (request.method === 'POST' && url.pathname === '/api/v1/official-calculator/regime-geral') {
       try {
         integrationHeaders(request);
