@@ -112,7 +112,7 @@ export default {
         if (toolName === 'fiscal.search_evidence') {
           const query = String(input.query ?? '').trim();
           if (!query) return json({ requestId, correlationId, outcome: 'ERROR', errorCode: 'RAG_QUERY_REQUIRED', warnings: [], finishedAt: new Date().toISOString() }, 400, request);
-          const result = await searchRag(env.DB, query, Number(input.limit ?? 5), input.asOf ? String(input.asOf) : undefined);
+          const result = await searchRag(env.DB, query, Number(input.limit ?? 5), input.asOf ? String(input.asOf) : undefined, input.sourceType ? String(input.sourceType) : undefined, input.jurisdiction ? String(input.jurisdiction) : undefined);
           return json({ requestId, correlationId, outcome: 'SUCCESS', result, warnings: result.confidence === 'LOW' ? ['EVIDENCE_CONFIDENCE_LOW'] : [], finishedAt: new Date().toISOString() }, 200, request);
         }
         if (toolName === 'fiscal.get_document') {
@@ -315,7 +315,9 @@ export default {
         if (!query) return json({ error: 'RAG_QUERY_REQUIRED' }, 400, request);
         const topK = Number(url.searchParams.get('topK') ?? '5');
         const asOf = url.searchParams.get('asOf') ?? undefined;
-        return json({ ok: true, ...await searchRag(env.DB, query, topK, asOf), tenantId: headers.tenantId }, 200, request);
+        const sourceType = url.searchParams.get('sourceType') ?? undefined;
+        const jurisdiction = url.searchParams.get('jurisdiction') ?? undefined;
+        return json({ ok: true, ...await searchRag(env.DB, query, topK, asOf, sourceType, jurisdiction), tenantId: headers.tenantId }, 200, request);
       } catch (error) {
         const status = Number((error as { status?: number }).status) || 500;
         return json({ ok: false, error: error instanceof Error ? error.message : 'RAG_SEARCH_FAILED' }, status, request);
