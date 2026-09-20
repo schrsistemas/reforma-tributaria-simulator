@@ -8,7 +8,7 @@ import { listGovernmentSources } from './government-source-repository.js';
 import { collectGovernmentSource, collectEnabledGovernmentSources } from './government-collection.js';
 import { createTef, getTef, transitionTefRecord } from './tef-repository.js';
 import { createPix, getPix, transitionPixRecord } from './pix-repository.js';
-import { searchRag } from './rag-repository.js';
+import { searchRag, getRagDocument } from './rag-repository.js';
 
 export interface Env {
   VERSION: string;
@@ -89,10 +89,11 @@ export default {
         protocol: 'MCP-compatible fiscal tool catalog',
         tools: [
           { name: 'fiscal.search_evidence', transport: 'POST /api/v1/mcp/call', status: 'AVAILABLE' },
+          { name: 'fiscal.get_document', transport: 'POST /api/v1/mcp/call', status: 'AVAILABLE' },
           { name: 'fiscal.resolve_ruleset', transport: 'POST /api/v1/mcp/call', status: 'AVAILABLE' },
           { name: 'fiscal.calculate', transport: 'POST /api/v1/simulations', status: 'AVAILABLE' },
           { name: 'fiscal.compare_calculation', transport: 'POST /api/v1/official-calculator/regime-geral', status: 'AVAILABLE' },
-          { name: 'fiscal.get_split_payment_rules', transport: 'POST /api/v1/mcp/call', status: 'CONTRACT' },
+          { name: 'fiscal.get_split_payment_rules', transport: 'POST /api/v1/mcp/call', status: 'AVAILABLE' },
           { name: 'fiscal.get_snapshot', transport: 'GET /api/v1/simulations/:id', status: 'AVAILABLE' }
         ]
       }, 200, request);
@@ -111,6 +112,18 @@ export default {
         if (toolName === 'fiscal.search_evidence') {
           const query = String(input.query ?? '').trim();
           if (!query) return json({ requestId, correlationId, outcome: 'ERROR', errorCode: 'RAG_QUERY_REQUIRED', warnings: [], finishedAt: new Date().toISOString() }, 400, request);
+          const result = await searchRag(env.DB, query, Number(input.limit ?? 5), input.asOf ? String(input.asOf) : undefined);
+          return json({ requestId, correlationId, outcome: 'SUCCESS', result, warnings: result.confidence === 'LOW' ? ['EVIDENCE_CONFIDENCE_LOW'] : [], finishedAt: new Date().toISOString() }, 200, request);
+        }
+        if (toolName === 'fiscal.get_document') {
+          const documentId = String(input.documentId ?? '').trim();
+          if (!documentId) return json({ requestId, correlationId, outcome: 'ERROR', errorCode: 'DOCUMENT_ID_REQUIRED', warnings: [], finishedAt: new Date().toISOString() }, 400, request);
+          const result = await getRagDocument(env.DB, documentId);
+          if (!result) return json({ requestId, correlationId, outcome: 'ERROR', errorCode: 'EVIDENCE_DOCUMENT_NOT_FOUND', warnings: [], finishedAt: new Date().toISOString() }, 404, request);
+          return json({ requestId, correlationId, outcome: 'SUCCESS', result, warnings: [], finishedAt: new Date().toISOString() }, 200, request);
+        }
+        if (toolName === 'fiscal.get_split_payment_rules') {
+          const query = String(input.query ?? 'Split Payment IBS CBS').trim() || 'Split Payment IBS CBS';
           const result = await searchRag(env.DB, query, Number(input.limit ?? 5), input.asOf ? String(input.asOf) : undefined);
           return json({ requestId, correlationId, outcome: 'SUCCESS', result, warnings: result.confidence === 'LOW' ? ['EVIDENCE_CONFIDENCE_LOW'] : [], finishedAt: new Date().toISOString() }, 200, request);
         }
