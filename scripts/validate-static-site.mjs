@@ -3,10 +3,12 @@ import { readFile } from 'node:fs/promises';
 const html = await readFile(new URL('../docs/index.html', import.meta.url), 'utf8');
 const open = (html.match(/<script\b/gi) ?? []).length;
 const close = (html.match(/<\/script>/gi) ?? []).length;
-if (open !== 1 || close !== 1) throw new Error(`Expected one script block; got ${open}/${close}`);
+if (open !== close) throw new Error(`Mismatched script blocks: ${open}/${close}`);
 
-const scriptBody = html.match(/<script>([\s\S]*)<\/script>/i)?.[1] ?? '';
-new Function(scriptBody);
+const scriptBodies = [...html.matchAll(/<script>([\\s\\S]*?)<\\/script>/gi)].map(m => m[1]);
+for (const [index, scriptBody] of scriptBodies.entries()) {
+  try { new Function(scriptBody); } catch (error) { throw new Error(`JavaScript block ${index + 1} is invalid: ${error.message}`); }
+}
 
 for (const id of ['simulateBtn','advancePixBtn','resetPixBtn','advanceTefBtn','resetTefBtn','pixGrid','tefGrid','bottomNav']) {
   if (!html.includes(`id="${id}"`) && !html.includes(`class="${id}"`)) throw new Error(`Missing required UI hook: ${id}`);
@@ -17,4 +19,4 @@ if (!html.includes('PORTAL SIMULADOR FACILITADOR')) throw new Error('Facilitator
 
 console.log('Static portal validation passed.');
 
-// CI trigger: keep validation aligned with the single-install-button PWA.
+// CI trigger: validate the multi-block static portal and single-install-button PWA.
