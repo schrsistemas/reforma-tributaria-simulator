@@ -297,3 +297,5 @@ Documentação:
 - [MCP Fiscal](docs/MCP-FISCAL.md)
 - [Fine-tuning de LLM](docs/LLM-FINETUNING.md)
 - [Operação de IA Fiscal](docs/AI-OPERATIONS.md)
+- [Política LLM Fiscal e Fine-Tuning](docs/LLM-FISCAL.md)
+- [Avaliação de IA Fiscal](docs/IA-EVALUATION.md)
