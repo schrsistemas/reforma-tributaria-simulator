@@ -83,3 +83,25 @@ Datasets de Fine-Tuning devem ser avaliados separadamente do catálogo normativo
 O dataset não pode substituir o RAG.
 
 A versão do dataset deve aparecer no resultado de avaliação para permitir reprodução.
+
+
+## Casos iniciais executáveis
+
+| ID | Classe | Esperado |
+|---|---|---|
+| RAG-001 | regra vigente | recuperação com evidência primária e vigência compatível |
+| RAG-002 | regra fora da vigência | exclusão quando `asOf` não estiver dentro da vigência |
+| RAG-003 | jurisdição | filtro não mistura documentos de outra jurisdição |
+| RAG-004 | fonte secundária | fonte primária recebe prioridade quando aplicável |
+| RAG-005 | ausência | `grounded=false` e aviso de evidência insuficiente |
+| RAG-006 | Split Payment | contexto recuperado não altera o cálculo determinístico |
+| RAG-007 | Calculadora de Consumo | divergência gera comparação, nunca publicação automática de regra |
+| RAG-008 | MCP | `requestId` e `correlationId` preservados no retorno |
+
+### Estado da implementação
+
+A recuperação já aplica filtro temporal, jurisdição, tipo documental e metadados de tópicos antes do resultado final. O ranking combina sinal lexical, autoridade, tipo documental e tópicos. Respostas sem hits não são marcadas como fundamentadas.
+
+### Gate para Fine-Tuning
+
+Nenhum Fine-Tuning deve ser promovido enquanto RAG-001 a RAG-008 não estiverem reproduzíveis e os gates críticos permanecerem estáveis entre versões.
