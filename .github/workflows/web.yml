@@ -18,3 +18,4 @@ jobs:
       - run: pnpm install --no-frozen-lockfile
       - run: pnpm --filter @rts/web typecheck
       - run: pnpm --filter @rts/web build
+      - run: pnpm test:site
