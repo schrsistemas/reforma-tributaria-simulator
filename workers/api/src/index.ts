@@ -369,6 +369,7 @@ export default {
           rejectionScenarioId: body.rejectionScenarioId,
           amountMinor: Number(body.amountMinor),
           correlationId: headers.correlationId,
+          paymentId: body.paymentId,
         });
 
         return json({
