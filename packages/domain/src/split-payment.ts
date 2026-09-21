@@ -60,3 +60,54 @@ export function isSplitPaymentInstrument(value: unknown): value is SplitPaymentI
 export function isSplitPaymentSettlementMode(value: unknown): value is SplitPaymentSettlementMode {
   return typeof value === 'string' && SPLIT_PAYMENT_SETTLEMENT_MODES.includes(value as SplitPaymentSettlementMode);
 }
+
+export interface SplitPaymentCalculation {
+  grossAmount: string;
+  taxDebits: Required<SplitPaymentTaxAmounts>;
+  taxesAlreadyExtinguished: Required<SplitPaymentTaxAmounts>;
+  segregatedTaxes: Required<SplitPaymentTaxAmounts>;
+  supplierNetAmount: string;
+}
+
+function splitCents(value: string): bigint {
+  if (!/^\d+(\.\d{1,2})?$/.test(value)) throw new Error('INVALID_MONEY');
+  const [whole, fraction = ''] = value.split('.');
+  return BigInt(whole) * 100n + BigInt((fraction + '00').slice(0, 2));
+}
+
+function splitMoney(value: bigint): string {
+  return (value / 100n).toString() + '.' + (value % 100n).toString().padStart(2, '0');
+}
+
+/**
+ * Calculates the amount available for segregation in the standard procedure.
+ * Already-extinguished tax debt is deducted from the fiscal debit; the function
+ * deliberately does not invent simplified-procedure percentages.
+ */
+export function calculateSplitPaymentAmounts(input: {
+  grossAmount: string;
+  taxDebits: SplitPaymentTaxAmounts;
+  taxesAlreadyExtinguished?: SplitPaymentTaxAmounts;
+}): SplitPaymentCalculation {
+  const gross = splitCents(input.grossAmount);
+  const ibsDebit = splitCents(input.taxDebits.IBS ?? '0.00');
+  const cbsDebit = splitCents(input.taxDebits.CBS ?? '0.00');
+  const ibsExtinguished = splitCents(input.taxesAlreadyExtinguished?.IBS ?? '0.00');
+  const cbsExtinguished = splitCents(input.taxesAlreadyExtinguished?.CBS ?? '0.00');
+
+  if (ibsExtinguished > ibsDebit || cbsExtinguished > cbsDebit) {
+    throw new Error('EXTINGUISHED_TAX_EXCEEDS_TAX_DEBIT');
+  }
+
+  const ibs = ibsDebit - ibsExtinguished;
+  const cbs = cbsDebit - cbsExtinguished;
+  if (ibs + cbs > gross) throw new Error('ALLOCATIONS_EXCEED_GROSS_AMOUNT');
+
+  return {
+    grossAmount: splitMoney(gross),
+    taxDebits: { IBS: splitMoney(ibsDebit), CBS: splitMoney(cbsDebit) },
+    taxesAlreadyExtinguished: { IBS: splitMoney(ibsExtinguished), CBS: splitMoney(cbsExtinguished) },
+    segregatedTaxes: { IBS: splitMoney(ibs), CBS: splitMoney(cbs) },
+    supplierNetAmount: splitMoney(gross - ibs - cbs),
+  };
+}
