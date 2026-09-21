@@ -71,6 +71,8 @@ function inputFromCreditEligibility(input: Record<string, unknown>): import('@rt
     suppliedFreeOrBelowMarketToPerson: input.suppliedFreeOrBelowMarketToPerson === undefined ? undefined : Boolean(input.suppliedFreeOrBelowMarketToPerson),
     economicActivityRelated: input.economicActivityRelated === undefined ? undefined : Boolean(input.economicActivityRelated),
     fuelSpecificRegime: input.fuelSpecificRegime === undefined ? undefined : Boolean(input.fuelSpecificRegime),
+    relatedToPersonalConsumptionItem: input.relatedToPersonalConsumptionItem === undefined ? undefined : Boolean(input.relatedToPersonalConsumptionItem),
+    operationalPurpose: input.operationalPurpose === undefined ? undefined : String(input.operationalPurpose) as import('@rts/domain').CreditEligibilityInput['operationalPurpose'],
   };
 }
 export default {
