@@ -115,8 +115,18 @@ export async function createPaymentRejectionSimulation(
       throw Object.assign(new Error('SPLIT_PAYMENT_NOT_FOUND'), { status: 404 });
     }
 
-    if (payment.status === 'REVERSED') {
+    const status = String(payment.status);
+    if (status === 'REVERSED') {
       throw Object.assign(new Error('SPLIT_PAYMENT_ALREADY_REVERSED'), { status: 409 });
+    }
+    if (status === 'REJECTED') {
+      throw Object.assign(new Error('SPLIT_PAYMENT_ALREADY_REJECTED'), { status: 409 });
+    }
+    if (status === 'SETTLED' || status === 'PARTIALLY_SETTLED') {
+      throw Object.assign(new Error('SPLIT_PAYMENT_ALREADY_EXECUTED'), { status: 409 });
+    }
+    if (status !== 'CREATED' && status !== 'ALLOCATED') {
+      throw Object.assign(new Error('SPLIT_PAYMENT_REJECTION_NOT_ALLOWED_FOR_STATUS'), { status: 409 });
     }
   }
 
