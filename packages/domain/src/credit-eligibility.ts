@@ -77,7 +77,7 @@ function decision(input:CreditEligibilityInput,tax:CreditTax):CreditTaxDecision 
     return {tax,eligibility:'INELIGIBLE',reason:'PERSONAL_CONSUMPTION',legalBasis:[legal57+' (inciso II)']};
   }
   if(!input.regularTaxpayer) {
-    return {tax,eligibility:'INELIGIBLE',reason:'FISCAL_REGIME_EXCEPTION',legalBasis:['LC 214/2025, art. 47; verificar regime aplicável']};
+    return {tax,eligibility:'CONDITIONAL',reason:'FISCAL_REGIME_EXCEPTION',legalBasis:['LC 214/2025, art. 47; verificar regime aplicável']};
   }
   if(!input.electronicFiscalDocument) {
     return {tax,eligibility:'CONDITIONAL',reason:'DOCUMENT_REQUIRED',legalBasis:[legal47+' (§1º, II)']};
@@ -91,7 +91,7 @@ function decision(input:CreditEligibilityInput,tax:CreditTax):CreditTaxDecision 
   if(!input.taxDebtExtinguished) {
     return {tax,eligibility:'CONDITIONAL',reason:'EXTINCTION_REQUIRED',legalBasis:[legal47, 'LC 214/2025, art. 48']};
   }
-  if(input.economicActivityRelated===false) {
+  if(input.economicActivityRelated!==true) {
     return {tax,eligibility:'CONDITIONAL',reason:'INSUFFICIENT_FACTS',legalBasis:[legal47,legal57]};
   }
   return {tax,eligibility:'ELIGIBLE',reason:'REGULAR_ACQUISITION',legalBasis:[legal47]};
