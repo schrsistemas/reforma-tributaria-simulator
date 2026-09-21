@@ -9,7 +9,7 @@ import { collectGovernmentSource, collectEnabledGovernmentSources } from './gove
 import { createTef, getTef, transitionTefRecord } from './tef-repository.js';
 import { createPix, getPix, transitionPixRecord } from './pix-repository.js';
 import { searchRag, getRagDocument } from './rag-repository.js';
-import { evaluateCreditEligibility } from '@rts/domain';
+import { evaluateCreditEligibility, CREDIT_ELIGIBILITY_RULE_MATRIX } from '@rts/domain';
 import { listPaymentMethods, listPaymentRejectionScenarios, createPaymentRejectionSimulation, getPaymentRejectionSimulation, listPaymentRejectionSimulations } from './payment-rejection-repository.js';
 
 export interface Env {
@@ -142,6 +142,7 @@ export default {
           { name: 'fiscal.compare_calculation', transport: 'POST /api/v1/official-calculator/regime-geral', status: 'AVAILABLE' },
           { name: 'fiscal.get_split_payment_rules', transport: 'POST /api/v1/mcp/call', status: 'AVAILABLE' },
           { name: 'fiscal.evaluate_credit_eligibility', transport: 'POST /api/v1/credit-eligibility', status: 'AVAILABLE' },
+          { name: 'fiscal.get_credit_eligibility_rules', transport: 'GET /api/v1/credit-eligibility/rules', status: 'AVAILABLE' },
           { name: 'fiscal.get_snapshot', transport: 'GET /api/v1/simulations/:id', status: 'AVAILABLE' },
           { name: 'payments.list_methods', transport: 'GET /api/v1/payment-methods', status: 'AVAILABLE' },
           { name: 'payments.list_rejection_scenarios', transport: 'GET /api/v1/payment-rejections/scenarios', status: 'AVAILABLE' },
@@ -178,6 +179,16 @@ export default {
           const query = String(input.query ?? 'Split Payment IBS CBS').trim() || 'Split Payment IBS CBS';
           const result = await searchRag(env.DB, query, Number(input.limit ?? 5), input.asOf ? String(input.asOf) : undefined);
           return json({ requestId, correlationId, outcome: 'SUCCESS', result, warnings: result.confidence === 'LOW' ? ['EVIDENCE_CONFIDENCE_LOW'] : [], finishedAt: new Date().toISOString() }, 200, request);
+        }
+        if (toolName === 'fiscal.get_credit_eligibility_rules') {
+          return json({
+            requestId,
+            correlationId,
+            outcome: 'SUCCESS',
+            result: { rules: CREDIT_ELIGIBILITY_RULE_MATRIX },
+            warnings: [],
+            finishedAt: new Date().toISOString(),
+          }, 200, request);
         }
         if (toolName === 'fiscal.evaluate_credit_eligibility') {
           const input = inputFromCreditEligibility(input);
@@ -363,6 +374,20 @@ export default {
       }
     }
 
+
+    if (request.method === 'GET' && url.pathname === '/api/v1/credit-eligibility/rules') {
+      return json({
+        ok: true,
+        rules: CREDIT_ELIGIBILITY_RULE_MATRIX,
+        source: {
+          authority: 'PLANALTO',
+          law: 'LC 214/2025',
+          amendments: ['LC 227/2026'],
+          currentCompilation: true,
+          url: 'https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp214compilado.htm',
+        },
+      }, 200, request);
+    }
 
     if (request.method === 'POST' && url.pathname === '/api/v1/credit-eligibility') {
       try {
