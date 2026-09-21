@@ -156,13 +156,23 @@ RESPOSTA AUDITÁVEL</div><a class="source" href="https://github.com/schrsistemas
 <a class="source" href="https://www.cgibs.gov.br/split-payment" target="_blank" rel="noopener">Abrir documentação do Split Payment</a>
 </div>
 </section></div></section><section id="split-payment" class="view"><div class="grid">
-<section class="card"><h1 class="title">Pagamento dividido (Split Payment)</h1><div class="subtitle">Motor operacional simulado para separar o valor bruto entre fornecedor e IBS/CBS, acompanhar liquidação, reversão e reconciliação. Nenhum pagamento real é executado.</div>
+<section class="card"><h1 class="title">Pagamento dividido (Split Payment)</h1><div class="subtitle">Motor operacional simulado do fluxo documento fiscal → operação → transação de pagamento → liquidação financeira → segregação IBS/CBS → fornecedor. Nenhum pagamento real é executado.</div>
 <label>Valor bruto da operação (R$)</label><input id="splitGross" value="1000.00" inputmode="decimal">
 <label>Modelo de liquidação</label><select id="splitMode"><option value="avista">À vista</option><option value="parcelado">Parcelado</option><option value="antecipado">Parcelado com antecipação</option></select>
 <label>Quantidade de parcelas</label><input id="splitInstallments" value="1" min="1" max="60" type="number">
 <label>Percentual da parcela liquidada agora (%)</label><input id="splitCurrentPercent" value="100" inputmode="decimal">
 <label>IBS a separar (R$)</label><input id="splitIbs" value="100.00" inputmode="decimal">
 <label>CBS a separar (R$)</label><input id="splitCbs" value="50.00" inputmode="decimal">
+<div class="formGrid">
+<label>Instrumento de pagamento<select id="splitInstrument"><option value="CARD">Cartão</option><option value="PIX">Pix</option><option value="BOLETO">Boleto</option><option value="TRANSFER">Transferência</option><option value="TEF">TEF</option><option value="OTHER">Outro</option></select></label>
+<label>Procedimento Split<select id="splitSettlementMode"><option value="STANDARD">Padrão</option><option value="SIMPLIFIED">Simplificado</option></select></label>
+<label>Documento fiscal (ID)<input id="splitFiscalDocumentId" placeholder="Ex.: NFe-2026-000123"></label>
+<label>Transação de pagamento (ID)<input id="splitPaymentTransactionId" placeholder="Ex.: PAY-ABC123"></label>
+<label>IBS já extinto (R$)<input id="splitExtinguishedIbs" value="0.00" inputmode="decimal"></label>
+<label>CBS já extinto (R$)<input id="splitExtinguishedCbs" value="0.00" inputmode="decimal"></label>
+</div>
+<div class="trace"><strong>Regra operacional</strong><br>No procedimento padrão, o motor calcula a segregação como débito informado menos parcelas já extintas. No procedimento simplificado, os valores devem vir do parâmetro simplificado aplicável; o simulador não inventa percentuais oficiais.</div>
+<button id="splitExampleCard" type="button">Carregar exemplo didático: venda R$ 10.000 + IBS/CBS R$ 2.650</button>
 <div class="metrics"><div class="metric"><small>Fornecedor</small><b id="splitNet">R$ 850,00</b></div><div class="metric"><small>IBS</small><b id="splitIbsOut">R$ 100,00</b></div><div class="metric"><small>CBS</small><b id="splitCbsOut">R$ 50,00</b></div></div><div id="splitCashFlow" class="trace">O impacto de caixa será demonstrado a partir dos valores informados.</div><div id="splitComparison" class="trace">Comparação de fluxo de caixa será calculada aqui.</div>
 <section class="card"><h2>Capital de giro demonstrativo</h2><div class="subtitle">Mostra o efeito de liquidez da segregação sobre o saldo disponível. Não representa ganho, perda patrimonial ou aumento de tributo.</div><label>Saldo inicial (R$)</label><input id="wcOpening" value="5000.00" inputmode="decimal"><label>Outros recebimentos do período (R$)</label><input id="wcOtherReceipts" value="0.00" inputmode="decimal"><label>Despesas do período (R$)</label><input id="wcExpenses" value="3000.00" inputmode="decimal"><div class="metrics"><div class="metric"><small>Saldo sem Split antes do recolhimento</small><b id="wcNoSplit">R$ 3.000,00</b></div><div class="metric"><small>Saldo com Split após segregação</small><b id="wcWithSplit">R$ 2.850,00</b></div><div class="metric"><small>Diferença temporária de liquidez</small><b id="wcDifference">R$ 150,00</b></div></div><div id="wcAfterTax" class="trace">Após eventual recolhimento do tributo, os cenários convergem para o mesmo saldo, neste modelo simplificado.</div></section><button id="splitCreateBtn" class="primary" type="button">Criar Pagamento dividido (Split Payment)</button><div id="splitMsg" class="ok">Pronto. Valores são fictícios.</div>
 <div class="tef" id="paymentRejectionSimulator">
@@ -377,12 +387,18 @@ function renderSplit(){
 }
 function renderSplitCashFlow(){const g=parseDecimal($('splitGross')?.value)||0,i=parseDecimal($('splitIbs')?.value)||0,c=parseDecimal($('splitCbs')?.value)||0,t=Math.max(0,i+c),n=Math.max(0,g-t),mode=$('splitMode')?.value||'avista',parts=Math.max(1,Number($('splitInstallments')?.value)||1),pct=Math.min(100,Math.max(0,parseDecimal($('splitCurrentPercent')?.value)||0)),portion=mode==='avista'?1:pct/100,currentGross=g*portion,currentTax=t*portion,currentNet=n*portion,out=$('splitCashFlow');if(out)out.innerHTML='<strong>FLUXO DE LIQUIDAÇÃO</strong><br>Modelo: '+(mode==='avista'?'À vista':mode==='parcelado'?'Parcelado':'Parcelado com antecipação')+'<br>Parcelas: '+parts+'<br>Liquidação considerada: '+pct.toLocaleString('pt-BR')+'%<br>Valor bruto liquidado agora: '+splitMoney(currentGross)+'<br>IBS/CBS segregados agora: '+splitMoney(currentTax)+'<br>Valor líquido disponível agora: '+splitMoney(currentNet)+'<br><small>A simulação demonstra fluxo financeiro. Antecipação não altera o tributo calculado.</small>';}
 async function createSplit(){
- const g=parseDecimal($('splitGross').value),i=parseDecimal($('splitIbs').value),c=parseDecimal($('splitCbs').value);
- if(!Number.isFinite(g)||!Number.isFinite(i)||!Number.isFinite(c)||g<0||i<0||c<0||i+c>g){$('splitMsg').textContent='Valores inválidos: IBS + CBS não pode superar o valor bruto.';$('splitMsg').className='warn';return;}
+ const g=parseDecimal($('splitGross').value),i=parseDecimal($('splitIbs').value),c=parseDecimal($('splitCbs').value),ei=parseDecimal($('splitExtinguishedIbs')?.value||0),ec=parseDecimal($('splitExtinguishedCbs')?.value||0);
+ if(!Number.isFinite(g)||!Number.isFinite(i)||!Number.isFinite(c)||!Number.isFinite(ei)||!Number.isFinite(ec)||g<0||i<0||c<0||ei<0||ec<0||ei>i||ec>c||i+c>g){$('splitMsg').textContent='Valores inválidos: tributos extintos não podem superar o débito e IBS + CBS não pode superar o bruto.';$('splitMsg').className='warn';return;}
  if(splitApiConfigured()){
   try{
    const paymentId='SPLIT-'+Date.now().toString(36).toUpperCase();
-   const result=await splitApi('/api/v1/split-payments',{method:'POST',headers:splitApiHeaders('split-create-'+crypto.randomUUID()),body:JSON.stringify({paymentId,operationId:'OP-SPLIT-'+Date.now().toString(36).toUpperCase(),calculationVersion:'2026-RTS-SIM',grossAmount:g.toFixed(2),taxes:{IBS:i.toFixed(2),CBS:c.toFixed(2)}})});
+   const result=await splitApi('/api/v1/split-payments',{method:'POST',headers:splitApiHeaders('split-create-'+crypto.randomUUID()),body:JSON.stringify({
+     paymentId,operationId:'OP-SPLIT-'+Date.now().toString(36).toUpperCase(),calculationVersion:'2026-RTS-SIM',
+     grossAmount:g.toFixed(2),taxes:{IBS:i.toFixed(2),CBS:c.toFixed(2)},
+     taxesAlreadyExtinguished:{IBS:ei.toFixed(2),CBS:ec.toFixed(2)},
+     paymentInstrument:$('splitInstrument')?.value||'OTHER',settlementMode:$('splitSettlementMode')?.value||'STANDARD',
+     fiscalDocumentId:$('splitFiscalDocumentId')?.value.trim()||undefined,paymentTransactionId:$('splitPaymentTransactionId')?.value.trim()||undefined
+   })});
    splitState={ibs:i===0?'LIQUIDADO':'PENDENTE',cbs:c===0?'LIQUIDADO':'PENDENTE',supplier:'PENDENTE',status:splitStatusLabel(result.status),reconciled:false,paymentId:String(result.paymentId||paymentId),backend:true};
    $('splitPaymentId').textContent=splitState.paymentId;$('splitMsg').textContent='Split Payment persistido no backend: '+splitState.paymentId;$('splitMsg').className='ok';renderSplit();return;
   }catch(error){$('splitMsg').textContent='Backend indisponível; usando demonstração local. '+(error instanceof Error?error.message:'erro desconhecido');$('splitMsg').className='warn';}
@@ -417,6 +433,21 @@ async function reverseSplit(){
  splitState.status='REVERTIDO';splitState.ibs='REVERTIDO';splitState.cbs='REVERTIDO';splitState.supplier='REVERTIDO';splitState.reconciled=false;renderSplit();
 }
 function resetSplit(){splitState={ibs:'PENDENTE',cbs:'PENDENTE',supplier:'PENDENTE',status:'CRIADO',reconciled:false,paymentId:'SIM-SPLIT-DEMO',backend:false};$('splitPaymentId').textContent='SIM-SPLIT-DEMO';$('splitMsg').textContent='Pronto. Valores locais são fictícios.';$('splitMsg').className='ok';renderSplit();}
+function loadSplitCardExample(){
+ $('splitGross').value='10000.00';
+ $('splitIbs').value='2650.00';
+ $('splitCbs').value='0.00';
+ $('splitExtinguishedIbs').value='0.00';
+ $('splitExtinguishedCbs').value='0.00';
+ $('splitInstrument').value='CARD';
+ $('splitSettlementMode').value='STANDARD';
+ $('splitFiscalDocumentId').value='EXEMPLO-DIDATICO-10000';
+ $('splitPaymentTransactionId').value='CARD-DEMO-12650';
+ renderSplit();renderSplitCashFlow();renderSplitSchedule();renderSplitComparison();renderWorkingCapital();
+ $('splitMsg').textContent='Exemplo carregado. R$ 2.650 é o IBS+CBS combinado do material didático; a tela não inventa a divisão entre IBS e CBS.';
+ $('splitMsg').className='warn';
+}
+
 
 
 function renderSplitComparison(){const o=$('splitComparison');if(!o)return;const g=parseDecimal($('splitGross')?.value)||0,i=parseDecimal($('splitIbs')?.value)||0,c=parseDecimal($('splitCbs')?.value)||0,t=Math.max(0,i+c),n=Math.max(0,g-t),parts=Math.max(1,Math.min(60,Number($('splitInstallments')?.value)||1));o.innerHTML='<strong>SEM SPLIT × COM SPLIT</strong><br>Tributo calculado nos dois cenários: '+splitMoney(t)+'<br>Venda bruta: '+splitMoney(g)+'<br><strong>Sem Split:</strong> disponibilidade inicial demonstrativa '+splitMoney(g)+'; tributo permanece como obrigação financeira posterior.<br><strong>Com Split:</strong> disponibilidade após segregação demonstrativa '+splitMoney(n)+'; IBS/CBS segregados na liquidação.<br>Diferença de disponibilidade imediata: '+splitMoney(t)+'<br>Parcelas: '+parts+'<br><small>A comparação demonstra fluxo de caixa, não aumento da carga tributária.</small>';}
@@ -555,7 +586,7 @@ async function simulatePaymentRejection(){
 }
 rejectionMethod.addEventListener('change',populateRejectionScenarios);rejectionScenario.addEventListener('change',renderRejectionScenario);$('simulatePaymentRejectionBtn').addEventListener('click',simulatePaymentRejection);populateRejectionMethods();
 $('advancePixBtn').addEventListener('click',advancePix);$('resetPixBtn').addEventListener('click',resetPix);
-$('advanceTefBtn').addEventListener('click',advanceTef);$('resetTefBtn').addEventListener('click',resetTef);$('splitCreateBtn').addEventListener('click',createSplit);$('settleSplitIbs').addEventListener('click',()=>settleSplitTax('IBS'));$('settleSplitCbs').addEventListener('click',()=>settleSplitTax('CBS'));$('settleSplitSupplier').addEventListener('click',settleSplitSupplier);$('reconcileSplit').addEventListener('click',reconcileSplit);$('reverseSplit').addEventListener('click',reverseSplit);$('resetSplit').addEventListener('click',resetSplit);['splitGross','splitIbs','splitCbs','splitMode','splitInstallments','splitCurrentPercent'].forEach(id=>$(id).addEventListener('input',()=>{renderSplit();renderSplitCashFlow();renderSplitSchedule();renderSplitComparison();}));['wcOpening','wcOtherReceipts','wcExpenses'].forEach(id=>$(id).addEventListener('input',renderWorkingCapital));
+$('advanceTefBtn').addEventListener('click',advanceTef);$('resetTefBtn').addEventListener('click',resetTef);$('splitCreateBtn').addEventListener('click',createSplit);$('settleSplitIbs').addEventListener('click',()=>settleSplitTax('IBS'));$('settleSplitCbs').addEventListener('click',()=>settleSplitTax('CBS'));$('settleSplitSupplier').addEventListener('click',settleSplitSupplier);$('reconcileSplit').addEventListener('click',reconcileSplit);$('reverseSplit').addEventListener('click',reverseSplit);$('resetSplit').addEventListener('click',resetSplit);$('splitExampleCard').addEventListener('click',loadSplitCardExample);['splitGross','splitIbs','splitCbs','splitMode','splitInstallments','splitCurrentPercent','splitExtinguishedIbs','splitExtinguishedCbs'].forEach(id=>$(id).addEventListener('input',()=>{renderSplit();renderSplitCashFlow();renderSplitSchedule();renderSplitComparison();renderWorkingCapital();}));['splitInstrument','splitSettlementMode','splitFiscalDocumentId','splitPaymentTransactionId'].forEach(id=>$(id).addEventListener('change',renderSplit));['wcOpening','wcOtherReceipts','wcExpenses'].forEach(id=>$(id).addEventListener('input',renderWorkingCapital));
 document.querySelectorAll('.bottomNav button[data-route]').forEach(btn=>btn.addEventListener('click',()=>{location.hash=btn.dataset.route;if(btn.dataset.focus==='pix')setTimeout(()=>document.getElementById('pixGrid')?.scrollIntoView({behavior:'smooth',block:'center'}),80);}));
 $('base').addEventListener('input',()=>{if(tefIndex===0)renderTef()});
 $('ibs').addEventListener('input',()=>{if(tefIndex===0)renderTef()});
