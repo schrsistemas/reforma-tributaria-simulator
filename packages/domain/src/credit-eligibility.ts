@@ -109,11 +109,11 @@ function decision(input:CreditEligibilityInput,tax:CreditTax):CreditTaxDecision 
   if(input.economicActivityRelated!==true) {
     return {tax,eligibility:'CONDITIONAL',reason:'INSUFFICIENT_FACTS',legalBasis:[legal47,legal57],ruleId:'CE-CONTEXT'};
   }
-  return {tax,eligibility:'ELIGIBLE',reason:'REGULAR_ACQUISITION',legalBasis:[legal47]};
+  return {tax,eligibility:'ELIGIBLE',reason:'REGULAR_ACQUISITION',legalBasis:[legal47],ruleId:'CE-047-GENERAL'};
 }
 
 export function evaluateCreditEligibility(input:CreditEligibilityInput):CreditEligibilityResult {
-  const personal=PERSONAL_CATEGORIES.has(input.category)||Boolean(input.suppliedFreeOrBelowMarketToPerson);
+  const personal=PERSONAL_CATEGORIES.has(input.category)||Boolean(input.suppliedFreeOrBelowMarketToPerson)||Boolean(input.relatedToPersonalConsumptionItem);
   const warnings:string[]=[];
   if(input.category==='OTHER') warnings.push('Categoria genérica: classificar a aquisição antes de tratar o resultado como definitivo.');
   if(input.economicActivityRelated===undefined) warnings.push('A relação com a atividade econômica não foi informada.');
