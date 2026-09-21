@@ -105,6 +105,21 @@ export async function createPaymentRejectionSimulation(
     throw Object.assign(new Error('PAYMENT_METHOD_SCENARIO_MISMATCH'), { status: 409 });
   }
 
+  if (input.paymentId) {
+    const payment = await db
+      .prepare('SELECT payment_id,status FROM split_payments WHERE tenant_id=? AND payment_id=?')
+      .bind(input.tenantId, input.paymentId)
+      .first<{payment_id:string;status:string}>();
+
+    if (!payment) {
+      throw Object.assign(new Error('SPLIT_PAYMENT_NOT_FOUND'), { status: 404 });
+    }
+
+    if (payment.status === 'REVERSED') {
+      throw Object.assign(new Error('SPLIT_PAYMENT_ALREADY_REVERSED'), { status: 409 });
+    }
+  }
+
   const id = crypto.randomUUID();
   const createdAt = new Date().toISOString();
 
@@ -131,7 +146,7 @@ export async function createPaymentRejectionSimulation(
 
   const row = await db
     .prepare(
-      'SELECT id,operation_id,payment_method_code,rejection_scenario_id,rejection_code,amount_minor,status,recoverable,correlation_id,created_at FROM payment_rejection_simulations WHERE id=?',
+      'SELECT id,operation_id,payment_id,payment_method_code,rejection_scenario_id,rejection_code,amount_minor,status,recoverable,correlation_id,created_at FROM payment_rejection_simulations WHERE id=?',
     )
     .bind(id)
     .first<Record<string, unknown>>();
@@ -139,15 +154,6 @@ export async function createPaymentRejectionSimulation(
   if (!row) throw new Error('PAYMENT_REJECTION_SIMULATION_NOT_CREATED');
 
   if (input.paymentId) {
-    const payment = await db
-      .prepare('SELECT payment_id,status FROM split_payments WHERE tenant_id=? AND payment_id=?')
-      .bind(input.tenantId, input.paymentId)
-      .first<{payment_id:string;status:string}>();
-
-    if (!payment) {
-      throw Object.assign(new Error('SPLIT_PAYMENT_NOT_FOUND'), { status: 404 });
-    }
-
     const rejectedAt = new Date().toISOString();
     await db.batch([
       db.prepare('UPDATE split_payments SET status=?,rejection_code=?,rejection_scenario_id=?,rejected_at=? WHERE tenant_id=? AND payment_id=?')
