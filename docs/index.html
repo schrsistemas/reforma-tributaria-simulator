@@ -458,7 +458,7 @@ async function loadRejectionCatalog(){
 async function simulatePaymentRejection(){
   const method=rejectionCatalog.find(x=>x.code===rejectionMethod.value)||rejectionCatalog[0];
   const scenario=method.scenarios.find(x=>x.id===rejectionScenario.value)||method.scenarios[0];
-  const operationId='OP-REJ-'+new Date().toISOString().replace(/\\D/g,'').slice(0,14);
+  const operationId='OP-REJ-'+new Date().toISOString().replace(/\D/g,'').slice(0,14);
   const amount=Number(document.getElementById('splitGross').value.replace(',','.'))||0;
   rejectionStatus.textContent='PROCESSANDO';
   rejectionResult.textContent='Enviando simulação de rejeição...';
