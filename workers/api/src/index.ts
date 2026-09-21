@@ -631,10 +631,23 @@ export default {
           operationId: string;
           calculationVersion: string;
           grossAmount: string;
-          taxes: { IBS?: string; CBS?: string };
+          taxes?: { IBS?: string; CBS?: string };
+          taxesAlreadyExtinguished?: { IBS?: string; CBS?: string };
+          paymentInstrument?: 'CARD'|'PIX'|'BOLETO'|'TRANSFER'|'TEF'|'OTHER';
+          settlementMode?: 'STANDARD'|'SIMPLIFIED';
+          fiscalDocumentId?: string;
+          paymentTransactionId?: string;
         };
         if (!body.paymentId || !body.operationId || !body.grossAmount) {
           return json({ error: 'PAYMENT_FIELDS_REQUIRED' }, 400, request);
+        }
+        const instruments = ['CARD','PIX','BOLETO','TRANSFER','TEF','OTHER'];
+        const modes = ['STANDARD','SIMPLIFIED'];
+        if (body.paymentInstrument !== undefined && !instruments.includes(body.paymentInstrument)) {
+          return json({ error: 'SPLIT_PAYMENT_INSTRUMENT_INVALID', allowed: instruments }, 400, request);
+        }
+        if (body.settlementMode !== undefined && !modes.includes(body.settlementMode)) {
+          return json({ error: 'SPLIT_PAYMENT_SETTLEMENT_MODE_INVALID', allowed: modes }, 400, request);
         }
         const result = await createSplitPayment(env.DB, {
           ...body,
@@ -642,6 +655,9 @@ export default {
           correlationId: headers.correlationId,
           idempotencyKey: headers.idempotencyKey,
           taxes: body.taxes ?? {},
+          taxesAlreadyExtinguished: body.taxesAlreadyExtinguished ?? {},
+          fiscalDocumentId: body.fiscalDocumentId?.trim() || undefined,
+          paymentTransactionId: body.paymentTransactionId?.trim() || undefined,
         });
         return json({ ok: true, ...result, correlationId: headers.correlationId }, result.replayed ? 200 : 201, request);
       } catch (error) {
