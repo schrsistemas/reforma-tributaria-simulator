@@ -24,6 +24,7 @@ export interface PaymentRejectionScenario {
 export interface PaymentRejectionSimulation {
   id: string;
   operationId: string;
+  paymentId?: string;
   paymentMethodCode: PaymentMethodCode;
   rejectionScenarioId: string;
   rejectionCode: string;
