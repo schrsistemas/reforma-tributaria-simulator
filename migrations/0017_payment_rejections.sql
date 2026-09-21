@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS payment_rejection_simulations (
   id TEXT PRIMARY KEY,
   tenant_id TEXT NOT NULL,
   operation_id TEXT NOT NULL,
+  idempotency_key TEXT NOT NULL,
   payment_method_code TEXT NOT NULL,
   rejection_scenario_id TEXT NOT NULL,
   rejection_code TEXT NOT NULL,
@@ -41,7 +42,8 @@ CREATE TABLE IF NOT EXISTS payment_rejection_simulations (
   correlation_id TEXT NOT NULL,
   created_at TEXT NOT NULL,
   FOREIGN KEY(payment_method_code) REFERENCES payment_methods(code),
-  FOREIGN KEY(rejection_scenario_id) REFERENCES payment_rejection_scenarios(id)
+  FOREIGN KEY(rejection_scenario_id) REFERENCES payment_rejection_scenarios(id),
+  UNIQUE(tenant_id, idempotency_key)
 );
 
 CREATE INDEX IF NOT EXISTS idx_payment_rejection_sim_tenant_operation
