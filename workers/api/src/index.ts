@@ -9,6 +9,7 @@ import { collectGovernmentSource, collectEnabledGovernmentSources } from './gove
 import { createTef, getTef, transitionTefRecord } from './tef-repository.js';
 import { createPix, getPix, transitionPixRecord } from './pix-repository.js';
 import { searchRag, getRagDocument } from './rag-repository.js';
+import { evaluateCreditEligibility } from '@rts/domain';
 import { listPaymentMethods, listPaymentRejectionScenarios, createPaymentRejectionSimulation, getPaymentRejectionSimulation, listPaymentRejectionSimulations } from './payment-rejection-repository.js';
 
 export interface Env {
@@ -72,7 +73,7 @@ export default {
       return json({
         service: 'reforma-tributaria-simulator',
         apiVersion: 'v1',
-        capabilities: ['simulation', 'tax-engine', 'split-payment', 'tef', 'pix', 'fiscal-knowledge', 'government-source-registry', 'official-consumption-calculator'],
+        capabilities: ['simulation', 'tax-engine', 'split-payment', 'tef', 'pix', 'fiscal-knowledge', 'government-source-registry', 'official-consumption-calculator', 'credit-eligibility'],
         execution: { explicitScenario: true, durableWorkflow: Boolean(env.SIMULATION_WORKFLOW) },
       }, 200, request);
     }
@@ -311,6 +312,23 @@ export default {
       }
     }
 
+
+    if (request.method === 'POST' && url.pathname === '/api/v1/credit-eligibility') {
+      try {
+        const headers = integrationHeaders(request);
+        const body = await readJson(request) as Parameters<typeof evaluateCreditEligibility>[0];
+        const result = evaluateCreditEligibility(body);
+        return json({
+          ok: true,
+          ...result,
+          correlationId: headers.correlationId,
+          disclaimer: 'Resultado determinístico baseado nas regras modeladas da LC 214/2025 compilada; exceções regulamentares e fatos não informados podem exigir análise adicional.',
+        }, 200, request);
+      } catch (error) {
+        const status = Number((error as { status?: number }).status) || 400;
+        return json({ ok: false, error: error instanceof Error ? error.message : 'CREDIT_ELIGIBILITY_FAILED' }, status, request);
+      }
+    }
 
     if (request.method === 'GET' && url.pathname === '/api/v1/payment-methods') {
       try {
