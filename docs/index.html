@@ -331,22 +331,75 @@ let tefIndex=0;const tefStates=['INICIADO','AUTORIZANDO','AUTORIZADO','CAPTURADO
  $('simStatus').textContent='TEF: '+tefStates[tefIndex]+' • fluxo local fictício';
 }
 function advanceTef(){if(tefIndex<tefStates.length-1){tefIndex++;if(tefIndex===2){const seed=Date.now().toString().slice(-8);tefNsu='NSU'+seed;tefAuth='AUTH'+seed.slice(-6)}}renderTef()}function resetTef(){tefIndex=0;tefNsu='—';tefAuth='—';renderTef()}
-let splitState={ibs:'PENDENTE',cbs:'PENDENTE',supplier:'PENDENTE',status:'CRIADO',reconciled:false};
+let splitState={ibs:'PENDENTE',cbs:'PENDENTE',supplier:'PENDENTE',status:'CRIADO',reconciled:false,paymentId:'SIM-SPLIT-DEMO',backend:false};
 function splitMoney(v){return Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});}
+function splitStatusLabel(v){return ({ALLOCATED:'ALOCADO',CREATED:'CRIADO',PARTIALLY_SETTLED:'PARCIALMENTE_LIQUIDADO',SETTLED:'LIQUIDADO',REJECTED:'REJEITADO',REVERSED:'REVERTIDO'}[String(v)]||String(v));}
+function splitApiConfigured(){return Boolean(rejectionApiConfig());}
+function splitApiHeaders(key){return rejectionApiHeaders(key);}
+async function splitApi(path,options={}){return rejectionApiJson(path,options);}
+function syncSplitFromBackend(row){
+  if(!row)return;
+  const p=row.payment||row;
+  const allocations=row.allocations||[];
+  const ibs=allocations.find(x=>String(x.tax)==='IBS'),cbs=allocations.find(x=>String(x.tax)==='CBS');
+  splitState.paymentId=String(p.payment_id||splitState.paymentId);
+  splitState.status=splitStatusLabel(p.status);
+  splitState.ibs=String(ibs?.status||'PENDENTE');
+  splitState.cbs=String(cbs?.status||'PENDENTE');
+  splitState.supplier=p.supplier_settled_at?'LIQUIDADO':'PENDENTE';
+  splitState.backend=true;
+  splitState.reconciled=Boolean(row.balanced);
+  $('splitPaymentId').textContent=splitState.paymentId;
+}
 function renderSplit(){
  const g=parseDecimal($('splitGross').value)||0,i=parseDecimal($('splitIbs').value)||0,c=parseDecimal($('splitCbs').value)||0;
  $('splitNet').textContent=splitMoney(Math.max(0,g-i-c));$('splitIbsOut').textContent=splitMoney(Math.max(0,i));$('splitCbsOut').textContent=splitMoney(Math.max(0,c));
  $('splitStatus').textContent=splitState.status;$('splitIbsState').textContent=splitState.ibs;$('splitCbsState').textContent=splitState.cbs;$('splitSupplierState').textContent=splitState.supplier;
  $('splitRecon').textContent=splitState.reconciled?'OK':'PENDENTE';
- $('splitTrace').textContent=['PAYMENT_CRIADO','ALLOCATION_CRIADO','IBS: '+splitState.ibs+' | '+splitMoney(i),'CBS: '+splitState.cbs+' | '+splitMoney(c),'FORNECEDOR: '+splitState.supplier+' | '+splitMoney(Math.max(0,g-i-c)),'Status: '+splitState.status,'Reconciliação: '+(splitState.reconciled?'APROVADA':'pendente'),'Modo: DEMONSTRAÇÃO VISUAL — nenhuma transação financeira real'].join('\\n');
+ $('splitTrace').textContent=['PAYMENT_CRIADO','ALLOCATION_CRIADO','IBS: '+splitState.ibs+' | '+splitMoney(i),'CBS: '+splitState.cbs+' | '+splitMoney(c),'FORNECEDOR: '+splitState.supplier+' | '+splitMoney(Math.max(0,g-i-c)),'Status: '+splitState.status,'Reconciliação: '+(splitState.reconciled?'APROVADA':'pendente'),'Modo: '+(splitState.backend?'BACKEND PERSISTIDO':'DEMONSTRAÇÃO VISUAL — nenhuma transação financeira real')].join('\\n');
 }
 function renderSplitCashFlow(){const g=parseDecimal($('splitGross')?.value)||0,i=parseDecimal($('splitIbs')?.value)||0,c=parseDecimal($('splitCbs')?.value)||0,t=Math.max(0,i+c),n=Math.max(0,g-t),mode=$('splitMode')?.value||'avista',parts=Math.max(1,Number($('splitInstallments')?.value)||1),pct=Math.min(100,Math.max(0,parseDecimal($('splitCurrentPercent')?.value)||0)),portion=mode==='avista'?1:pct/100,currentGross=g*portion,currentTax=t*portion,currentNet=n*portion,out=$('splitCashFlow');if(out)out.innerHTML='<strong>FLUXO DE LIQUIDAÇÃO</strong><br>Modelo: '+(mode==='avista'?'À vista':mode==='parcelado'?'Parcelado':'Parcelado com antecipação')+'<br>Parcelas: '+parts+'<br>Liquidação considerada: '+pct.toLocaleString('pt-BR')+'%<br>Valor bruto liquidado agora: '+splitMoney(currentGross)+'<br>IBS/CBS segregados agora: '+splitMoney(currentTax)+'<br>Valor líquido disponível agora: '+splitMoney(currentNet)+'<br><small>A simulação demonstra fluxo financeiro. Antecipação não altera o tributo calculado.</small>';}
-function createSplit(){const g=parseDecimal($('splitGross').value),i=parseDecimal($('splitIbs').value),c=parseDecimal($('splitCbs').value);if(!Number.isFinite(g)||!Number.isFinite(i)||!Number.isFinite(c)||g<0||i<0||c<0||i+c>g){$('splitMsg').textContent='Valores inválidos: IBS + CBS não pode superar o valor bruto.';$('splitMsg').className='warn';return;}splitState={ibs:i===0?'LIQUIDADO':'PENDENTE',cbs:c===0?'LIQUIDADO':'PENDENTE',supplier:'PENDENTE',status:i+c>0?'ALOCADO':'CRIADO',reconciled:false};$('splitPaymentId').textContent='SIM-SPLIT-'+Date.now().toString(36).toUpperCase();$('splitMsg').textContent='Pagamento dividido (Split Payment) criado: valor bruto separado entre tributos e fornecedor.';$('splitMsg').className='ok';renderSplit();}
-function settleSplitTax(tax){if(splitState.status==='REVERTIDO')return;if(tax==='IBS')splitState.ibs='LIQUIDADO';if(tax==='CBS')splitState.cbs='LIQUIDADO';updateSplitStatus();}
-function settleSplitSupplier(){if(splitState.status!=='REVERTIDO')splitState.supplier='LIQUIDADO';updateSplitStatus();}
-function reconcileSplit(){const g=parseDecimal($('splitGross').value)||0,i=parseDecimal($('splitIbs').value)||0,c=parseDecimal($('splitCbs').value)||0;splitState.reconciled=Math.abs(g-(i+c+Math.max(0,g-i-c)))<0.001;renderSplit();}
-function reverseSplit(){splitState.status='REVERTIDO';splitState.ibs='REVERTIDO';splitState.cbs='REVERTIDO';splitState.supplier='REVERTIDO';splitState.reconciled=false;renderSplit();}
-function resetSplit(){splitState={ibs:'PENDENTE',cbs:'PENDENTE',supplier:'PENDENTE',status:'CRIADO',reconciled:false};$('splitPaymentId').textContent='SIM-SPLIT-DEMO';$('splitMsg').textContent='Pronto. Valores são fictícios.';$('splitMsg').className='ok';renderSplit();}
+async function createSplit(){
+ const g=parseDecimal($('splitGross').value),i=parseDecimal($('splitIbs').value),c=parseDecimal($('splitCbs').value);
+ if(!Number.isFinite(g)||!Number.isFinite(i)||!Number.isFinite(c)||g<0||i<0||c<0||i+c>g){$('splitMsg').textContent='Valores inválidos: IBS + CBS não pode superar o valor bruto.';$('splitMsg').className='warn';return;}
+ if(splitApiConfigured()){
+  try{
+   const paymentId='SPLIT-'+Date.now().toString(36).toUpperCase();
+   const result=await splitApi('/api/v1/split-payments',{method:'POST',headers:splitApiHeaders('split-create-'+crypto.randomUUID()),body:JSON.stringify({paymentId,operationId:'OP-SPLIT-'+Date.now().toString(36).toUpperCase(),calculationVersion:'2026-RTS-SIM',grossAmount:g.toFixed(2),taxes:{IBS:i.toFixed(2),CBS:c.toFixed(2)}})});
+   splitState={ibs:i===0?'SETTLED':'PENDING',cbs:c===0?'SETTLED':'PENDING',supplier:'PENDING',status:splitStatusLabel(result.status),reconciled:false,paymentId:String(result.paymentId||paymentId),backend:true};
+   $('splitPaymentId').textContent=splitState.paymentId;$('splitMsg').textContent='Split Payment persistido no backend: '+splitState.paymentId;$('splitMsg').className='ok';renderSplit();return;
+  }catch(error){$('splitMsg').textContent='Backend indisponível; usando demonstração local. '+(error instanceof Error?error.message:'erro desconhecido');$('splitMsg').className='warn';}
+ }
+ splitState={ibs:i===0?'LIQUIDADO':'PENDENTE',cbs:c===0?'LIQUIDADO':'PENDENTE',supplier:'PENDENTE',status:i+c>0?'ALOCADO':'CRIADO',reconciled:false,paymentId:'SIM-SPLIT-'+Date.now().toString(36).toUpperCase(),backend:false};
+ $('splitPaymentId').textContent=splitState.paymentId;$('splitMsg').textContent='Pagamento dividido (Split Payment) criado localmente: nenhum registro financeiro foi persistido.';$('splitMsg').className='ok';renderSplit();
+}
+async function settleSplitTax(tax){
+ if(splitState.status==='REVERTIDO'||splitState.status==='REJEITADO')return;
+ if(splitState.backend){
+  try{const result=await splitApi('/api/v1/split-payments/'+encodeURIComponent(splitState.paymentId)+'/settle',{method:'POST',headers:splitApiHeaders('split-settle-'+tax+'-'+crypto.randomUUID()),body:JSON.stringify({tax})});syncSplitFromBackend(result);$('splitMsg').textContent='Liquidação '+tax+' persistida no backend.';$('splitMsg').className='ok';renderSplit();return;}catch(error){$('splitMsg').textContent='Falha na liquidação backend: '+(error instanceof Error?error.message:'erro desconhecido');$('splitMsg').className='warn';return;}
+ }
+ if(tax==='IBS')splitState.ibs='LIQUIDADO';if(tax==='CBS')splitState.cbs='LIQUIDADO';updateSplitStatus();
+}
+async function settleSplitSupplier(){
+ if(splitState.status==='REVERTIDO'||splitState.status==='REJEITADO')return;
+ if(splitState.backend){
+  try{const result=await splitApi('/api/v1/split-payments/'+encodeURIComponent(splitState.paymentId)+'/settle',{method:'POST',headers:splitApiHeaders('split-settle-supplier-'+crypto.randomUUID()),body:JSON.stringify({supplier:true})});syncSplitFromBackend(result);$('splitMsg').textContent='Liquidação do fornecedor persistida no backend.';$('splitMsg').className='ok';renderSplit();return;}catch(error){$('splitMsg').textContent='Falha na liquidação backend: '+(error instanceof Error?error.message:'erro desconhecido');$('splitMsg').className='warn';return;}
+ }
+ if(splitState.status!=='REVERTIDO')splitState.supplier='LIQUIDADO';updateSplitStatus();
+}
+async function reconcileSplit(){
+ if(splitState.backend){
+  try{const result=await splitApi('/api/v1/split-payments/'+encodeURIComponent(splitState.paymentId)+'/reconcile',{method:'POST',headers:splitApiHeaders('split-reconcile-'+crypto.randomUUID()),body:'{}'});splitState.reconciled=Boolean(result.balanced);$('splitMsg').textContent='Reconciliação '+(result.balanced?'aprovada':'reprovada')+' pelo backend.';$('splitMsg').className=result.balanced?'ok':'warn';renderSplit();return;}catch(error){$('splitMsg').textContent='Falha na reconciliação backend: '+(error instanceof Error?error.message:'erro desconhecido');$('splitMsg').className='warn';return;}
+ }
+ const g=parseDecimal($('splitGross').value)||0,i=parseDecimal($('splitIbs').value)||0,c=parseDecimal($('splitCbs').value)||0;splitState.reconciled=Math.abs(g-(i+c+Math.max(0,g-i-c)))<0.001;renderSplit();
+}
+async function reverseSplit(){
+ if(splitState.backend){
+  try{const result=await splitApi('/api/v1/split-payments/'+encodeURIComponent(splitState.paymentId)+'/reverse',{method:'POST',headers:splitApiHeaders('split-reverse-'+crypto.randomUUID()),body:'{}'});syncSplitFromBackend(result);$('splitMsg').textContent='Reversão persistida no backend.';$('splitMsg').className='ok';renderSplit();return;}catch(error){$('splitMsg').textContent='Falha na reversão backend: '+(error instanceof Error?error.message:'erro desconhecido');$('splitMsg').className='warn';return;}
+ }
+ splitState.status='REVERTIDO';splitState.ibs='REVERTIDO';splitState.cbs='REVERTIDO';splitState.supplier='REVERTIDO';splitState.reconciled=false;renderSplit();
+}
+function resetSplit(){splitState={ibs:'PENDENTE',cbs:'PENDENTE',supplier:'PENDENTE',status:'CRIADO',reconciled:false,paymentId:'SIM-SPLIT-DEMO',backend:false};$('splitPaymentId').textContent='SIM-SPLIT-DEMO';$('splitMsg').textContent='Pronto. Valores locais são fictícios.';$('splitMsg').className='ok';renderSplit();}
 
 
 function renderSplitComparison(){const o=$('splitComparison');if(!o)return;const g=parseDecimal($('splitGross')?.value)||0,i=parseDecimal($('splitIbs')?.value)||0,c=parseDecimal($('splitCbs')?.value)||0,t=Math.max(0,i+c),n=Math.max(0,g-t),parts=Math.max(1,Math.min(60,Number($('splitInstallments')?.value)||1));o.innerHTML='<strong>SEM SPLIT × COM SPLIT</strong><br>Tributo calculado nos dois cenários: '+splitMoney(t)+'<br>Venda bruta: '+splitMoney(g)+'<br><strong>Sem Split:</strong> disponibilidade inicial demonstrativa '+splitMoney(g)+'; tributo permanece como obrigação financeira posterior.<br><strong>Com Split:</strong> disponibilidade após segregação demonstrativa '+splitMoney(n)+'; IBS/CBS segregados na liquidação.<br>Diferença de disponibilidade imediata: '+splitMoney(t)+'<br>Parcelas: '+parts+'<br><small>A comparação demonstra fluxo de caixa, não aumento da carga tributária.</small>';}
