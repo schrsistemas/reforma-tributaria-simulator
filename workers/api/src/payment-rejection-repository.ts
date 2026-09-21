@@ -12,6 +12,7 @@ interface CreateRejectionInput {
   rejectionScenarioId: string;
   amountMinor: number;
   correlationId: string;
+  paymentId?: string;
 }
 
 function mapScenario(row: Record<string, unknown>): PaymentRejectionScenario {
@@ -32,6 +33,7 @@ function mapSimulation(row: Record<string, unknown>): PaymentRejectionSimulation
   return {
     id: String(row.id),
     operationId: String(row.operation_id),
+    paymentId: row.payment_id ? String(row.payment_id) : undefined,
     paymentMethodCode: String(row.payment_method_code) as PaymentMethodCode,
     rejectionScenarioId: String(row.rejection_scenario_id),
     rejectionCode: String(row.rejection_code),
@@ -79,7 +81,7 @@ export async function createPaymentRejectionSimulation(
 ) {
   const existing = await db
     .prepare(
-      'SELECT id,operation_id,payment_method_code,rejection_scenario_id,rejection_code,amount_minor,status,recoverable,correlation_id,created_at FROM payment_rejection_simulations WHERE tenant_id=? AND idempotency_key=?',
+      'SELECT id,operation_id,payment_id,payment_method_code,rejection_scenario_id,rejection_code,amount_minor,status,recoverable,correlation_id,created_at FROM payment_rejection_simulations WHERE tenant_id=? AND idempotency_key=?',
     )
     .bind(input.tenantId, input.idempotencyKey)
     .first<Record<string, unknown>>();
@@ -108,12 +110,13 @@ export async function createPaymentRejectionSimulation(
 
   await db
     .prepare(
-      'INSERT INTO payment_rejection_simulations (id,tenant_id,operation_id,idempotency_key,payment_method_code,rejection_scenario_id,rejection_code,amount_minor,status,recoverable,correlation_id,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
+      'INSERT INTO payment_rejection_simulations (id,tenant_id,operation_id,payment_id,idempotency_key,payment_method_code,rejection_scenario_id,rejection_code,amount_minor,status,recoverable,correlation_id,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)',
     )
     .bind(
       id,
       input.tenantId,
       input.operationId,
+      input.paymentId ?? null,
       input.idempotencyKey,
       input.paymentMethodCode,
       input.rejectionScenarioId,
@@ -134,6 +137,43 @@ export async function createPaymentRejectionSimulation(
     .first<Record<string, unknown>>();
 
   if (!row) throw new Error('PAYMENT_REJECTION_SIMULATION_NOT_CREATED');
+
+  if (input.paymentId) {
+    const payment = await db
+      .prepare('SELECT payment_id,status FROM split_payments WHERE tenant_id=? AND payment_id=?')
+      .bind(input.tenantId, input.paymentId)
+      .first<{payment_id:string;status:string}>();
+
+    if (!payment) {
+      throw Object.assign(new Error('SPLIT_PAYMENT_NOT_FOUND'), { status: 404 });
+    }
+
+    const rejectedAt = new Date().toISOString();
+    await db.batch([
+      db.prepare('UPDATE split_payments SET status=?,rejection_code=?,rejection_scenario_id=?,rejected_at=? WHERE tenant_id=? AND payment_id=?')
+        .bind('REJECTED', String(scenario.rejection_code), input.rejectionScenarioId, rejectedAt, input.tenantId, input.paymentId),
+      db.prepare('INSERT INTO split_payment_events (event_id,tenant_id,payment_id,event_type,schema_version,idempotency_key,correlation_id,payload_json,occurred_at) VALUES (?,?,?,?,?,?,?,?,?)')
+        .bind(
+          crypto.randomUUID(),
+          input.tenantId,
+          input.paymentId,
+          'PAYMENT_REJECTED',
+          '1.0',
+          input.idempotencyKey + ':payment-rejected',
+          input.correlationId,
+          JSON.stringify({
+            operationId: input.operationId,
+            rejectionSimulationId: id,
+            rejectionCode: String(scenario.rejection_code),
+            rejectionScenarioId: input.rejectionScenarioId,
+            amountMinor: input.amountMinor,
+            paymentMethodCode: input.paymentMethodCode,
+            splitPayment: 'NOT_EXECUTED',
+          }),
+          rejectedAt,
+        ),
+    ]);
+  }
 
   return { simulation: mapSimulation(row), scenario: mapScenario(scenario), replayed: false };
 }
