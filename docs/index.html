@@ -344,8 +344,8 @@ function syncSplitFromBackend(row){
   const ibs=allocations.find(x=>String(x.tax)==='IBS'),cbs=allocations.find(x=>String(x.tax)==='CBS');
   splitState.paymentId=String(p.payment_id||splitState.paymentId);
   splitState.status=splitStatusLabel(p.status);
-  splitState.ibs=String(ibs?.status||'PENDENTE');
-  splitState.cbs=String(cbs?.status||'PENDENTE');
+  splitState.ibs=String(ibs?.status==='SETTLED'?'LIQUIDADO':ibs?.status||'PENDENTE');
+  splitState.cbs=String(cbs?.status==='SETTLED'?'LIQUIDADO':cbs?.status||'PENDENTE');
   splitState.supplier=p.supplier_settled_at?'LIQUIDADO':'PENDENTE';
   splitState.backend=true;
   splitState.reconciled=Boolean(row.balanced);
@@ -366,7 +366,7 @@ async function createSplit(){
   try{
    const paymentId='SPLIT-'+Date.now().toString(36).toUpperCase();
    const result=await splitApi('/api/v1/split-payments',{method:'POST',headers:splitApiHeaders('split-create-'+crypto.randomUUID()),body:JSON.stringify({paymentId,operationId:'OP-SPLIT-'+Date.now().toString(36).toUpperCase(),calculationVersion:'2026-RTS-SIM',grossAmount:g.toFixed(2),taxes:{IBS:i.toFixed(2),CBS:c.toFixed(2)}})});
-   splitState={ibs:i===0?'SETTLED':'PENDING',cbs:c===0?'SETTLED':'PENDING',supplier:'PENDING',status:splitStatusLabel(result.status),reconciled:false,paymentId:String(result.paymentId||paymentId),backend:true};
+   splitState={ibs:i===0?'LIQUIDADO':'PENDENTE',cbs:c===0?'LIQUIDADO':'PENDENTE',supplier:'PENDENTE',status:splitStatusLabel(result.status),reconciled:false,paymentId:String(result.paymentId||paymentId),backend:true};
    $('splitPaymentId').textContent=splitState.paymentId;$('splitMsg').textContent='Split Payment persistido no backend: '+splitState.paymentId;$('splitMsg').className='ok';renderSplit();return;
   }catch(error){$('splitMsg').textContent='Backend indisponível; usando demonstração local. '+(error instanceof Error?error.message:'erro desconhecido');$('splitMsg').className='warn';}
  }
