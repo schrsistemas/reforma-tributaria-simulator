@@ -2,6 +2,7 @@ import type { DecimalString, TaxCode } from './types.js';
 
 export type LedgerEventType =
   | 'PAYMENT_CREATED'
+  | 'PAYMENT_REJECTED'
   | 'PAYMENT_LINKED'
   | 'ALLOCATION_CREATED'
   | 'ALLOCATION_SETTLED'
