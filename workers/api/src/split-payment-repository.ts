@@ -11,7 +11,6 @@ function cents(v:string):bigint{
   return BigInt(w)*100n+BigInt((f+'00').slice(0,2));
 }
 function money(v:bigint){return (v/100n).toString()+'.'+(v%100n).toString().padStart(2,'0');}
-function taxAmount(tax:TaxCode,taxes:Partial<Record<TaxCode,string>>){return cents(taxes[tax]??'0.00');}
 function normalizeInstrument(value:SplitPaymentInstrument|undefined){return value??'OTHER';}
 function normalizeMode(value:SplitPaymentSettlementMode|undefined){return value??'STANDARD';}
 
