@@ -77,7 +77,6 @@ export async function settleSplitPayment(db:D1Database,input:{tenantId:string;pa
 
   const refreshedBeforeStatus=await getSplitPayment(db,input.tenantId,input.paymentId);
   if(!refreshedBeforeStatus)return null;
-  if(!refreshed)return null;
   const projectedAllocations=(refreshedBeforeStatus.allocations as Record<string,unknown>[]).map(x =>
     input.tax && String(x.tax)===input.tax && String(x.status)!=='REVERSED'
       ? {...x,status:'SETTLED'}
@@ -86,7 +85,7 @@ export async function settleSplitPayment(db:D1Database,input:{tenantId:string;pa
   const allAllocationsSettled=projectedAllocations.every(x=>String(x.status)==='SETTLED');
   const supplierSettled=Boolean((refreshedBeforeStatus.payment as Record<string,unknown>).supplier_settled_at) || Boolean(input.supplier);
   const next=allAllocationsSettled&&supplierSettled?'SETTLED':(
-    (refreshed.allocations as Record<string,unknown>[]).some(x=>String(x.status)==='SETTLED')||supplierSettled?'PARTIALLY_SETTLED':'ALLOCATED'
+    projectedAllocations.some(x=>String(x.status)==='SETTLED')||supplierSettled?'PARTIALLY_SETTLED':'ALLOCATED'
   );
   statements.push(
     db.prepare('UPDATE split_payments SET status=? WHERE tenant_id=? AND payment_id=?')
