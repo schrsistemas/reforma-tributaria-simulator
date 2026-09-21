@@ -6,7 +6,8 @@ export type CreditReason=
   | 'DOCUMENT_REQUIRED'
   | 'EXTINCTION_REQUIRED'
   | 'FISCAL_REGIME_EXCEPTION'
-  | 'INSUFFICIENT_FACTS';
+  | 'INSUFFICIENT_FACTS'
+  | 'CONTEXT_SPECIFIC';
 
 export type CreditAcquisitionCategory=
   | 'GOODS'
@@ -39,6 +40,8 @@ export interface CreditEligibilityInput {
   suppliedFreeOrBelowMarketToPerson?: boolean;
   economicActivityRelated?: boolean;
   fuelSpecificRegime?: boolean;
+  relatedToPersonalConsumptionItem?: boolean;
+  operationalPurpose?: 'BUSINESS'|'PERSONAL'|'MIXED'|'UNKNOWN';
 }
 
 export interface CreditTaxDecision {
@@ -46,6 +49,7 @@ export interface CreditTaxDecision {
   eligibility: CreditEligibility;
   reason: CreditReason;
   legalBasis: string[];
+  ruleId: string;
 }
 
 export interface CreditEligibilityResult {
@@ -65,34 +69,45 @@ const OFFICIAL_URL='https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp214compila
 const PERSONAL_CATEGORIES=new Set<CreditAcquisitionCategory>([
   'JEWELRY','ART_ANTIQUES','ALCOHOL','TOBACCO','WEAPONS_AMMUNITION','RECREATIONAL_SPORTS_AESTHETIC'
 ]);
+const CONTEXT_CATEGORIES=new Set<CreditAcquisitionCategory>([
+  'VEHICLE','FOOD','TRAVEL_HOSPITALITY','TELECOM','GIFT','FUEL'
+]);
+
+export const CREDIT_ELIGIBILITY_RULE_MATRIX = [
+  {ruleId:'CE-057-I', categories:['JEWELRY','ART_ANTIQUES','ALCOHOL','TOBACCO','WEAPONS_AMMUNITION','RECREATIONAL_SPORTS_AESTHETIC'], outcome:'INELIGIBLE', basis:'LC 214/2025, art. 57, I'},
+  {ruleId:'CE-057-II', categories:['OTHER'], outcome:'INELIGIBLE', basis:'LC 214/2025, art. 57, II'},
+  {ruleId:'CE-047-DOC', categories:['OTHER'], outcome:'CONDITIONAL', basis:'LC 214/2025, art. 47, §1º, II'},
+  {ruleId:'CE-047-FUEL', categories:['FUEL'], outcome:'CONDITIONAL', basis:'LC 214/2025, art. 47, §§4º e 5º'},
+  {ruleId:'CE-CONTEXT', categories:['VEHICLE','FOOD','TRAVEL_HOSPITALITY','TELECOM','GIFT','FUEL'], outcome:'CONDITIONAL', basis:'Requer fatos adicionais e verificação de regime/exceções'},
+] as const;
 
 function decision(input:CreditEligibilityInput,tax:CreditTax):CreditTaxDecision {
   const legal47='LC 214/2025, art. 47';
   const legal57='LC 214/2025, art. 57';
 
   if(PERSONAL_CATEGORIES.has(input.category)) {
-    return {tax,eligibility:'INELIGIBLE',reason:'PERSONAL_CONSUMPTION',legalBasis:[legal57+' (inciso I)']};
+    return {tax,eligibility:'INELIGIBLE',reason:'PERSONAL_CONSUMPTION',legalBasis:[legal57+' (inciso I)'],ruleId:'CE-057-I'};
   }
-  if(input.suppliedFreeOrBelowMarketToPerson) {
-    return {tax,eligibility:'INELIGIBLE',reason:'PERSONAL_CONSUMPTION',legalBasis:[legal57+' (inciso II)']};
+  if(input.suppliedFreeOrBelowMarketToPerson || input.relatedToPersonalConsumptionItem) {
+    return {tax,eligibility:'INELIGIBLE',reason:'PERSONAL_CONSUMPTION',legalBasis:[legal57+' (inciso II)'],ruleId:'CE-057-II'};
   }
   if(!input.regularTaxpayer) {
-    return {tax,eligibility:'CONDITIONAL',reason:'FISCAL_REGIME_EXCEPTION',legalBasis:['LC 214/2025, art. 47; verificar regime aplicável']};
+    return {tax,eligibility:'CONDITIONAL',reason:'FISCAL_REGIME_EXCEPTION',legalBasis:['LC 214/2025, art. 47; verificar regime aplicável'],ruleId:'CE-REGIME'};
   }
   if(!input.electronicFiscalDocument) {
-    return {tax,eligibility:'CONDITIONAL',reason:'DOCUMENT_REQUIRED',legalBasis:[legal47+' (§1º, II)']};
+    return {tax,eligibility:'CONDITIONAL',reason:'DOCUMENT_REQUIRED',legalBasis:[legal47+' (§1º, II)'],ruleId:'CE-047-DOC'};
   }
   if(input.fuelSpecificRegime || input.category==='FUEL') {
     if(input.fuelSpecificRegime) {
-      return {tax,eligibility:'ELIGIBLE',reason:'REGULAR_ACQUISITION',legalBasis:[legal47+' (§§4º e 5º)']};
+      return {tax,eligibility:'ELIGIBLE',reason:'REGULAR_ACQUISITION',legalBasis:[legal47+' (§§4º e 5º)'],ruleId:'CE-047-FUEL'};
     }
-    return {tax,eligibility:'CONDITIONAL',reason:'FISCAL_REGIME_EXCEPTION',legalBasis:[legal47+'; combustível possui regime específico']};
+    return {tax,eligibility:'CONDITIONAL',reason:'FISCAL_REGIME_EXCEPTION',legalBasis:[legal47+'; combustível possui regime específico'],ruleId:'CE-047-FUEL'};
   }
   if(!input.taxDebtExtinguished) {
-    return {tax,eligibility:'CONDITIONAL',reason:'EXTINCTION_REQUIRED',legalBasis:[legal47, 'LC 214/2025, art. 48']};
+    return {tax,eligibility:'CONDITIONAL',reason:'EXTINCTION_REQUIRED',legalBasis:[legal47, 'LC 214/2025, art. 48'],ruleId:'CE-047-EXTINCTION'};
   }
   if(input.economicActivityRelated!==true) {
-    return {tax,eligibility:'CONDITIONAL',reason:'INSUFFICIENT_FACTS',legalBasis:[legal47,legal57]};
+    return {tax,eligibility:'CONDITIONAL',reason:'INSUFFICIENT_FACTS',legalBasis:[legal47,legal57],ruleId:'CE-CONTEXT'};
   }
   return {tax,eligibility:'ELIGIBLE',reason:'REGULAR_ACQUISITION',legalBasis:[legal47]};
 }
@@ -102,6 +117,8 @@ export function evaluateCreditEligibility(input:CreditEligibilityInput):CreditEl
   const warnings:string[]=[];
   if(input.category==='OTHER') warnings.push('Categoria genérica: classificar a aquisição antes de tratar o resultado como definitivo.');
   if(input.economicActivityRelated===undefined) warnings.push('A relação com a atividade econômica não foi informada.');
+  if(input.operationalPurpose===undefined || input.operationalPurpose==='UNKNOWN') warnings.push('A finalidade da aquisição não foi informada.');
+  if(CONTEXT_CATEGORIES.has(input.category)) warnings.push('Esta categoria exige análise contextual; não tratar a classificação como crédito automático.');
   return {
     ibs:decision(input,'IBS'),
     cbs:decision(input,'CBS'),
