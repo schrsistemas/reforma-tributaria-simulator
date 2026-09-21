@@ -51,29 +51,48 @@ export async function settleSplitPayment(db:D1Database,input:{tenantId:string;pa
   if(String(payment.status)==='REJECTED') throw new Error('PAYMENT_REJECTED_CANNOT_SETTLE');
 
   const now=new Date().toISOString();
+  const statements:D1PreparedStatement[]=[];
   if(input.tax){
     if(!TAXES.includes(input.tax)) throw new Error('INVALID_TAX');
     const allocation=(current.allocations as Record<string,unknown>[]).find(x=>String(x.tax)===input.tax);
     if(!allocation) throw new Error('ALLOCATION_NOT_FOUND');
     if(String(allocation.status)==='REVERSED') throw new Error('ALLOCATION_ALREADY_REVERSED');
     if(String(allocation.status)!=='SETTLED'){
-      await db.prepare('UPDATE split_payment_allocations SET status=?,settled_at=? WHERE payment_id=? AND tax=?').bind('SETTLED',now,input.paymentId,input.tax).run();
-      await appendEvent(db,{tenantId:input.tenantId,paymentId:input.paymentId,eventType:'ALLOCATION_SETTLED',idempotencyKey:input.idempotencyKey,correlationId:input.correlationId,payload:{tax:input.tax,amount:allocation.amount}});
+      statements.push(
+        db.prepare('UPDATE split_payment_allocations SET status=?,settled_at=? WHERE payment_id=? AND tax=?')
+          .bind('SETTLED',now,input.paymentId,input.tax),
+        db.prepare('INSERT INTO split_payment_events(event_id,tenant_id,payment_id,event_type,schema_version,idempotency_key,correlation_id,payload_json,occurred_at) VALUES(?,?,?,?,?,?,?,?,?)')
+          .bind(crypto.randomUUID(),input.tenantId,input.paymentId,'ALLOCATION_SETTLED','1.0',input.idempotencyKey,input.correlationId,JSON.stringify({tax:input.tax,amount:allocation.amount}),now),
+      );
     }
   }
   if(input.supplier){
-    await db.prepare('UPDATE split_payments SET supplier_settled_at=? WHERE tenant_id=? AND payment_id=?').bind(now,input.tenantId,input.paymentId).run();
-    await appendEvent(db,{tenantId:input.tenantId,paymentId:input.paymentId,eventType:'SUPPLIER_SETTLED',idempotencyKey:input.idempotencyKey+':supplier',correlationId:input.correlationId,payload:{amount:payment.supplier_net_amount}});
+    statements.push(
+      db.prepare('UPDATE split_payments SET supplier_settled_at=? WHERE tenant_id=? AND payment_id=?')
+        .bind(now,input.tenantId,input.paymentId),
+      db.prepare('INSERT INTO split_payment_events(event_id,tenant_id,payment_id,event_type,schema_version,idempotency_key,correlation_id,payload_json,occurred_at) VALUES(?,?,?,?,?,?,?,?,?)')
+        .bind(crypto.randomUUID(),input.tenantId,input.paymentId,'SUPPLIER_SETTLED','1.0',input.idempotencyKey+':supplier',input.correlationId,JSON.stringify({amount:payment.supplier_net_amount}),now),
+    );
   }
 
-  const refreshed=await getSplitPayment(db,input.tenantId,input.paymentId);
+  const refreshedBeforeStatus=await getSplitPayment(db,input.tenantId,input.paymentId);
+  if(!refreshedBeforeStatus)return null;
   if(!refreshed)return null;
-  const allAllocationsSettled=(refreshed.allocations as Record<string,unknown>[]).every(x=>String(x.status)==='SETTLED');
-  const supplierSettled=Boolean((refreshed.payment as Record<string,unknown>).supplier_settled_at);
+  const projectedAllocations=(refreshedBeforeStatus.allocations as Record<string,unknown>[]).map(x =>
+    input.tax && String(x.tax)===input.tax && String(x.status)!=='REVERSED'
+      ? {...x,status:'SETTLED'}
+      : x,
+  );
+  const allAllocationsSettled=projectedAllocations.every(x=>String(x.status)==='SETTLED');
+  const supplierSettled=Boolean((refreshedBeforeStatus.payment as Record<string,unknown>).supplier_settled_at) || Boolean(input.supplier);
   const next=allAllocationsSettled&&supplierSettled?'SETTLED':(
     (refreshed.allocations as Record<string,unknown>[]).some(x=>String(x.status)==='SETTLED')||supplierSettled?'PARTIALLY_SETTLED':'ALLOCATED'
   );
-  await db.prepare('UPDATE split_payments SET status=? WHERE tenant_id=? AND payment_id=?').bind(next,input.tenantId,input.paymentId).run();
+  statements.push(
+    db.prepare('UPDATE split_payments SET status=? WHERE tenant_id=? AND payment_id=?')
+      .bind(next,input.tenantId,input.paymentId),
+  );
+  if(statements.length) await db.batch(statements);
   return getSplitPayment(db,input.tenantId,input.paymentId);
 }
 
