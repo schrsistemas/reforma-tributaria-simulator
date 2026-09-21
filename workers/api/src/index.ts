@@ -62,17 +62,48 @@ async function readJson(request: Request) {
 }
 
 
-function inputFromCreditEligibility(input: Record<string, unknown>): import('@rts/domain').CreditEligibilityInput {
+function strictBoolean(value: unknown, field: string): boolean {
+  if (typeof value !== 'boolean') throw Object.assign(new Error('CREDIT_ELIGIBILITY_FIELD_BOOLEAN_REQUIRED:' + field), { status: 400 });
+  return value;
+}
+
+function optionalBoolean(input: Record<string, unknown>, field: string): boolean | undefined {
+  if (input[field] === undefined) return undefined;
+  return strictBoolean(input[field], field);
+}
+
+function inputFromCreditEligibility(raw: Record<string, unknown>): import('@rts/domain').CreditEligibilityInput {
+  const category = String(raw.category ?? '');
+  const categories = ['GOODS','RAW_MATERIALS','MACHINERY','SOFTWARE_TECHNOLOGY','ENERGY','FREIGHT_LOGISTICS','CONTRACTED_SERVICES','COMMERCIAL_RENTAL','VEHICLE','FUEL','FOOD','TRAVEL_HOSPITALITY','TELECOM','GIFT','JEWELRY','ART_ANTIQUES','ALCOHOL','TOBACCO','WEAPONS_AMMUNITION','RECREATIONAL_SPORTS_AESTHETIC','OTHER'];
+  if (!categories.includes(category)) throw Object.assign(new Error('CREDIT_ELIGIBILITY_CATEGORY_INVALID'), { status: 400 });
+  const operationalPurpose = raw.operationalPurpose === undefined ? undefined : String(raw.operationalPurpose);
+  if (operationalPurpose !== undefined && !['BUSINESS','PERSONAL','MIXED','UNKNOWN'].includes(operationalPurpose)) throw Object.assign(new Error('CREDIT_ELIGIBILITY_OPERATIONAL_PURPOSE_INVALID'), { status: 400 });
+  const documentType = raw.documentType === undefined ? undefined : String(raw.documentType);
+  if (documentType !== undefined && !['NFE','NFSE','CTE','CTE_OS','NFC_E','OTHER_ELECTRONIC'].includes(documentType)) throw Object.assign(new Error('CREDIT_ELIGIBILITY_DOCUMENT_TYPE_INVALID'), { status: 400 });
+  const operationTaxTreatment = raw.operationTaxTreatment === undefined ? undefined : String(raw.operationTaxTreatment);
+  if (operationTaxTreatment !== undefined && !['NORMAL','IMMUNE','EXEMPT','ZERO_RATE','DEFERRAL','SUSPENSION','OTHER'].includes(operationTaxTreatment)) throw Object.assign(new Error('CREDIT_ELIGIBILITY_TAX_TREATMENT_INVALID'), { status: 400 });
   return {
-    category: String(input.category) as import('@rts/domain').CreditAcquisitionCategory,
-    regularTaxpayer: Boolean(input.regularTaxpayer),
-    electronicFiscalDocument: Boolean(input.electronicFiscalDocument),
-    taxDebtExtinguished: Boolean(input.taxDebtExtinguished),
-    suppliedFreeOrBelowMarketToPerson: input.suppliedFreeOrBelowMarketToPerson === undefined ? undefined : Boolean(input.suppliedFreeOrBelowMarketToPerson),
-    economicActivityRelated: input.economicActivityRelated === undefined ? undefined : Boolean(input.economicActivityRelated),
-    fuelSpecificRegime: input.fuelSpecificRegime === undefined ? undefined : Boolean(input.fuelSpecificRegime),
-    relatedToPersonalConsumptionItem: input.relatedToPersonalConsumptionItem === undefined ? undefined : Boolean(input.relatedToPersonalConsumptionItem),
-    operationalPurpose: input.operationalPurpose === undefined ? undefined : String(input.operationalPurpose) as import('@rts/domain').CreditEligibilityInput['operationalPurpose'],
+    category: category as import('@rts/domain').CreditAcquisitionCategory,
+    regularTaxpayer: strictBoolean(raw.regularTaxpayer, 'regularTaxpayer'),
+    electronicFiscalDocument: strictBoolean(raw.electronicFiscalDocument, 'electronicFiscalDocument'),
+    taxDebtExtinguished: strictBoolean(raw.taxDebtExtinguished, 'taxDebtExtinguished'),
+    extinctionRequirementWaived: optionalBoolean(raw, 'extinctionRequirementWaived'),
+    suppliedFreeOrBelowMarketToPerson: optionalBoolean(raw, 'suppliedFreeOrBelowMarketToPerson'),
+    economicActivityRelated: optionalBoolean(raw, 'economicActivityRelated'),
+    fuelSpecificRegime: optionalBoolean(raw, 'fuelSpecificRegime'),
+    relatedToPersonalConsumptionItem: optionalBoolean(raw, 'relatedToPersonalConsumptionItem'),
+    operationalPurpose: operationalPurpose as import('@rts/domain').CreditEligibilityInput['operationalPurpose'],
+    commercializedOrUsedForManufacturing: optionalBoolean(raw, 'commercializedOrUsedForManufacturing'),
+    usedBySecurityCompany: optionalBoolean(raw, 'usedBySecurityCompany'),
+    usedExclusivelyByCustomersOnPremises: optionalBoolean(raw, 'usedExclusivelyByCustomersOnPremises'),
+    serviceProvidedForConsiderationToCustomers: optionalBoolean(raw, 'serviceProvidedForConsiderationToCustomers'),
+    predominantActivityIsSameService: optionalBoolean(raw, 'predominantActivityIsSameService'),
+    workdayOnPremisesEmployeeProvision: optionalBoolean(raw, 'workdayOnPremisesEmployeeProvision'),
+    documentType: documentType as import('@rts/domain').CreditEligibilityInput['documentType'],
+    operationTaxTreatment: operationTaxTreatment as import('@rts/domain').CreditEligibilityInput['operationTaxTreatment'],
+    ncm: raw.ncm === undefined ? undefined : String(raw.ncm).trim() || undefined,
+    cfop: raw.cfop === undefined ? undefined : String(raw.cfop).trim() || undefined,
+    itemDescription: raw.itemDescription === undefined ? undefined : String(raw.itemDescription).trim() || undefined,
   };
 }
 export default {
