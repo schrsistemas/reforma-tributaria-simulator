@@ -429,7 +429,7 @@ function rejectionApiHeaders(idempotencyKey){
 async function rejectionApiJson(path,options={}){
   const cfg=rejectionApiConfig();
   if(!cfg)throw new Error('REJECTION_API_NOT_CONFIGURED');
-  const response=await fetch(cfg.baseUrl.replace(/\\/$/,'')+path,options);
+  const response=await fetch(cfg.baseUrl.replace(/\/$/,'')+path,options);
   const body=await response.json().catch(()=>({}));
   if(!response.ok)throw new Error(String(body.error||body.errorCode||('API_HTTP_'+response.status)));
   return body;
