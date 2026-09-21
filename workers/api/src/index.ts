@@ -61,6 +61,18 @@ async function readJson(request: Request) {
   return request.json();
 }
 
+
+function inputFromCreditEligibility(input: Record<string, unknown>): import('@rts/domain').CreditEligibilityInput {
+  return {
+    category: String(input.category) as import('@rts/domain').CreditAcquisitionCategory,
+    regularTaxpayer: Boolean(input.regularTaxpayer),
+    electronicFiscalDocument: Boolean(input.electronicFiscalDocument),
+    taxDebtExtinguished: Boolean(input.taxDebtExtinguished),
+    suppliedFreeOrBelowMarketToPerson: input.suppliedFreeOrBelowMarketToPerson === undefined ? undefined : Boolean(input.suppliedFreeOrBelowMarketToPerson),
+    economicActivityRelated: input.economicActivityRelated === undefined ? undefined : Boolean(input.economicActivityRelated),
+    fuelSpecificRegime: input.fuelSpecificRegime === undefined ? undefined : Boolean(input.fuelSpecificRegime),
+  };
+}
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
@@ -133,6 +145,11 @@ export default {
           const query = String(input.query ?? 'Split Payment IBS CBS').trim() || 'Split Payment IBS CBS';
           const result = await searchRag(env.DB, query, Number(input.limit ?? 5), input.asOf ? String(input.asOf) : undefined);
           return json({ requestId, correlationId, outcome: 'SUCCESS', result, warnings: result.confidence === 'LOW' ? ['EVIDENCE_CONFIDENCE_LOW'] : [], finishedAt: new Date().toISOString() }, 200, request);
+        }
+        if (toolName === 'fiscal.evaluate_credit_eligibility') {
+          const input = inputFromCreditEligibility(input);
+          const result = evaluateCreditEligibility(input);
+          return json({ requestId, correlationId, outcome: 'SUCCESS', result, warnings: result.warnings, finishedAt: new Date().toISOString() }, 200, request);
         }
         if (toolName === 'fiscal.resolve_ruleset') {
           const referenceDate = String(input.asOf ?? new Date().toISOString().slice(0, 10));
