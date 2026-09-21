@@ -327,6 +327,7 @@ export function evaluateCreditEligibility(input:CreditEligibilityInput):CreditEl
   if(input.category==='FOOD' && input.suppliedFreeOrBelowMarketToPerson && input.workdayOnPremisesEmployeeProvision!==true) {
     warnings.push('Alimentação fornecida a pessoas físicas exige verificar as exceções do art. 57, §3º, IV.');
   }
+  if(input.extinctionRequirementWaived===true) warnings.push('A dispensa do requisito de extinção do art. 48 foi informada pelo chamador; o motor não verifica sozinho se as modalidades de extinção realmente não foram implementadas.');
   if(input.documentType && !input.electronicFiscalDocument) warnings.push('documentType informado não substitui a exigência de documento fiscal eletrônico idôneo.');
   if(!input.itemDescription && !input.ncm && !input.cfop) warnings.push('Nenhuma evidência de item (descrição, NCM ou CFOP) foi informada; a classificação permanece dependente dos fatos.');
   if(input.operationTaxTreatment && input.operationTaxTreatment!=='NORMAL') warnings.push('Tratamento tributário especial pode impedir o crédito, salvo hipótese expressa de crédito presumido ou outra exceção.');
