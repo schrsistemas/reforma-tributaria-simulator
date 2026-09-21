@@ -60,8 +60,8 @@ export async function settleSplitPayment(db:D1Database,input:{tenantId:string;pa
   const payment=current.payment as Record<string,unknown>;
   if(String(payment.status)==='REVERSED') throw new Error('SPLIT_PAYMENT_ALREADY_REVERSED');
   if(String(payment.status)==='REJECTED') throw new Error('PAYMENT_REJECTED_CANNOT_SETTLE');
-
   if(await hasEventIdempotency(db,input.tenantId,input.paymentId,input.idempotencyKey)) return current;
+
   const now=new Date().toISOString();
   const statements:D1PreparedStatement[]=[];
   if(input.tax){
@@ -71,8 +71,8 @@ export async function settleSplitPayment(db:D1Database,input:{tenantId:string;pa
     if(String(allocation.status)==='REVERSED') throw new Error('ALLOCATION_ALREADY_REVERSED');
     if(String(allocation.status)!=='SETTLED'){
       statements.push(
-        db.prepare('UPDATE split_payment_allocations SET status=?,settled_at=? WHERE payment_id=? AND tax=?')
-          .bind('SETTLED',now,input.paymentId,input.tax),
+        db.prepare('UPDATE split_payment_allocations SET status=?,settled_at=? WHERE payment_id=? AND tax=? AND status<>?')
+          .bind('SETTLED',now,input.paymentId,input.tax,'REVERSED'),
         db.prepare('INSERT INTO split_payment_events(event_id,tenant_id,payment_id,event_type,schema_version,idempotency_key,correlation_id,payload_json,occurred_at) VALUES(?,?,?,?,?,?,?,?,?)')
           .bind(crypto.randomUUID(),input.tenantId,input.paymentId,'ALLOCATION_SETTLED','1.0',input.idempotencyKey,input.correlationId,JSON.stringify({tax:input.tax,amount:allocation.amount}),now),
       );
@@ -87,21 +87,10 @@ export async function settleSplitPayment(db:D1Database,input:{tenantId:string;pa
     );
   }
 
-  const refreshedBeforeStatus=await getSplitPayment(db,input.tenantId,input.paymentId);
-  if(!refreshedBeforeStatus)return null;
-  const projectedAllocations=(refreshedBeforeStatus.allocations as Record<string,unknown>[]).map(x =>
-    input.tax && String(x.tax)===input.tax && String(x.status)!=='REVERSED'
-      ? {...x,status:'SETTLED'}
-      : x,
-  );
-  const allAllocationsSettled=projectedAllocations.every(x=>String(x.status)==='SETTLED');
-  const supplierSettled=Boolean((refreshedBeforeStatus.payment as Record<string,unknown>).supplier_settled_at) || Boolean(input.supplier);
-  const next=allAllocationsSettled&&supplierSettled?'SETTLED':(
-    projectedAllocations.some(x=>String(x.status)==='SETTLED')||supplierSettled?'PARTIALLY_SETTLED':'ALLOCATED'
-  );
+  // Compute lifecycle status in the same batch, after the requested updates.
   statements.push(
-    db.prepare('UPDATE split_payments SET status=? WHERE tenant_id=? AND payment_id=?')
-      .bind(next,input.tenantId,input.paymentId),
+    db.prepare("UPDATE split_payments SET status = CASE WHEN supplier_settled_at IS NOT NULL AND NOT EXISTS (SELECT 1 FROM split_payment_allocations a WHERE a.payment_id=split_payments.payment_id AND a.status<>?) THEN 'SETTLED' WHEN supplier_settled_at IS NOT NULL OR EXISTS (SELECT 1 FROM split_payment_allocations a WHERE a.payment_id=split_payments.payment_id AND a.status='SETTLED') THEN 'PARTIALLY_SETTLED' ELSE 'ALLOCATED' END WHERE tenant_id=? AND payment_id=?")
+      .bind('SETTLED',input.tenantId,input.paymentId),
   );
   if(statements.length) await db.batch(statements);
   return getSplitPayment(db,input.tenantId,input.paymentId);
