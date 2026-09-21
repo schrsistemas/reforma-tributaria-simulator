@@ -25,7 +25,7 @@ async function ingestGovernmentEvidence(env: Env, source: GovernmentSource, resu
   const documentId = crypto.randomUUID();
   const now = new Date().toISOString();
   await env.DB.prepare('INSERT INTO rag_documents (id,source_id,title,jurisdiction,published_at,source_url,content_hash,version,created_at) VALUES (?,?,?,?,?,?,?,?,?)')
-    .bind(documentId,source.id,source.name,source.jurisdictionLevel,result.fetchedAt,source.url,contentHash,'AUTO-'+contentHash.slice(0,12),now).run();
+    .bind(documentId,source.id,source.name,source.name,result.fetchedAt,source.officialUrl,contentHash,'AUTO-'+contentHash.slice(0,12),now).run();
   const chunks = chunkDocument(result.text);
   for (let i=0;i<chunks.length;i++) {
     await env.DB.prepare('INSERT INTO rag_chunks (id,document_id,ordinal,text,token_count,metadata_json) VALUES (?,?,?,?,?,?)')
