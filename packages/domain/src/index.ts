@@ -9,6 +9,7 @@ export * from './tef.js';
 export * from './pix.js';
 export * from './payment.js';
 export * from './payment-rejections.js';
+export * from './credit-eligibility.js';
 export * from './legal.js';
 export * from './lgpd.js';
 export * from './mei.js';
