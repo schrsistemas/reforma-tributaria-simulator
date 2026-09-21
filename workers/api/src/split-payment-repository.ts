@@ -80,8 +80,8 @@ export async function settleSplitPayment(db:D1Database,input:{tenantId:string;pa
   }
   if(input.supplier){
     statements.push(
-      db.prepare('UPDATE split_payments SET supplier_settled_at=? WHERE tenant_id=? AND payment_id=?')
-        .bind(now,input.tenantId,input.paymentId),
+      db.prepare('UPDATE split_payments SET supplier_settled_at=? WHERE tenant_id=? AND payment_id=? AND status NOT IN (?,?)')
+        .bind(now,input.tenantId,input.paymentId,'REVERSED','REJECTED'),
       db.prepare('INSERT INTO split_payment_events(event_id,tenant_id,payment_id,event_type,schema_version,idempotency_key,correlation_id,payload_json,occurred_at) VALUES(?,?,?,?,?,?,?,?,?)')
         .bind(crypto.randomUUID(),input.tenantId,input.paymentId,'SUPPLIER_SETTLED','1.0',input.idempotencyKey+':supplier',input.correlationId,JSON.stringify({amount:payment.supplier_net_amount}),now),
     );
