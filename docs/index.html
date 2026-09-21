@@ -405,7 +405,7 @@ if(transSearchBtn){
     ].join('\\n');
   });
 }
-const rejectionCatalog=[
+const rejectionCatalogFallback=[
 {code:'15',name:'Boleto',scenarios:[{id:'PAY-15-1003',code:'1003',title:'Tipo de pagamento inválido',message:'O meio de pagamento informado foi configurado para uma simulação de rejeição.',recoverable:true},{id:'PAY-15-MISSING',code:'SIM-MISSING',title:'Código de pagamento ausente',message:'A operação não possui código de meio de pagamento informado.',recoverable:true}]},
 {code:'17',name:'Pix QR Code dinâmico',scenarios:[{id:'PAY-17-1003',code:'1003',title:'Tipo de pagamento inválido',message:'O meio de pagamento informado foi configurado para uma simulação de rejeição.',recoverable:true},{id:'PAY-17-MISSING',code:'SIM-MISSING',title:'Código de pagamento ausente',message:'A operação não possui código de meio de pagamento informado.',recoverable:true}]},
 {code:'18',name:'TED',scenarios:[{id:'PAY-18-1003',code:'1003',title:'Tipo de pagamento inválido',message:'O meio de pagamento informado foi configurado para uma simulação de rejeição.',recoverable:true},{id:'PAY-18-MISSING',code:'SIM-MISSING',title:'Código de pagamento ausente',message:'A operação não possui código de meio de pagamento informado.',recoverable:true}]},
@@ -413,11 +413,75 @@ const rejectionCatalog=[
 {code:'23',name:'Pix automático',scenarios:[{id:'PAY-23-1003',code:'1003',title:'Tipo de pagamento inválido',message:'O meio de pagamento informado foi configurado para uma simulação de rejeição.',recoverable:true},{id:'PAY-23-MISSING',code:'SIM-MISSING',title:'Código de pagamento ausente',message:'A operação não possui código de meio de pagamento informado.',recoverable:true}]},
 {code:'24',name:'TEF / Book Transfer',scenarios:[{id:'PAY-24-1003',code:'1003',title:'Tipo de pagamento inválido',message:'O meio de pagamento informado foi configurado para uma simulação de rejeição.',recoverable:true},{id:'PAY-24-MISSING',code:'SIM-MISSING',title:'Código de pagamento ausente',message:'A operação não possui código de meio de pagamento informado.',recoverable:true}]}
 ];
+let rejectionCatalog=rejectionCatalogFallback;
 const rejectionMethod=$('rejectionPaymentMethod'),rejectionScenario=$('rejectionScenario'),rejectionCode=$('rejectionCode'),rejectionStatus=$('rejectionStatus'),rejectionRecoverable=$('rejectionRecoverable'),rejectionDescription=$('rejectionDescription'),rejectionResult=$('rejectionResult');
+function rejectionApiConfig(){
+  const cfg=window.__RTS_REJECTION_API__;
+  if(!cfg||!cfg.baseUrl||!cfg.tenantId||!cfg.authorization)return null;
+  return cfg;
+}
+function rejectionApiHeaders(idempotencyKey){
+  const cfg=rejectionApiConfig();
+  if(!cfg)return null;
+  return {'Accept':'application/json','Content-Type':'application/json','Authorization':cfg.authorization,'X-Zynkronyx-Tenant':cfg.tenantId,'X-Correlation-Id':crypto.randomUUID(),'Idempotency-Key':idempotencyKey};
+}
+async function rejectionApiJson(path,options={}){
+  const cfg=rejectionApiConfig();
+  if(!cfg)throw new Error('REJECTION_API_NOT_CONFIGURED');
+  const response=await fetch(cfg.baseUrl.replace(/\\/$/,'')+path,options);
+  const body=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(String(body.error||body.errorCode||('API_HTTP_'+response.status)));
+  return body;
+}
 function populateRejectionMethods(){rejectionMethod.innerHTML=rejectionCatalog.map(x=>'<option value="'+x.code+'">'+x.code+' — '+x.name+'</option>').join('');populateRejectionScenarios();}
 function populateRejectionScenarios(){const method=rejectionCatalog.find(x=>x.code===rejectionMethod.value)||rejectionCatalog[0];rejectionScenario.innerHTML=method.scenarios.map(x=>'<option value="'+x.id+'">'+x.code+' — '+x.title+'</option>').join('');renderRejectionScenario();}
 function renderRejectionScenario(){const method=rejectionCatalog.find(x=>x.code===rejectionMethod.value)||rejectionCatalog[0];const scenario=method.scenarios.find(x=>x.id===rejectionScenario.value)||method.scenarios[0];rejectionCode.textContent=scenario.code;rejectionStatus.textContent='PRONTO';rejectionRecoverable.textContent=scenario.recoverable?'SIM':'NÃO';rejectionDescription.textContent=scenario.title+' — '+scenario.message+' Meio: '+method.code+' — '+method.name+'.';}
-function simulatePaymentRejection(){const method=rejectionCatalog.find(x=>x.code===rejectionMethod.value)||rejectionCatalog[0];const scenario=method.scenarios.find(x=>x.id===rejectionScenario.value)||method.scenarios[0];const operationId='OP-REJ-'+new Date().toISOString().replace(/\D/g,'').slice(0,14);const amount=Number(document.getElementById('splitGross').value.replace(',','.'))||0;rejectionStatus.textContent='REJEITADO';rejectionResult.innerHTML='<strong>REJEIÇÃO SIMULADA</strong><br>Operação: '+operationId+'<br>Valor: '+brl(amount)+'<br>Meio: '+method.code+' — '+method.name+'<br>Código: '+scenario.code+'<br>Mensagem: '+scenario.title+'<br>Pagamento: REJEITADO<br>Split Payment: NÃO EXECUTADO<br><small>Registro local de demonstração; nenhuma transação financeira foi criada.</small>';}
+async function loadRejectionCatalog(){
+  if(!rejectionApiConfig())return;
+  try{
+    const methods=await rejectionApiJson('/api/v1/payment-methods',{headers:rejectionApiHeaders('catalog-methods-'+crypto.randomUUID())});
+    const scenarios=await rejectionApiJson('/api/v1/payment-rejections/scenarios',{headers:rejectionApiHeaders('catalog-scenarios-'+crypto.randomUUID())});
+    const methodRows=Array.isArray(methods)?methods:(methods.methods||methods.data||[]);
+    const scenarioRows=Array.isArray(scenarios)?scenarios:(scenarios.scenarios||scenarios.data||[]);
+    if(!methodRows.length||!scenarioRows.length)throw new Error('EMPTY_REJECTION_CATALOG');
+    rejectionCatalog=methodRows.map(method=>({code:String(method.code),name:String(method.name),scenarios:scenarioRows.filter(s=>String(s.paymentMethodCode)===String(method.code)).map(s=>({id:String(s.id),code:String(s.rejectionCode),title:String(s.title),message:String(s.message),recoverable:Boolean(s.recoverable)}))})).filter(x=>x.scenarios.length);
+    if(!rejectionCatalog.length)throw new Error('EMPTY_REJECTION_CATALOG');
+    populateRejectionMethods();
+    rejectionResult.textContent='Catálogo carregado do backend. A próxima simulação será persistida pela API.';
+  }catch(error){
+    rejectionCatalog=rejectionCatalogFallback;
+    populateRejectionMethods();
+    rejectionResult.textContent='Backend indisponível/configuração ausente; usando catálogo local de fallback. '+(error instanceof Error?error.message:'erro desconhecido');
+  }
+}
+async function simulatePaymentRejection(){
+  const method=rejectionCatalog.find(x=>x.code===rejectionMethod.value)||rejectionCatalog[0];
+  const scenario=method.scenarios.find(x=>x.id===rejectionScenario.value)||method.scenarios[0];
+  const operationId='OP-REJ-'+new Date().toISOString().replace(/\\D/g,'').slice(0,14);
+  const amount=Number(document.getElementById('splitGross').value.replace(',','.'))||0;
+  rejectionStatus.textContent='PROCESSANDO';
+  rejectionResult.textContent='Enviando simulação de rejeição...';
+  const cfg=rejectionApiConfig();
+  if(cfg){
+    try{
+      const body=await rejectionApiJson('/api/v1/payment-rejections/simulations',{
+        method:'POST',
+        headers:rejectionApiHeaders('rejection-'+crypto.randomUUID()),
+        body:JSON.stringify({operationId,paymentMethodCode:method.code,rejectionScenarioId:scenario.id,amountMinor:Math.round(amount*100),paymentId:document.getElementById('splitPaymentId')?.textContent?.startsWith('SIM-SPLIT-')?undefined:document.getElementById('splitPaymentId')?.textContent})
+      });
+      const sim=body.simulation||body.result?.simulation||body;
+      rejectionStatus.textContent=String(sim.status||'REJEITADO');
+      rejectionResult.innerHTML='<strong>REJEIÇÃO PERSISTIDA NO BACKEND</strong><br>Simulação: '+String(sim.id||'—')+'<br>Operação: '+String(sim.operationId||operationId)+'<br>Valor: '+brl(Number(sim.amountMinor||0)/100)+'<br>Meio: '+method.code+' — '+method.name+'<br>Código: '+String(sim.rejectionCode||scenario.code)+'<br>Pagamento: REJEITADO<br>Split Payment: '+(body.lifecycle?.splitPayment||'NÃO EXECUTADO');
+      return;
+    }catch(error){
+      rejectionStatus.textContent='FALLBACK';
+      rejectionResult.innerHTML='<strong>BACKEND INDISPONÍVEL</strong><br>Motivo: '+(error instanceof Error?error.message:'erro desconhecido')+'<br>Executando somente a demonstração local; nenhum registro remoto foi criado.';
+    }
+  }else{
+    rejectionStatus.textContent='REJEITADO';
+    rejectionResult.innerHTML='<strong>REJEIÇÃO LOCAL</strong><br>Operação: '+operationId+'<br>Valor: '+brl(amount)+'<br>Meio: '+method.code+' — '+method.name+'<br>Código: '+scenario.code+'<br>Mensagem: '+scenario.title+'<br>Pagamento: REJEITADO<br>Split Payment: NÃO EXECUTADO<br><small>Backend não configurado nesta página. Registro apenas local; nenhuma transação financeira foi criada.</small>';
+  }
+}
 rejectionMethod.addEventListener('change',populateRejectionScenarios);rejectionScenario.addEventListener('change',renderRejectionScenario);$('simulatePaymentRejectionBtn').addEventListener('click',simulatePaymentRejection);populateRejectionMethods();
 $('advancePixBtn').addEventListener('click',advancePix);$('resetPixBtn').addEventListener('click',resetPix);
 $('advanceTefBtn').addEventListener('click',advanceTef);$('resetTefBtn').addEventListener('click',resetTef);$('splitCreateBtn').addEventListener('click',createSplit);$('settleSplitIbs').addEventListener('click',()=>settleSplitTax('IBS'));$('settleSplitCbs').addEventListener('click',()=>settleSplitTax('CBS'));$('settleSplitSupplier').addEventListener('click',settleSplitSupplier);$('reconcileSplit').addEventListener('click',reconcileSplit);$('reverseSplit').addEventListener('click',reverseSplit);$('resetSplit').addEventListener('click',resetSplit);['splitGross','splitIbs','splitCbs','splitMode','splitInstallments','splitCurrentPercent'].forEach(id=>$(id).addEventListener('input',()=>{renderSplit();renderSplitCashFlow();renderSplitSchedule();renderSplitComparison();}));['wcOpening','wcOtherReceipts','wcExpenses'].forEach(id=>$(id).addEventListener('input',renderWorkingCapital));
