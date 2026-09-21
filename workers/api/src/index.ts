@@ -9,6 +9,7 @@ import { collectGovernmentSource, collectEnabledGovernmentSources } from './gove
 import { createTef, getTef, transitionTefRecord } from './tef-repository.js';
 import { createPix, getPix, transitionPixRecord } from './pix-repository.js';
 import { searchRag, getRagDocument } from './rag-repository.js';
+import { listPaymentMethods, listPaymentRejectionScenarios, createPaymentRejectionSimulation, getPaymentRejectionSimulation, listPaymentRejectionSimulations } from './payment-rejection-repository.js';
 
 export interface Env {
   VERSION: string;
@@ -306,6 +307,109 @@ export default {
       }
     }
 
+
+    if (request.method === 'GET' && url.pathname === '/api/v1/payment-methods') {
+      try {
+        integrationHeaders(request);
+        if (!env.DB) return json({ error: 'DATABASE_NOT_BOUND' }, 503, request);
+        return json({ ok: true, paymentMethods: await listPaymentMethods(env.DB) }, 200, request);
+      } catch (error) {
+        const status = Number((error as { status?: number }).status) || 500;
+        return json({ ok: false, error: error instanceof Error ? error.message : 'PAYMENT_METHODS_FAILED' }, status, request);
+      }
+    }
+
+    if (request.method === 'GET' && url.pathname === '/api/v1/payment-rejections/scenarios') {
+      try {
+        integrationHeaders(request);
+        if (!env.DB) return json({ error: 'DATABASE_NOT_BOUND' }, 503, request);
+        const paymentMethodCode = url.searchParams.get('paymentMethodCode') ?? undefined;
+        return json({
+          ok: true,
+          scenarios: await listPaymentRejectionScenarios(env.DB, paymentMethodCode),
+          disclaimer: 'Scenarios in this endpoint are simulation data unless an individual scenario is explicitly linked to official evidence.',
+        }, 200, request);
+      } catch (error) {
+        const status = Number((error as { status?: number }).status) || 500;
+        return json({ ok: false, error: error instanceof Error ? error.message : 'PAYMENT_REJECTION_SCENARIOS_FAILED' }, status, request);
+      }
+    }
+
+    if (request.method === 'POST' && url.pathname === '/api/v1/payment-rejections/simulations') {
+      try {
+        const headers = integrationHeaders(request);
+        if (!headers.idempotencyKey) return json({ error: 'IDEMPOTENCY_KEY_REQUIRED' }, 400, request);
+        if (!env.DB) return json({ error: 'DATABASE_NOT_BOUND' }, 503, request);
+
+        const body = await readJson(request) as {
+          operationId?: string;
+          paymentMethodCode?: import('@rts/domain').PaymentMethodCode;
+          rejectionScenarioId?: string;
+          amountMinor?: number;
+        };
+
+        if (!body.operationId || !body.paymentMethodCode || !body.rejectionScenarioId) {
+          return json({ error: 'PAYMENT_REJECTION_FIELDS_REQUIRED' }, 400, request);
+        }
+
+        if (!Number.isInteger(body.amountMinor) || Number(body.amountMinor) < 0) {
+          return json({ error: 'PAYMENT_REJECTION_AMOUNT_INVALID' }, 400, request);
+        }
+
+        const result = await createPaymentRejectionSimulation(env.DB, {
+          tenantId: headers.tenantId,
+          operationId: body.operationId,
+          idempotencyKey: headers.idempotencyKey,
+          paymentMethodCode: body.paymentMethodCode,
+          rejectionScenarioId: body.rejectionScenarioId,
+          amountMinor: Number(body.amountMinor),
+          correlationId: headers.correlationId,
+        });
+
+        return json({
+          ok: true,
+          ...result,
+          lifecycle: {
+            payment: 'REJECTED',
+            splitPayment: 'NOT_EXECUTED',
+          },
+          correlationId: headers.correlationId,
+        }, result.replayed ? 200 : 201, request);
+      } catch (error) {
+        const status = Number((error as { status?: number }).status) || 400;
+        return json({ ok: false, error: error instanceof Error ? error.message : 'PAYMENT_REJECTION_SIMULATION_FAILED' }, status, request);
+      }
+    }
+
+    if (request.method === 'GET' && url.pathname === '/api/v1/payment-rejections/simulations') {
+      try {
+        const headers = integrationHeaders(request);
+        if (!env.DB) return json({ error: 'DATABASE_NOT_BOUND' }, 503, request);
+        const operationId = url.searchParams.get('operationId') ?? undefined;
+        const limit = Number(url.searchParams.get('limit') ?? '20');
+        return json({
+          ok: true,
+          simulations: await listPaymentRejectionSimulations(env.DB, headers.tenantId, operationId, limit),
+        }, 200, request);
+      } catch (error) {
+        const status = Number((error as { status?: number }).status) || 500;
+        return json({ ok: false, error: error instanceof Error ? error.message : 'PAYMENT_REJECTION_HISTORY_FAILED' }, status, request);
+      }
+    }
+
+    if (request.method === 'GET' && url.pathname.startsWith('/api/v1/payment-rejections/simulations/')) {
+      try {
+        const headers = integrationHeaders(request);
+        if (!env.DB) return json({ error: 'DATABASE_NOT_BOUND' }, 503, request);
+        const id = decodeURIComponent(url.pathname.split('/').pop()!);
+        const result = await getPaymentRejectionSimulation(env.DB, headers.tenantId, id);
+        if (!result) return json({ error: 'PAYMENT_REJECTION_SIMULATION_NOT_FOUND' }, 404, request);
+        return json({ ok: true, ...result }, 200, request);
+      } catch (error) {
+        const status = Number((error as { status?: number }).status) || 500;
+        return json({ ok: false, error: error instanceof Error ? error.message : 'PAYMENT_REJECTION_LOOKUP_FAILED' }, status, request);
+      }
+    }
 
     if (request.method === 'GET' && url.pathname === '/api/v1/rag/search') {
       try {
