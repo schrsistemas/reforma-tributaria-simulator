@@ -48,6 +48,7 @@ export async function settleSplitPayment(db:D1Database,input:{tenantId:string;pa
   if(!current) return null;
   const payment=current.payment as Record<string,unknown>;
   if(String(payment.status)==='REVERSED') throw new Error('SPLIT_PAYMENT_ALREADY_REVERSED');
+  if(String(payment.status)==='REJECTED') throw new Error('PAYMENT_REJECTED_CANNOT_SETTLE');
 
   const now=new Date().toISOString();
   if(input.tax){
@@ -91,6 +92,7 @@ export async function reconcileSplitPayment(db:D1Database,input:{tenantId:string
   const current=await getSplitPayment(db,input.tenantId,input.paymentId);
   if(!current)return null;
   const p=current.payment as Record<string,unknown>;
+  if(String(p.status)==='REJECTED') throw new Error('PAYMENT_REJECTED_CANNOT_RECONCILE');
   const gross=cents(String(p.gross_amount)), net=cents(String(p.supplier_net_amount));
   const allocated=(current.allocations as Record<string,unknown>[]).reduce((sum,row)=>sum+cents(String(row.amount)),ZERO);
   const balanced=allocated+net===gross;
