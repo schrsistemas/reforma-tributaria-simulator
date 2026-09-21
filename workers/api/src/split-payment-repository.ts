@@ -134,7 +134,7 @@ export async function settleSplitPayment(db:D1Database,input:{tenantId:string;pa
   const now=new Date().toISOString();
   const statements:D1PreparedStatement[]=[
     db.prepare('INSERT INTO split_payment_events(event_id,tenant_id,payment_id,event_type,schema_version,idempotency_key,correlation_id,payload_json,occurred_at) VALUES(?,?,?,?,?,?,?,?,?)')
-      .bind(crypto.randomUUID(),input.tenantId,input.paymentId,'PAYMENT_LIQUIDATION_STARTED','1.0',input.idempotencyKey+':liquidation',input.correlationId,JSON.stringify({paymentId:input.paymentId}),now)
+      .bind(crypto.randomUUID(),input.tenantId,input.paymentId,'PAYMENT_LIQUIDATION_STARTED','1.0',input.idempotencyKey,input.correlationId,JSON.stringify({paymentId:input.paymentId}),now)
   ];
 
   if(input.tax){
