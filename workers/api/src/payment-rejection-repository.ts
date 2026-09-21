@@ -123,7 +123,8 @@ export async function createPaymentRejectionSimulation(
   const id = crypto.randomUUID();
   const createdAt = new Date().toISOString();
 
-  await db
+  const rejectedAt = new Date().toISOString();
+  const simulationInsert = db
     .prepare(
       'INSERT INTO payment_rejection_simulations (id,tenant_id,operation_id,payment_id,idempotency_key,payment_method_code,rejection_scenario_id,rejection_code,amount_minor,status,recoverable,correlation_id,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)',
     )
@@ -141,21 +142,11 @@ export async function createPaymentRejectionSimulation(
       Number(scenario.recoverable) === 1 ? 1 : 0,
       input.correlationId,
       createdAt,
-    )
-    .run();
+    );
 
-  const row = await db
-    .prepare(
-      'SELECT id,operation_id,payment_id,payment_method_code,rejection_scenario_id,rejection_code,amount_minor,status,recoverable,correlation_id,created_at FROM payment_rejection_simulations WHERE id=?',
-    )
-    .bind(id)
-    .first<Record<string, unknown>>();
-
-  if (!row) throw new Error('PAYMENT_REJECTION_SIMULATION_NOT_CREATED');
-
+  const statements = [simulationInsert];
   if (input.paymentId) {
-    const rejectedAt = new Date().toISOString();
-    await db.batch([
+    statements.push(
       db.prepare('UPDATE split_payments SET status=?,rejection_code=?,rejection_scenario_id=?,rejected_at=? WHERE tenant_id=? AND payment_id=?')
         .bind('REJECTED', String(scenario.rejection_code), input.rejectionScenarioId, rejectedAt, input.tenantId, input.paymentId),
       db.prepare('INSERT INTO split_payment_events (event_id,tenant_id,payment_id,event_type,schema_version,idempotency_key,correlation_id,payload_json,occurred_at) VALUES (?,?,?,?,?,?,?,?,?)')
@@ -178,8 +169,19 @@ export async function createPaymentRejectionSimulation(
           }),
           rejectedAt,
         ),
-    ]);
+    );
   }
+
+  await db.batch(statements);
+
+  const row = await db
+    .prepare(
+      'SELECT id,operation_id,payment_id,payment_method_code,rejection_scenario_id,rejection_code,amount_minor,status,recoverable,correlation_id,created_at FROM payment_rejection_simulations WHERE id=?',
+    )
+    .bind(id)
+    .first<Record<string, unknown>>();
+
+  if (!row) throw new Error('PAYMENT_REJECTION_SIMULATION_NOT_CREATED');
 
   return { simulation: mapSimulation(row), scenario: mapScenario(scenario), replayed: false };
 }
@@ -191,7 +193,7 @@ export async function getPaymentRejectionSimulation(
 ) {
   const row = await db
     .prepare(
-      'SELECT id,operation_id,payment_method_code,rejection_scenario_id,rejection_code,amount_minor,status,recoverable,correlation_id,created_at FROM payment_rejection_simulations WHERE tenant_id=? AND id=?',
+      'SELECT id,operation_id,payment_id,payment_method_code,rejection_scenario_id,rejection_code,amount_minor,status,recoverable,correlation_id,created_at FROM payment_rejection_simulations WHERE tenant_id=? AND id=?',
     )
     .bind(tenantId, id)
     .first<Record<string, unknown>>();
@@ -219,8 +221,8 @@ export async function listPaymentRejectionSimulations(
 ) {
   const safeLimit = Math.max(1, Math.min(limit, 100));
   const query = operationId
-    ? 'SELECT id,operation_id,payment_method_code,rejection_scenario_id,rejection_code,amount_minor,status,recoverable,correlation_id,created_at FROM payment_rejection_simulations WHERE tenant_id=? AND operation_id=? ORDER BY created_at DESC LIMIT ?'
-    : 'SELECT id,operation_id,payment_method_code,rejection_scenario_id,rejection_code,amount_minor,status,recoverable,correlation_id,created_at FROM payment_rejection_simulations WHERE tenant_id=? ORDER BY created_at DESC LIMIT ?';
+    ? 'SELECT id,operation_id,payment_id,payment_method_code,rejection_scenario_id,rejection_code,amount_minor,status,recoverable,correlation_id,created_at FROM payment_rejection_simulations WHERE tenant_id=? AND operation_id=? ORDER BY created_at DESC LIMIT ?'
+    : 'SELECT id,operation_id,payment_id,payment_method_code,rejection_scenario_id,rejection_code,amount_minor,status,recoverable,correlation_id,created_at FROM payment_rejection_simulations WHERE tenant_id=? ORDER BY created_at DESC LIMIT ?';
 
   const result = operationId
     ? await db.prepare(query).bind(tenantId, operationId, safeLimit).all<Record<string, unknown>>()
