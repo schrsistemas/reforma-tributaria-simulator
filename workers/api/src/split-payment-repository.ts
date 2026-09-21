@@ -160,7 +160,7 @@ export async function settleSplitPayment(db:D1Database,input:{tenantId:string;pa
         .bind(now,input.tenantId,input.paymentId,'REVERSED','REJECTED'),
       db.prepare('INSERT INTO split_payment_events(event_id,tenant_id,payment_id,event_type,schema_version,idempotency_key,correlation_id,payload_json,occurred_at) VALUES(?,?,?,?,?,?,?,?,?)')
         .bind(crypto.randomUUID(),input.tenantId,input.paymentId,'SUPPLIER_FUNDS_RELEASED','1.0',input.idempotencyKey+':supplier-release',input.correlationId,JSON.stringify({amount:payment.supplier_net_amount}),now),
-      db.prepare('INSERT INTO split_payment_events(event_id,tenant_id,payment_id,event_type,schema_version,idempotency_key,correlationId,payload_json,occurred_at) VALUES(?,?,?,?,?,?,?,?,?)')
+      db.prepare('INSERT INTO split_payment_events(event_id,tenant_id,payment_id,event_type,schema_version,idempotency_key,correlation_id,payload_json,occurred_at) VALUES(?,?,?,?,?,?,?,?,?)')
         .bind(crypto.randomUUID(),input.tenantId,input.paymentId,'SUPPLIER_SETTLED','1.0',input.idempotencyKey+':supplier',input.correlationId,JSON.stringify({amount:payment.supplier_net_amount}),now)
     );
   }
