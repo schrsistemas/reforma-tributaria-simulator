@@ -171,6 +171,7 @@ RESPOSTA AUDITÁVEL</div><a class="source" href="https://github.com/schrsistemas
 <div class="formGrid">
 <label>Meio de pagamento<select id="rejectionPaymentMethod"></select></label>
 <label>Cenário de rejeição<select id="rejectionScenario"></select></label>
+<label>Payment ID do Split (opcional)<input id="rejectionPaymentId" placeholder="Somente ID persistido no backend"></label>
 </div>
 <div class="metrics">
 <div class="metric"><small>Código</small><b id="rejectionCode">—</b></div>
@@ -467,7 +468,7 @@ async function simulatePaymentRejection(){
       const body=await rejectionApiJson('/api/v1/payment-rejections/simulations',{
         method:'POST',
         headers:rejectionApiHeaders('rejection-'+crypto.randomUUID()),
-        body:JSON.stringify({operationId,paymentMethodCode:method.code,rejectionScenarioId:scenario.id,amountMinor:Math.round(amount*100),paymentId:document.getElementById('splitPaymentId')?.textContent?.startsWith('SIM-SPLIT-')?undefined:document.getElementById('splitPaymentId')?.textContent})
+        body:JSON.stringify({operationId,paymentMethodCode:method.code,rejectionScenarioId:scenario.id,amountMinor:Math.round(amount*100),paymentId:(document.getElementById('rejectionPaymentId')?.value||'').trim()||undefined})
       });
       const sim=body.simulation||body.result?.simulation||body;
       rejectionStatus.textContent=String(sim.status||'REJEITADO');
