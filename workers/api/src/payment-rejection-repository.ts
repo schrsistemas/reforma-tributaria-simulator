@@ -122,6 +122,15 @@ export async function createPaymentRejectionSimulation(
     if (status === 'REJECTED') {
       throw Object.assign(new Error('SPLIT_PAYMENT_ALREADY_REJECTED'), { status: 409 });
     }
+
+    const priorRejection = await db
+      .prepare('SELECT id FROM payment_rejection_simulations WHERE tenant_id=? AND payment_id=? LIMIT 1')
+      .bind(input.tenantId, input.paymentId)
+      .first<{ id: string }>();
+
+    if (priorRejection) {
+      throw Object.assign(new Error('SPLIT_PAYMENT_ALREADY_REJECTED'), { status: 409 });
+    }
     if (status === 'SETTLED' || status === 'PARTIALLY_SETTLED') {
       throw Object.assign(new Error('SPLIT_PAYMENT_ALREADY_EXECUTED'), { status: 409 });
     }
