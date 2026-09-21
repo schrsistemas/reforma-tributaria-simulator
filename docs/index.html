@@ -304,7 +304,7 @@ function route(){
 function creditBool(id){return $(id).value==='true';}
 function creditActivityValue(){const v=$('creditActivity').value;return v===''?undefined:v==='true';}
 function creditLabel(v){return v==='ELIGIBLE'?'CREDITÁVEL':v==='CONDITIONAL'?'CONDICIONAL':'NÃO CREDITÁVEL';}
-function renderCreditDecision(target,result){const d=result[target];$(target==='ibs'?'creditIbs':'creditCbs').textContent=creditLabel(d.eligibility);$(target==='ibs'?'creditIbsReason':'creditCbsReason').textContent=[target.toUpperCase()+': '+creditLabel(d.eligibility),'Motivo: '+d.reason,'Base legal: '+d.legalBasis.join(' | ')].join('\n');}
+function renderCreditDecision(target,result){const d=result[target];$(target==='ibs'?'creditIbs':'creditCbs').textContent=creditLabel(d.eligibility);$(target==='ibs'?'creditIbsReason':'creditCbsReason').textContent=[target.toUpperCase()+': '+creditLabel(d.eligibility),'Regra: '+d.ruleId,'Motivo: '+d.reason,'Base legal: '+d.legalBasis.join(' | ')].join('\n');}
 async function evaluateCreditEligibility(){
  const input={category:$('creditCategory').value,regularTaxpayer:creditBool('creditRegular'),electronicFiscalDocument:creditBool('creditDoc'),taxDebtExtinguished:creditBool('creditExtinguished'),economicActivityRelated:creditActivityValue(),suppliedFreeOrBelowMarketToPerson:creditBool('creditPersonalSupply'),fuelSpecificRegime:creditBool('creditFuelSpecific'),relatedToPersonalConsumptionItem:creditBool('creditRelatedPersonal'),operationalPurpose:$('creditPurpose').value};
  try{
