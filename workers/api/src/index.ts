@@ -350,6 +350,7 @@ export default {
           paymentMethodCode?: import('@rts/domain').PaymentMethodCode;
           rejectionScenarioId?: string;
           amountMinor?: number;
+          paymentId?: string;
         };
 
         if (!body.operationId || !body.paymentMethodCode || !body.rejectionScenarioId) {
@@ -375,7 +376,7 @@ export default {
           ...result,
           lifecycle: {
             payment: 'REJECTED',
-            splitPayment: 'NOT_EXECUTED',
+            splitPayment: body.paymentId ? 'REJECTED_NOT_EXECUTED' : 'NOT_EXECUTED',
           },
           correlationId: headers.correlationId,
         }, result.replayed ? 200 : 201, request);
