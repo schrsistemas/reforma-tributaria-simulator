@@ -1,13 +1,39 @@
-export type RagSourceType='LAW'|'REGULATION'|'GUIDANCE'|'NEWS'|'TECHNICAL_NOTE'|'FAQ';
+export type RagSourceType = 'LAW'|'REGULATION'|'GUIDANCE'|'NEWS'|'TECHNICAL_NOTE'|'FAQ';
 
-/** Registro canônico de documento utilizado pelo índice RAG fiscal. */
 export interface RagDocument { id:string; sourceId:string; title:string; jurisdiction:string; publishedAt:string; effectiveFrom?:string; effectiveTo?:string; sourceUrl:string; contentHash:string; version:string; }
 
-/** Unidade mínima de recuperação. Nunca contém instrução executável. */
 export interface RagChunk { id:string; documentId:string; ordinal:number; text:string; tokenCount:number; embeddingRef?:string; metadata:Record<string,string>; }
 
-/** Resultado bruto de indexação antes do reranking. */
 export interface RagIndexedChunk { chunkId:string; documentId:string; score:number; text:string; sourceUrl:string; title:string; }
+
+export interface FiscalEvidence {
+  documentId: string;
+  chunkId: string;
+  authority: string;
+  url: string;
+  publishedAt: string;
+  effectiveFrom?: string;
+  effectiveTo?: string;
+  version: string;
+  contentHash: string;
+  evidenceLevel: 'PRIMARY' | 'SECONDARY';
+}
+
+export interface RagHit {
+  chunkId: string;
+  documentId: string;
+  score: number;
+  text: string;
+  evidence: FiscalEvidence;
+}
+
+export interface RagAnswer {
+  answer: string;
+  hits: RagHit[];
+  confidence: 'HIGH' | 'MEDIUM' | 'LOW';
+  grounded: boolean;
+  generatedAt: string;
+}
 
 export const RAG_GUARDRAILS=[
   'answer only from retrieved evidence',
