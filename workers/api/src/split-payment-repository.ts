@@ -1,3 +1,4 @@
+import { calculateSplitPaymentAmounts } from '@rts/domain';
 import type { TaxCode } from '@rts/domain';
 import type { SplitPaymentInstrument, SplitPaymentSettlementMode } from '@rts/domain';
 
@@ -53,23 +54,25 @@ export async function createSplitPayment(db:D1Database,input:{
     .first<{payment_id:string;status:string}>();
   if(prior) conflict('IDEMPOTENCY_KEY_ALREADY_USED');
 
-  const gross=cents(input.grossAmount);
-  const extinguishedIbs=taxAmount('IBS',input.taxesAlreadyExtinguished??{});
-  const extinguishedCbs=taxAmount('CBS',input.taxesAlreadyExtinguished??{});
-  const ibsDebit=taxAmount('IBS',input.taxes);
-  const cbsDebit=taxAmount('CBS',input.taxes);
-  if(extinguishedIbs>ibsDebit || extinguishedCbs>cbsDebit) throw new Error('EXTINGUISHED_TAX_EXCEEDS_TAX_DEBIT');
-
-  const ibs=ibsDebit-extinguishedIbs;
-  const cbs=cbsDebit-extinguishedCbs;
-  if(ibs+cbs>gross)throw new Error('ALLOCATIONS_EXCEED_GROSS_AMOUNT');
+  const calculated=calculateSplitPaymentAmounts({
+    grossAmount:input.grossAmount,
+    taxDebits:input.taxes,
+    taxesAlreadyExtinguished:input.taxesAlreadyExtinguished??{},
+  });
+  const gross=cents(calculated.grossAmount);
+  const ibs=cents(calculated.segregatedTaxes.IBS);
+  const cbs=cents(calculated.segregatedTaxes.CBS);
+  const ibsDebit=cents(calculated.taxDebits.IBS);
+  const cbsDebit=cents(calculated.taxDebits.CBS);
+  const extinguishedIbs=cents(calculated.taxesAlreadyExtinguished.IBS);
+  const extinguishedCbs=cents(calculated.taxesAlreadyExtinguished.CBS);
 
   const now=new Date().toISOString();
-  const net=money(gross-ibs-cbs);
+  const net=calculated.supplierNetAmount;
   const status=(ibs+cbs)>ZERO?'ALLOCATED':'CREATED';
   const paymentInstrument=normalizeInstrument(input.paymentInstrument);
   const settlementMode=normalizeMode(input.settlementMode);
-  const extinguishedJson=JSON.stringify({IBS:money(extinguishedIbs),CBS:money(extinguishedCbs)});
+  const extinguishedJson=JSON.stringify(calculated.taxesAlreadyExtinguished);
 
   const batch=[
     db.prepare('INSERT INTO split_payments(payment_id,tenant_id,operation_id,calculation_version,gross_amount,supplier_net_amount,status,correlation_id,created_at,payment_instrument,settlement_mode,fiscal_document_id,payment_transaction_id,extinguished_taxes_json) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
