@@ -71,8 +71,8 @@ export async function settleSplitPayment(db:D1Database,input:{tenantId:string;pa
     if(String(allocation.status)==='REVERSED') throw new Error('ALLOCATION_ALREADY_REVERSED');
     if(String(allocation.status)!=='SETTLED'){
       statements.push(
-        db.prepare('UPDATE split_payment_allocations SET status=?,settled_at=? WHERE payment_id=? AND tax=? AND status<>?')
-          .bind('SETTLED',now,input.paymentId,input.tax,'REVERSED'),
+        db.prepare('UPDATE split_payment_allocations SET status=?,settled_at=? WHERE payment_id=? AND tax=? AND status=?')
+          .bind('SETTLED',now,input.paymentId,input.tax,'PENDING'),
         db.prepare('INSERT INTO split_payment_events(event_id,tenant_id,payment_id,event_type,schema_version,idempotency_key,correlation_id,payload_json,occurred_at) VALUES(?,?,?,?,?,?,?,?,?)')
           .bind(crypto.randomUUID(),input.tenantId,input.paymentId,'ALLOCATION_SETTLED','1.0',input.idempotencyKey,input.correlationId,JSON.stringify({tax:input.tax,amount:allocation.amount}),now),
       );
