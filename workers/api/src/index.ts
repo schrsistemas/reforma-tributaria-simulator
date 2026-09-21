@@ -95,7 +95,11 @@ export default {
           { name: 'fiscal.calculate', transport: 'POST /api/v1/simulations', status: 'AVAILABLE' },
           { name: 'fiscal.compare_calculation', transport: 'POST /api/v1/official-calculator/regime-geral', status: 'AVAILABLE' },
           { name: 'fiscal.get_split_payment_rules', transport: 'POST /api/v1/mcp/call', status: 'AVAILABLE' },
-          { name: 'fiscal.get_snapshot', transport: 'GET /api/v1/simulations/:id', status: 'AVAILABLE' }
+          { name: 'fiscal.get_snapshot', transport: 'GET /api/v1/simulations/:id', status: 'AVAILABLE' },
+          { name: 'payments.list_methods', transport: 'GET /api/v1/payment-methods', status: 'AVAILABLE' },
+          { name: 'payments.list_rejection_scenarios', transport: 'GET /api/v1/payment-rejections/scenarios', status: 'AVAILABLE' },
+          { name: 'payments.simulate_rejection', transport: 'POST /api/v1/payment-rejections/simulations', status: 'AVAILABLE' },
+          { name: 'payments.get_rejection_simulation', transport: 'GET /api/v1/payment-rejections/simulations/:id', status: 'AVAILABLE' }
         ]
       }, 200, request);
     }
