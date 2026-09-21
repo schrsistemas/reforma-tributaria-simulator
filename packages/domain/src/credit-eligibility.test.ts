@@ -39,3 +39,16 @@ test('resultado mantém IBS e CBS segregados',()=>{
   assert.equal(r.ibs.tax,'IBS');
   assert.equal(r.cbs.tax,'CBS');
 });
+
+
+test('sem informação sobre atividade econômica permanece condicional',()=>{
+  const r=evaluateCreditEligibility({category:'GOODS',regularTaxpayer:true,electronicFiscalDocument:true,taxDebtExtinguished:true});
+  assert.equal(r.ibs.eligibility,'CONDITIONAL');
+  assert.equal(r.ibs.reason,'INSUFFICIENT_FACTS');
+});
+
+test('regime não regular exige análise específica em vez de bloqueio definitivo',()=>{
+  const r=evaluateCreditEligibility({category:'GOODS',regularTaxpayer:false,electronicFiscalDocument:true,taxDebtExtinguished:true,economicActivityRelated:true});
+  assert.equal(r.ibs.eligibility,'CONDITIONAL');
+  assert.equal(r.ibs.reason,'FISCAL_REGIME_EXCEPTION');
+});
