@@ -80,7 +80,9 @@ export async function settleSplitPayment(db:D1Database,input:{tenantId:string;pa
 export async function reverseSplitPayment(db:D1Database,input:{tenantId:string;paymentId:string;correlationId:string;idempotencyKey:string}){
   const current=await getSplitPayment(db,input.tenantId,input.paymentId);
   if(!current)return null;
-  if(String((current.payment as Record<string,unknown>).status)==='REVERSED')return current;
+  const currentStatus=String((current.payment as Record<string,unknown>).status);
+  if(currentStatus==='REVERSED')return current;
+  if(currentStatus==='REJECTED')throw new Error('PAYMENT_REJECTED_CANNOT_REVERSE');
   const now=new Date().toISOString();
   await db.prepare('UPDATE split_payments SET status=? WHERE tenant_id=? AND payment_id=?').bind('REVERSED',input.tenantId,input.paymentId).run();
   await db.prepare('UPDATE split_payment_allocations SET status=?,settled_at=NULL WHERE payment_id=?').bind('REVERSED',input.paymentId).run();
