@@ -18,19 +18,22 @@ O endereço acima é o endereço estável de produção do projeto. Deployments 
 
 A publicação é automatizada por GitHub Actions. O workflow cria o projeto Pages quando necessário, publica `docs/` e verifica automaticamente o endpoint de produção antes de considerar o deploy bem-sucedido.
 
-## Arquitetura
+## Arquitetura do monorepo
 
-- **apps/web** — dashboard mobile-first e operação do simulador
-- **apps/api** — API de domínio
-- **packages/domain** — contratos e tipos fiscais
-- **packages/tax-engine** — motor determinístico de cálculo
-- **packages/schemas** — contratos JSON Schema
-- **packages/scenarios** — cenários reproduzíveis
-- **workers/api** — Cloudflare Worker de entrada
-- **workers/workflows** — processamento durável
-- **workers/queues** — ingestão e processamento assíncrono
-- **docs** — superfície visual, arquitetura, legislação, fontes e decisões
-- **tests** — testes unitários, integração, contrato e regressão
+O workspace é gerenciado pelo pnpm. A lista de pacotes fica centralizada em `pnpm-workspace.yaml`; scripts de validação ficam no `package.json` da raiz.
+
+- **apps/web** — aplicação Next.js de dashboard; compilada e validada pela CI.
+- **packages/domain** — contratos, tipos e regras do domínio fiscal.
+- **packages/tax-engine** — motor determinístico de cálculo e resolução de regras.
+- **packages/schemas** — contratos JSON Schema compartilhados.
+- **packages/scenarios** — execução de cenários reproduzíveis.
+- **workers/api** — API de entrada e adaptadores Cloudflare.
+- **workers/workflows** — processamento durável com Cloudflare Workflows.
+- **workers/queues** — documentação e espaço reservado para processamento assíncrono; não representa um Worker implantado por si só.
+- **migrations** — migrações SQL versionadas do domínio e da persistência.
+- **docs** — portal estático publicado em Cloudflare Pages, PWA, documentação, arquitetura e decisões.
+
+A publicação visual atual utiliza `docs/` como diretório de saída do Cloudflare Pages. A aplicação em `apps/web` é validada separadamente; não confundir build Next.js com o deploy do portal estático.
 
 ## Separação de responsabilidades
 
