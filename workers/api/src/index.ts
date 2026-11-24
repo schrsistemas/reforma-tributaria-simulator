@@ -18,6 +18,10 @@ export interface Env {
   SIMULATION_WORKFLOW?: WorkflowBinding;
   INTEGRATION_TOKEN?: string;
   EVIDENCE_BUCKET?: R2Bucket;
+  /** Full HTTPS endpoint published for the Receita Federal Simples Nacional observability API. */
+  OFFICIAL_SIMPLE_OBSERVABILITY_URL?: string;
+  /** Full HTTPS endpoint published for the Receita Federal Simples Nacional activities catalog. */
+  OFFICIAL_SIMPLE_ACTIVITIES_URL?: string;
 }
 interface WorkflowBinding {
   create(options: { id?: string; params: unknown }): Promise<{ id: string; status: string }>;
@@ -41,6 +45,46 @@ function integrationHeaders(request: Request) {
     throw Object.assign(new Error('Missing integration headers'), { status: 400 });
   }
   return { correlationId, idempotencyKey, tenantId };
+}
+
+async function proxyOfficialRequest(
+  request: Request,
+  target: string,
+  requestBody?: unknown,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 20000);
+  try {
+    const targetUrl = new URL(target);
+    if (targetUrl.protocol !== 'https:') {
+      throw Object.assign(new Error('OFFICIAL_ENDPOINT_MUST_USE_HTTPS'), { status: 500 });
+    }
+    const method = request.method === 'GET' ? 'GET' : 'POST';
+    const upstream = await fetch(targetUrl.toString(), {
+      method,
+      headers: {
+        accept: 'application/json',
+        ...(method === 'POST' ? { 'content-type': 'application/json' } : {}),
+      },
+      ...(method === 'POST' ? { body: JSON.stringify(requestBody ?? {}) } : {}),
+      signal: controller.signal,
+    });
+    const payload = await upstream.text();
+    const headers = new Headers({
+      'content-type': upstream.headers.get('content-type') ?? 'application/json; charset=utf-8',
+      'cache-control': 'no-store',
+      'x-official-http-status': String(upstream.status),
+    });
+    for (const name of ['x-warning-dados-simulados', 'x-calculadora-versao', 'x-versao-aplicacao', 'x-versao-base-dados']) {
+      const value = upstream.headers.get(name);
+      if (value) headers.set(name, value);
+    }
+    const correlationId = request.headers.get('X-Correlation-Id');
+    if (correlationId) headers.set('X-Correlation-Id', correlationId);
+    return new Response(payload, { status: upstream.status, headers });
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 function authenticate(request: Request, env: Env) {
@@ -231,6 +275,64 @@ export default {
       } catch (error) {
         const status = error instanceof Error && error.name === 'AbortError' ? 504 : (Number((error as { status?: number }).status) || 502);
         return json({ ok: false, error: error instanceof Error ? error.message : 'OFFICIAL_CALCULATOR_UNAVAILABLE' }, status, request);
+      }
+    }
+
+    if (request.method === 'POST' && url.pathname === '/api/v1/official-calculator/regime-geral/observabilidade') {
+      try {
+        integrationHeaders(request);
+        const body = await readJson(request);
+        return await proxyOfficialRequest(
+          request,
+          'https://piloto-cbs.tributos.gov.br/servico/calculadora-consumo/api/calculadora/observabilidade/regime-geral',
+          body,
+        );
+      } catch (error) {
+        const status = error instanceof Error && error.name === 'AbortError' ? 504 : (Number((error as { status?: number }).status) || 502);
+        return json({ ok: false, error: error instanceof Error ? error.message : 'OFFICIAL_REGULAR_CALCULATOR_UNAVAILABLE' }, status, request);
+      }
+    }
+
+    if (request.method === 'POST' && url.pathname === '/api/v1/official-calculator/simples-nacional/observabilidade') {
+      try {
+        integrationHeaders(request);
+        const body = await readJson(request);
+        const target = env.OFFICIAL_SIMPLE_OBSERVABILITY_URL;
+        if (!target) return json({
+          ok: false,
+          error: 'OFFICIAL_SIMPLE_CALCULATOR_ENDPOINT_NOT_CONFIGURED',
+          requiredConfiguration: 'OFFICIAL_SIMPLE_OBSERVABILITY_URL',
+        }, 503, request);
+        return await proxyOfficialRequest(request, target, body);
+      } catch (error) {
+        const status = error instanceof Error && error.name === 'AbortError' ? 504 : (Number((error as { status?: number }).status) || 502);
+        return json({ ok: false, error: error instanceof Error ? error.message : 'OFFICIAL_SIMPLE_CALCULATOR_UNAVAILABLE' }, status, request);
+      }
+    }
+
+    if (request.method === 'GET' && url.pathname === '/api/v1/official-calculator/simples-nacional/atividades') {
+      try {
+        integrationHeaders(request);
+        const configured = env.OFFICIAL_SIMPLE_ACTIVITIES_URL;
+        if (!configured) return json({
+          ok: false,
+          error: 'OFFICIAL_SIMPLE_CALCULATOR_ENDPOINT_NOT_CONFIGURED',
+          requiredConfiguration: 'OFFICIAL_SIMPLE_ACTIVITIES_URL',
+        }, 503, request);
+        const target = new URL(configured);
+        const date = url.searchParams.get('data');
+        if (!date || !/^\\d{4}-\\d{2}-\\d{2}$/.test(date)) {
+          return json({ ok: false, error: 'VALID_DATE_REQUIRED', expected: 'YYYY-MM-DD' }, 400, request);
+        }
+        target.searchParams.set('data', date);
+        for (const key of ['anexo', 'tipoDocumento', 'cClassTrib']) {
+          const value = url.searchParams.get(key);
+          if (value) target.searchParams.set(key, value);
+        }
+        return await proxyOfficialRequest(request, target.toString());
+      } catch (error) {
+        const status = error instanceof Error && error.name === 'AbortError' ? 504 : (Number((error as { status?: number }).status) || 502);
+        return json({ ok: false, error: error instanceof Error ? error.message : 'OFFICIAL_SIMPLE_ACTIVITIES_UNAVAILABLE' }, status, request);
       }
     }
 
