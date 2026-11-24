@@ -191,8 +191,8 @@ export default {
           }, 200, request);
         }
         if (toolName === 'fiscal.evaluate_credit_eligibility') {
-          const input = inputFromCreditEligibility(input);
-          const result = evaluateCreditEligibility(input);
+          const eligibilityInput = inputFromCreditEligibility(input as Record<string, unknown>);
+          const result = evaluateCreditEligibility(eligibilityInput);
           return json({ requestId, correlationId, outcome: 'SUCCESS', result, warnings: result.warnings, finishedAt: new Date().toISOString() }, 200, request);
         }
         if (toolName === 'fiscal.resolve_ruleset') {
