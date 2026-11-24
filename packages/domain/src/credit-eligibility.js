@@ -1,6 +1,6 @@
-export type CreditTax='IBS'|'CBS';
-export type CreditEligibility='ELIGIBLE'|'INELIGIBLE'|'CONDITIONAL';
-export type CreditReason=
+type CreditTax='IBS'|'CBS';
+type CreditEligibility='ELIGIBLE'|'INELIGIBLE'|'CONDITIONAL';
+type CreditReason=
   | 'REGULAR_ACQUISITION'
   | 'PERSONAL_CONSUMPTION'
   | 'DOCUMENT_REQUIRED'
@@ -9,7 +9,7 @@ export type CreditReason=
   | 'INSUFFICIENT_FACTS'
   | 'CONTEXT_SPECIFIC';
 
-export type CreditAcquisitionCategory=
+type CreditAcquisitionCategory=
   | 'GOODS'
   | 'RAW_MATERIALS'
   | 'MACHINERY'
@@ -32,10 +32,10 @@ export type CreditAcquisitionCategory=
   | 'RECREATIONAL_SPORTS_AESTHETIC'
   | 'OTHER';
 
-export type CreditDocumentType='NFE'|'NFSE'|'CTE'|'CTE_OS'|'NFC_E'|'OTHER_ELECTRONIC';
-export type CreditOperationTaxTreatment='NORMAL'|'IMMUNE'|'EXEMPT'|'ZERO_RATE'|'DEFERRAL'|'SUSPENSION'|'OTHER';
+type CreditDocumentType='NFE'|'NFSE'|'CTE'|'CTE_OS'|'NFC_E'|'OTHER_ELECTRONIC';
+type CreditOperationTaxTreatment='NORMAL'|'IMMUNE'|'EXEMPT'|'ZERO_RATE'|'DEFERRAL'|'SUSPENSION'|'OTHER';
 
-export interface CreditEligibilityInput {
+interface CreditEligibilityInput {
   category: CreditAcquisitionCategory;
   regularTaxpayer: boolean;
   electronicFiscalDocument: boolean;
@@ -64,7 +64,7 @@ export interface CreditEligibilityInput {
   itemDescription?: string;
 }
 
-export interface CreditTaxDecision {
+interface CreditTaxDecision {
   tax: CreditTax;
   eligibility: CreditEligibility;
   reason: CreditReason;
@@ -72,7 +72,7 @@ export interface CreditTaxDecision {
   ruleId: string;
 }
 
-export interface CreditEligibilityResult {
+interface CreditEligibilityResult {
   ibs: CreditTaxDecision;
   cbs: CreditTaxDecision;
   personalConsumption: boolean;
@@ -100,7 +100,7 @@ const CONTEXT_CATEGORIES=new Set<CreditAcquisitionCategory>([
  * Matrix is descriptive metadata for audit/UI. Conditions deliberately describe
  * the legal trigger instead of pretending every rule maps to one merchandise category.
  */
-export const CREDIT_ELIGIBILITY_RULE_MATRIX = [
+const CREDIT_ELIGIBILITY_RULE_MATRIX = [
   {ruleId:'CE-057-I', outcome:'INELIGIBLE', basis:'LC 214/2025, art. 57, I', condition:'listed personal-use goods/services, subject to art. 57, §3º exceptions'},
   {ruleId:'CE-057-I-G', outcome:'INELIGIBLE', basis:'LC 214/2025, art. 57, I, g', condition:'goods/services related to acquisition or maintenance of art. 57, I items'},
   {ruleId:'CE-057-II', outcome:'INELIGIBLE', basis:'LC 214/2025, art. 57, II', condition:'non-onerous or below-market supply to the persons listed in art. 57, II'},
@@ -300,7 +300,7 @@ function decision(input:CreditEligibilityInput,tax:CreditTax):CreditTaxDecision 
   };
 }
 
-export function evaluateCreditEligibility(input:CreditEligibilityInput):CreditEligibilityResult {
+function evaluateCreditEligibility(input:CreditEligibilityInput):CreditEligibilityResult {
   const personal=
     PERSONAL_CATEGORIES.has(input.category) &&
     !(
@@ -346,3 +346,5 @@ export function evaluateCreditEligibility(input:CreditEligibilityInput):CreditEl
     },
   };
 }
+
+module.exports = { evaluateCreditEligibility, CREDIT_ELIGIBILITY_RULE_MATRIX };
