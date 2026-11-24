@@ -26,10 +26,14 @@ R2 and Workflows are optional capabilities, but their absence must remain visibl
 ## Health and readiness
 
 - `GET /health` is a liveness check. It confirms that the Worker process responds; it does not assert that persistence is available.
-- `GET /ready` is a readiness check. It returns HTTP 200 and `status: ready` when D1 is bound. Without D1 it returns HTTP 503 and `status: degraded`, with the missing dependency and affected capability names.
+- `GET /ready` is a readiness check. It returns HTTP 200 and `status: ready` only when D1 and `INTEGRATION_TOKEN` are configured. If either is missing it returns HTTP 503 and `status: degraded`, with the missing dependency and affected capability names.
 - `GET /api/v1` exposes the runtime persistence and readiness summary for diagnostics.
 
 A successful GitHub deployment is not equivalent to a ready fiscal API. Production monitoring should check both `/health` and `/ready`.
+
+## Tenant identity and authentication boundary
+
+The current API authenticates business routes with the shared `INTEGRATION_TOKEN` bearer secret and receives the tenant identifier from `X-Zynkronyx-Tenant`. That header is caller-supplied metadata; it is not, by itself, proof that the caller belongs to the named tenant. Do not treat this arrangement as verified multi-tenant isolation when the same integration token is distributed to multiple tenants. Before onboarding independent tenants, bind tenant identity to the credential (for example, per-tenant credentials or a signed token with a verified tenant claim) and derive the tenant context server-side. Validate cross-tenant read/write denial with integration tests before production use.
 
 ## Deployment and capacity checklist
 
