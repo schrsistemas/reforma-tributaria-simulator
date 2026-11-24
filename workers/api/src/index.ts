@@ -158,12 +158,37 @@ export default {
       return json({ status: 'ok', service: 'reforma-tributaria-simulator', version: env.VERSION ?? 'dev' }, 200, request);
     }
 
+    if (request.method === 'GET' && url.pathname === '/ready') {
+      const dependencies = {
+        database: Boolean(env.DB),
+        evidenceArchive: Boolean(env.EVIDENCE_BUCKET),
+        durableWorkflow: Boolean(env.SIMULATION_WORKFLOW),
+      };
+      // D1 is required for production operations that persist snapshots,
+      // rules, evidence metadata, and financial state. R2 and Workflows are
+      // optional capabilities and must not make the API falsely unready.
+      const ready = dependencies.database;
+      return json({
+        status: ready ? 'ready' : 'degraded',
+        service: 'reforma-tributaria-simulator',
+        version: env.VERSION ?? 'dev',
+        dependencies,
+        unavailableCapabilities: [
+          ...(!dependencies.database ? ['persistent-fiscal-operations', 'rag-search', 'simulation-snapshots', 'financial-ledgers', 'scheduled-collection'] : []),
+          ...(!dependencies.evidenceArchive ? ['evidence-binary-archive'] : []),
+          ...(!dependencies.durableWorkflow ? ['durable-scenario-execution'] : []),
+        ],
+      }, ready ? 200 : 503, request);
+    }
+
     if (request.method === 'GET' && url.pathname === '/api/v1') {
       return json({
         service: 'reforma-tributaria-simulator',
         apiVersion: 'v1',
         capabilities: ['simulation', 'tax-engine', 'split-payment', 'tef', 'pix', 'fiscal-knowledge', 'government-source-registry', 'official-consumption-calculator', 'credit-eligibility'],
         execution: { explicitScenario: true, durableWorkflow: Boolean(env.SIMULATION_WORKFLOW) },
+        persistence: { database: Boolean(env.DB), evidenceArchive: Boolean(env.EVIDENCE_BUCKET) },
+        readiness: env.DB ? 'READY' : 'DEGRADED',
       }, 200, request);
     }
 
