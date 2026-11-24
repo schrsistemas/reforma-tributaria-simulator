@@ -1,98 +1,13 @@
-type CreditTax='IBS'|'CBS';
-type CreditEligibility='ELIGIBLE'|'INELIGIBLE'|'CONDITIONAL';
-type CreditReason=
-  | 'REGULAR_ACQUISITION'
-  | 'PERSONAL_CONSUMPTION'
-  | 'DOCUMENT_REQUIRED'
-  | 'EXTINCTION_REQUIRED'
-  | 'FISCAL_REGIME_EXCEPTION'
-  | 'INSUFFICIENT_FACTS'
-  | 'CONTEXT_SPECIFIC';
 
-type CreditAcquisitionCategory=
-  | 'GOODS'
-  | 'RAW_MATERIALS'
-  | 'MACHINERY'
-  | 'SOFTWARE_TECHNOLOGY'
-  | 'ENERGY'
-  | 'FREIGHT_LOGISTICS'
-  | 'CONTRACTED_SERVICES'
-  | 'COMMERCIAL_RENTAL'
-  | 'VEHICLE'
-  | 'FUEL'
-  | 'FOOD'
-  | 'TRAVEL_HOSPITALITY'
-  | 'TELECOM'
-  | 'GIFT'
-  | 'JEWELRY'
-  | 'ART_ANTIQUES'
-  | 'ALCOHOL'
-  | 'TOBACCO'
-  | 'WEAPONS_AMMUNITION'
-  | 'RECREATIONAL_SPORTS_AESTHETIC'
-  | 'OTHER';
 
-type CreditDocumentType='NFE'|'NFSE'|'CTE'|'CTE_OS'|'NFC_E'|'OTHER_ELECTRONIC';
-type CreditOperationTaxTreatment='NORMAL'|'IMMUNE'|'EXEMPT'|'ZERO_RATE'|'DEFERRAL'|'SUSPENSION'|'OTHER';
-
-interface CreditEligibilityInput {
-  category: CreditAcquisitionCategory;
-  regularTaxpayer: boolean;
-  electronicFiscalDocument: boolean;
-  taxDebtExtinguished: boolean;
-
-  /** Optional art. 48 exception when the relevant extinction modalities were not implemented. */
-  extinctionRequirementWaived?: boolean;
-
-  suppliedFreeOrBelowMarketToPerson?: boolean;
-  economicActivityRelated?: boolean;
-  fuelSpecificRegime?: boolean;
-  relatedToPersonalConsumptionItem?: boolean;
-  operationalPurpose?: 'BUSINESS'|'PERSONAL'|'MIXED'|'UNKNOWN';
-
-  /** Evidence/context used to apply the art. 57 §3 exceptions. */
-  commercializedOrUsedForManufacturing?: boolean;
-  usedBySecurityCompany?: boolean;
-  usedExclusivelyByCustomersOnPremises?: boolean;
-  serviceProvidedForConsiderationToCustomers?: boolean;
-  predominantActivityIsSameService?: boolean;
-  workdayOnPremisesEmployeeProvision?: boolean;
-  documentType?: CreditDocumentType;
-  operationTaxTreatment?: CreditOperationTaxTreatment;
-  ncm?: string;
-  cfop?: string;
-  itemDescription?: string;
-}
-
-interface CreditTaxDecision {
-  tax: CreditTax;
-  eligibility: CreditEligibility;
-  reason: CreditReason;
-  legalBasis: string[];
-  ruleId: string;
-}
-
-interface CreditEligibilityResult {
-  ibs: CreditTaxDecision;
-  cbs: CreditTaxDecision;
-  personalConsumption: boolean;
-  warnings: string[];
-  source: {
-    authority: 'PLANALTO';
-    law: 'LC 214/2025';
-    amendments: string[];
-    currentCompilation: boolean;
-    url: string;
-  };
-}
 
 const OFFICIAL_URL='https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp214compilado.htm';
 
-const PERSONAL_CATEGORIES=new Set<CreditAcquisitionCategory>([
+const PERSONAL_CATEGORIES=new Set([
   'JEWELRY','ART_ANTIQUES','ALCOHOL','TOBACCO','WEAPONS_AMMUNITION','RECREATIONAL_SPORTS_AESTHETIC'
 ]);
 
-const CONTEXT_CATEGORIES=new Set<CreditAcquisitionCategory>([
+const CONTEXT_CATEGORIES=new Set([
   'VEHICLE','FOOD','TRAVEL_HOSPITALITY','TELECOM','GIFT','FUEL'
 ]);
 
@@ -111,9 +26,9 @@ const CREDIT_ELIGIBILITY_RULE_MATRIX = [
   {ruleId:'CE-047-FUEL', outcome:'CONDITIONAL', basis:'LC 214/2025, art. 47, §§4º e 5º', condition:'fuel acquired under the specific fuel regime'},
   {ruleId:'CE-049', outcome:'CONDITIONAL', basis:'LC 214/2025, art. 49', condition:'immune, exempt, zero-rate, deferral or suspension operation; verify express presumptive-credit exception'},
   {ruleId:'CE-CONTEXT', outcome:'CONDITIONAL', basis:'LC 214/2025, arts. 47 and 57', condition:'facts or classification are insufficient for a definitive determination'},
-] as const;
+];
 
-function decision(input:CreditEligibilityInput,tax:CreditTax):CreditTaxDecision {
+function decision(input,tax):CreditTaxDecision {
   const legal47='LC 214/2025, art. 47';
   const legal57='LC 214/2025, art. 57';
 
@@ -300,7 +215,7 @@ function decision(input:CreditEligibilityInput,tax:CreditTax):CreditTaxDecision 
   };
 }
 
-function evaluateCreditEligibility(input:CreditEligibilityInput):CreditEligibilityResult {
+function evaluateCreditEligibility(input):CreditEligibilityResult {
   const personal=
     PERSONAL_CATEGORIES.has(input.category) &&
     !(
@@ -318,7 +233,7 @@ function evaluateCreditEligibility(input:CreditEligibilityInput):CreditEligibili
     Boolean(input.relatedToPersonalConsumptionItem) ||
     Boolean(input.suppliedFreeOrBelowMarketToPerson && input.workdayOnPremisesEmployeeProvision!==true);
 
-  const warnings:string[]=[];
+  const warnings=[];
   if(input.category==='OTHER') warnings.push('Categoria genérica: classificar a aquisição antes de tratar o resultado como definitivo.');
   if(input.economicActivityRelated===undefined) warnings.push('A relação com a atividade econômica não foi informada.');
   if(input.operationalPurpose===undefined || input.operationalPurpose==='UNKNOWN') warnings.push('A finalidade da aquisição não foi informada.');
