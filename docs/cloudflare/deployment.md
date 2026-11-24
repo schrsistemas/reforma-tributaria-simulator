@@ -26,14 +26,14 @@ R2 and Workflows are optional capabilities, but their absence must remain visibl
 ## Health and readiness
 
 - `GET /health` is a liveness check. It confirms that the Worker process responds; it does not assert that persistence is available.
-- `GET /ready` is a readiness check. It returns HTTP 200 and `status: ready` only when D1 and `INTEGRATION_TOKEN` are configured. If either is missing it returns HTTP 503 and `status: degraded`, with the missing dependency and affected capability names.
+- `GET /ready` is a readiness check. It returns HTTP 200 and `status: ready` only when D1, `INTEGRATION_TOKEN` and `INTEGRATION_TENANT_ID` are configured. If any is missing it returns HTTP 503 and `status: degraded`, with the missing dependency and affected capability names.
 - `GET /api/v1` exposes the runtime persistence and readiness summary for diagnostics.
 
 A successful GitHub deployment is not equivalent to a ready fiscal API. Production monitoring should check both `/health` and `/ready`.
 
 ## Tenant identity and authentication boundary
 
-The current API authenticates business routes with the shared `INTEGRATION_TOKEN` bearer secret and receives the tenant identifier from `X-Zynkronyx-Tenant`. That header is caller-supplied metadata; it is not, by itself, proof that the caller belongs to the named tenant. Do not treat this arrangement as verified multi-tenant isolation when the same integration token is distributed to multiple tenants. Before onboarding independent tenants, bind tenant identity to the credential (for example, per-tenant credentials or a signed token with a verified tenant claim) and derive the tenant context server-side. Validate cross-tenant read/write denial with integration tests before production use.
+The API currently supports **one tenant per integration token**. Configure `INTEGRATION_TOKEN` and `INTEGRATION_TENANT_ID` for the same authorized integration. All authenticated routes reject a missing tenant binding with HTTP 503 and reject a mismatched `X-Zynkronyx-Tenant` header with HTTP 403. The tenant header is caller-supplied metadata and is only accepted when it matches the server-side binding. Do not share this token across independent tenants. Multi-tenant credential mapping (per-tenant credentials or signed tokens with verified tenant claims) is a separate future feature, not implemented by this single-tenant binding. Validate cross-tenant denial with integration tests before onboarding multiple tenants.
 
 ## Deployment and capacity checklist
 
