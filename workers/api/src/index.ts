@@ -17,6 +17,8 @@ export interface Env {
   DB?: D1Database;
   SIMULATION_WORKFLOW?: WorkflowBinding;
   INTEGRATION_TOKEN?: string;
+  /** Tenant authorized to use the configured integration token. */
+  INTEGRATION_TENANT_ID?: string;
   EVIDENCE_BUCKET?: R2Bucket;
   /** Full HTTPS endpoint published for the Receita Federal Simples Nacional observability API. */
   OFFICIAL_SIMPLE_OBSERVABILITY_URL?: string;
@@ -95,6 +97,16 @@ function authenticate(request: Request, env: Env) {
   if (authorization !== `Bearer ${env.INTEGRATION_TOKEN}`) {
     throw Object.assign(new Error('UNAUTHORIZED'), { status: 401 });
   }
+  // A shared token must never authorize an arbitrary caller-supplied tenant.
+  // The current integration supports one explicitly bound tenant per token.
+  const boundTenantId = env.INTEGRATION_TENANT_ID?.trim();
+  if (!boundTenantId) {
+    throw Object.assign(new Error('INTEGRATION_TENANT_NOT_CONFIGURED'), { status: 503 });
+  }
+  const requestedTenantId = request.headers.get('X-Zynkronyx-Tenant')?.trim();
+  if (requestedTenantId !== boundTenantId) {
+    throw Object.assign(new Error('TENANT_FORBIDDEN'), { status: 403 });
+  }
 }
 
 async function readJson(request: Request) {
@@ -162,12 +174,13 @@ export default {
       const dependencies = {
         database: Boolean(env.DB),
         integrationAuth: Boolean(env.INTEGRATION_TOKEN),
+        tenantBinding: Boolean(env.INTEGRATION_TENANT_ID?.trim()),
         evidenceArchive: Boolean(env.EVIDENCE_BUCKET),
         durableWorkflow: Boolean(env.SIMULATION_WORKFLOW),
       };
       // D1 and integration authentication are required for business routes.
       // R2 and Workflows remain optional capabilities.
-      const ready = dependencies.database && dependencies.integrationAuth;
+      const ready = dependencies.database && dependencies.integrationAuth && dependencies.tenantBinding;
       return json({
         status: ready ? 'ready' : 'degraded',
         service: 'reforma-tributaria-simulator',
@@ -176,6 +189,7 @@ export default {
         unavailableCapabilities: [
           ...(!dependencies.database ? ['persistent-fiscal-operations', 'rag-search', 'simulation-snapshots', 'financial-ledgers', 'scheduled-collection'] : []),
           ...(!dependencies.integrationAuth ? ['authenticated-business-api'] : []),
+          ...(!dependencies.tenantBinding ? ['tenant-bound-business-api'] : []),
           ...(!dependencies.evidenceArchive ? ['evidence-binary-archive'] : []),
           ...(!dependencies.durableWorkflow ? ['durable-scenario-execution'] : []),
         ],
@@ -189,8 +203,8 @@ export default {
         capabilities: ['simulation', 'tax-engine', 'split-payment', 'tef', 'pix', 'fiscal-knowledge', 'government-source-registry', 'official-consumption-calculator', 'credit-eligibility'],
         execution: { explicitScenario: true, durableWorkflow: Boolean(env.SIMULATION_WORKFLOW) },
         persistence: { database: Boolean(env.DB), evidenceArchive: Boolean(env.EVIDENCE_BUCKET) },
-        authentication: { integrationTokenConfigured: Boolean(env.INTEGRATION_TOKEN) },
-        readiness: env.DB && env.INTEGRATION_TOKEN ? 'READY' : 'DEGRADED',
+        authentication: { integrationTokenConfigured: Boolean(env.INTEGRATION_TOKEN), tenantBindingConfigured: Boolean(env.INTEGRATION_TENANT_ID?.trim()) },
+        readiness: env.DB && env.INTEGRATION_TOKEN && env.INTEGRATION_TENANT_ID?.trim() ? 'READY' : 'DEGRADED',
       }, 200, request);
     }
 
