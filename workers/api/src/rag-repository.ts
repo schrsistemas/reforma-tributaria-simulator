@@ -17,7 +17,7 @@ export async function searchRag(
   sourceType?: string,
   jurisdiction?: string,
 ): Promise<RagAnswer> {
-  const limit = Math.max(1, Math.min(topK, 10));
+  const limit = Number.isFinite(topK) ? Math.max(1, Math.min(Math.trunc(topK), 10)) : 5;
 
   const rows = await db
     .prepare(
@@ -53,10 +53,10 @@ export async function searchRag(
 
   const ranked = rerank(query, candidates).slice(0, limit);
 
+  // Index candidate rows once; avoid a linear scan for every ranked hit.
+  const sourceRowsByChunkId = new Map(rows.results.map((row) => [String(row.chunk_id), row]));
   const hits: RagHit[] = ranked.map((x) => {
-    const sourceRow = rows.results.find((r) => String(r.chunk_id) === x.id) as
-      | Record<string, unknown>
-      | undefined;
+    const sourceRow = sourceRowsByChunkId.get(x.id);
 
     const evidence: FiscalEvidence = {
       documentId: x.documentId,
