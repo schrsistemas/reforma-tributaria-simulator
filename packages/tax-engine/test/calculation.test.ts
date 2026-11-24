@@ -45,3 +45,17 @@ test('rejects empty operations', () => {
 test('rejects invalid decimals', () => {
   assert.throws(() => calculateTax({ ...operation, items: [{ ...operation.items[0], unitPrice: '1.2.3' }] }, rules), /Invalid decimal/);
 });
+
+test('percentage rate is interpreted as percent for decimal strings with varying scale', () => {
+  const result = calculateTax({
+    ...operation,
+    items: [{ ...operation.items[0], quantity: '1', unitPrice: '250.00' }]
+  }, [{ ...rules[0], ratePercent: '0.9' }]);
+  assert.equal(result.taxes.IBS.amount, '2.25');
+});
+
+test('uses item quantity and price rather than trusting the grossAmount field', () => {
+  const result = calculateTax({ ...operation, grossAmount: '999999.00' }, [{ ...rules[0], ratePercent: '10.00' }]);
+  assert.equal(result.taxableBase, '1000.00');
+  assert.equal(result.taxes.IBS.amount, '100.00');
+});
