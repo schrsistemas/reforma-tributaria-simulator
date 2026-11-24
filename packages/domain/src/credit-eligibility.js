@@ -28,7 +28,7 @@ const CREDIT_ELIGIBILITY_RULE_MATRIX = [
   {ruleId:'CE-CONTEXT', outcome:'CONDITIONAL', basis:'LC 214/2025, arts. 47 and 57', condition:'facts or classification are insufficient for a definitive determination'},
 ];
 
-function decision(input,tax):CreditTaxDecision {
+function decision(input,tax) {
   const legal47='LC 214/2025, art. 47';
   const legal57='LC 214/2025, art. 57';
 
@@ -215,7 +215,7 @@ function decision(input,tax):CreditTaxDecision {
   };
 }
 
-function evaluateCreditEligibility(input):CreditEligibilityResult {
+function evaluateCreditEligibility(input) {
   const personal=
     PERSONAL_CATEGORIES.has(input.category) &&
     !(
