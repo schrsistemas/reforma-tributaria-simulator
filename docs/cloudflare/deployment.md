@@ -9,6 +9,17 @@ Production deployment uses GitHub Actions and protected GitHub Environment secre
 
 The repository never contains credential values. Deploy success confirms that the Worker script was accepted by Cloudflare; it does not prove that optional bindings or persistence resources are provisioned.
 
+## Worker secrets
+
+The current GitHub Actions deployment passes only the Cloudflare account ID and API token to Wrangler. It does not provision application authentication secrets. Configure these directly in the target Cloudflare account from `workers/api` before exposing authenticated business routes:
+
+```bash
+npx wrangler secret put INTEGRATION_TOKEN
+npx wrangler secret put INTEGRATION_TENANT_ID
+```
+
+Use a high-entropy token and the exact tenant identifier authorized for that token. These are separate Worker secrets; do not put their values in `wrangler.toml`, source files, GitHub commits, or deployment logs. After configuring them, verify `GET /ready` and confirm the `integrationAuth` and `tenantBinding` dependencies are true. The current implementation supports one tenant per configured token.
+
 ## Runtime bindings
 
 The current `workers/api/wrangler.toml` intentionally leaves account-specific resources unbound. Before enabling persisted production operations, provision resources in the intended Cloudflare account and add their real identifiers to the Worker configuration:
