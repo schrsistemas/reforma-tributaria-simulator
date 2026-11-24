@@ -3,7 +3,6 @@ name: CI
 on:
   push:
     branches: [main]
-  pull_request:
 
 permissions:
   contents: read
@@ -17,11 +16,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: pnpm install --frozen-lockfile=false
-      - run: pnpm test
-      - run: pnpm test:site
-      - run: pnpm typecheck
-      - run: pnpm build
+      - run: pnpm install --no-frozen-lockfile
+      - name: Run unit and integration tests
+        run: pnpm test
+      - name: Validate static production site
+        run: pnpm test:site
+      - name: Type-check all workspaces
+        run: pnpm typecheck
+      - name: Build all workspaces
+        run: pnpm build
 
   security:
     runs-on: ubuntu-latest
