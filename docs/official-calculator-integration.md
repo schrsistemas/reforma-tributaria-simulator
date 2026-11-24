@@ -38,6 +38,36 @@ Endpoint de observabilidade:
 
 O fluxo considera atividade/anexo, tipo de documento, cClassTrib, regime de apuração do IBS/CBS, vigência e os dados de receita/tributação pertinentes. É um motor separado do regime regular.
 
+## Adaptadores HTTP implementados
+
+O Worker disponibiliza os seguintes caminhos, todos exigindo os cabeçalhos de integração `X-Correlation-Id`, `Idempotency-Key` e `X-Zynkronyx-Tenant`:
+
+| Endpoint do simulador | Método | Destino |
+|---|---|---|
+| `/api/v1/official-calculator/regime-geral` | POST | API oficial de cálculo do regime regular |
+| `/api/v1/official-calculator/regime-geral/observabilidade` | POST | API oficial de observabilidade por item do regime regular |
+| `/api/v1/official-calculator/simples-nacional/observabilidade` | POST | URL oficial configurada para observabilidade do Simples |
+| `/api/v1/official-calculator/simples-nacional/atividades?data=AAAA-MM-DD` | GET | URL oficial configurada para consulta de atividades |
+
+Os adaptadores são proxies HTTP: não recalculam nem transformam o JSON fiscal. Preservam o corpo e o status HTTP devolvidos pelo motor oficial, não armazenam respostas em cache e propagam os headers de alerta de dados simulados e de versão quando fornecidos pelo upstream. O timeout de chamada é de 20 segundos.
+
+### Configuração do Simples Nacional
+
+Os caminhos publicados pelo repositório oficial identificam a API, mas o endereço de implantação não deve ser inferido a partir da porta local de desenvolvimento. Configure os endpoints HTTPS completos no ambiente do Worker:
+
+- `OFFICIAL_SIMPLE_OBSERVABILITY_URL`: endpoint completo de `POST /calculadora/observabilidade/simples-nacional`.
+- `OFFICIAL_SIMPLE_ACTIVITIES_URL`: endpoint completo de `GET /calculadora/simples-nacional/atividades`.
+
+Sem essas configurações, o Worker retorna HTTP 503 com o identificador de configuração ausente. Isso é intencional: evita direcionar dados fiscais a um host presumido ou a um ambiente de homologação incorreto. A URL de atividades recebe `data` e encaminha opcionalmente `anexo`, `tipoDocumento` e `cClassTrib`.
+
+### Interpretação de respostas
+
+- Para o endpoint de observabilidade do regime regular, inspecione o estado de cada item. HTTP 200 não significa que todos os itens foram calculados.
+- Trate `CALCULADO`, `CALCULO_SIMULADO`, `INCONSISTENCIA_ENTRADA`, `NAO_IMPLEMENTADO` e `FALHA_TECNICA` como estados distintos.
+- Em respostas do Simples, preserve os objetos de observabilidade e os códigos `VSN-`; não converta erros por item em sucesso fiscal.
+- Registre o payload enviado, payload integral recebido, timestamp, correlation ID, status HTTP, headers de versão/alerta e hash do artefato oficial. O proxy não persiste esses dados automaticamente.
+- Não use a estimativa local do sandbox como substituta de resposta oficial.
+
 ## Achados na revisão do simulador
 
 1. A interface de produção tinha campos de taxa livres e cálculo `base × taxa` apresentado no contexto de uma calculadora oficial. Mesmo com aviso, isso induzia a uso como fórmula tributária.
