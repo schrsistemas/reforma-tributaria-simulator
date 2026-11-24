@@ -118,7 +118,7 @@ export default function Home() {
           <label>URL da API<input type="url" placeholder="https://..." value={apiUrl} onChange={event => setApiUrl(event.target.value)} /></label>
           <button onClick={executeScenario} disabled={busy}>{busy ? "Executando..." : "Executar cenário"}</button>
           {error && <p className="error" role="alert">{error}</p>}
-          {result && <pre className="result">{JSON.stringify(result, null, 2)}</pre>}
+          {result !== null && <pre className="result">{JSON.stringify(result, null, 2)}</pre>}
         </div>
         <div className="card">
           <h3>Memória matemática do cenário</h3>
