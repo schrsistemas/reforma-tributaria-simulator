@@ -32,8 +32,8 @@ A operação usa data do fato gerador, município, UF e itens individualizados c
 
 Endpoint de observabilidade:
 
-- `POST /api/observabilidade/simples-nacional`
-- `POST /api/observabilidade/simples-nacional/nao-assistido`
+- `POST /api/calculadora/observabilidade/simples-nacional`
+- `POST /api/calculadora/observabilidade/simples-nacional/nao-assistido`
 - Consulta de atividades e códigos de erro conforme o README oficial.
 
 O fluxo considera atividade/anexo, tipo de documento, cClassTrib, regime de apuração do IBS/CBS, vigência e os dados de receita/tributação pertinentes. É um motor separado do regime regular.
