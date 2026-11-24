@@ -7,10 +7,5 @@
     "typecheck": "pnpm -r typecheck",
     "build": "pnpm -r build",
     "test:site": "node scripts/validate-static-site.mjs"
-  },
-  "workspaces": [
-    "apps/*",
-    "packages/*",
-    "workers/*"
-  ]
+  }
 }
