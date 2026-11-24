@@ -15,7 +15,7 @@ const CONTEXT_CATEGORIES=new Set([
  * Matrix is descriptive metadata for audit/UI. Conditions deliberately describe
  * the legal trigger instead of pretending every rule maps to one merchandise category.
  */
-const CREDIT_ELIGIBILITY_RULE_MATRIX = [
+export const CREDIT_ELIGIBILITY_RULE_MATRIX = [
   {ruleId:'CE-057-I', outcome:'INELIGIBLE', basis:'LC 214/2025, art. 57, I', condition:'listed personal-use goods/services, subject to art. 57, §3º exceptions'},
   {ruleId:'CE-057-I-G', outcome:'INELIGIBLE', basis:'LC 214/2025, art. 57, I, g', condition:'goods/services related to acquisition or maintenance of art. 57, I items'},
   {ruleId:'CE-057-II', outcome:'INELIGIBLE', basis:'LC 214/2025, art. 57, II', condition:'non-onerous or below-market supply to the persons listed in art. 57, II'},
@@ -215,7 +215,7 @@ function decision(input,tax) {
   };
 }
 
-function evaluateCreditEligibility(input) {
+export function evaluateCreditEligibility(input) {
   const personal=
     PERSONAL_CATEGORIES.has(input.category) &&
     !(
@@ -261,5 +261,3 @@ function evaluateCreditEligibility(input) {
     },
   };
 }
-
-module.exports = { evaluateCreditEligibility, CREDIT_ELIGIBILITY_RULE_MATRIX };
