@@ -1,6 +1,8 @@
 name: CI
 
 on:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
   push:
     branches: [main]
 
