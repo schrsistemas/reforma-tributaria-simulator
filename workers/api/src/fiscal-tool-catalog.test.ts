@@ -71,6 +71,14 @@ test('validates typed booleans and required credit eligibility fields', () => {
   }).ok, false);
 });
 
+
+test('rejects impossible calendar dates and oversized or blank string inputs', () => {
+  assert.equal(validateFiscalToolInput('fiscal.resolve_ruleset', { asOf: '2027-02-29' }).ok, false);
+  assert.equal(validateFiscalToolInput('fiscal.resolve_ruleset', { asOf: '2028-02-29' }).ok, true);
+  assert.equal(validateFiscalToolInput('fiscal.search_evidence', { query: 'x'.repeat(501) }).ok, false);
+  assert.equal(validateFiscalToolInput('fiscal.get_document', { documentId: '   ' }).ok, false);
+  assert.equal(validateFiscalToolInput('fiscal.get_document', { documentId: 'd'.repeat(129) }).ok, false);
+});
 test('allows no-argument credit rule lookup but rejects extra arguments', () => {
   assert.equal(validateFiscalToolInput('fiscal.get_credit_eligibility_rules', {}).ok, true);
   assert.equal(validateFiscalToolInput('fiscal.get_credit_eligibility_rules', { includeDrafts: true }).ok, false);
