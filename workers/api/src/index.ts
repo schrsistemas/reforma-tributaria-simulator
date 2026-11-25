@@ -349,25 +349,26 @@ export default {
         }
         const input = validation.input;
         const definition = FISCAL_MCP_TOOLS.find(tool => tool.name === toolName)!;
-        if (definition.requiresDatabase && !env.DB) {
+        const database = env.DB;
+        if (definition.requiresDatabase && !database) {
           return json({ requestId, correlationId, outcome: 'ERROR', errorCode: 'DATABASE_NOT_BOUND', warnings: [], finishedAt: new Date().toISOString() }, 503, request);
         }
         if (toolName === 'fiscal.search_evidence') {
           const query = String(input.query ?? '').trim();
           if (!query) return json({ requestId, correlationId, outcome: 'ERROR', errorCode: 'RAG_QUERY_REQUIRED', warnings: [], finishedAt: new Date().toISOString() }, 400, request);
-          const result = await searchRag(env.DB, query, Number(input.limit ?? 5), input.asOf ? String(input.asOf) : undefined, input.sourceType ? String(input.sourceType) : undefined, input.jurisdiction ? String(input.jurisdiction) : undefined);
+          const result = await searchRag(database!, query, Number(input.limit ?? 5), input.asOf ? String(input.asOf) : undefined, input.sourceType ? String(input.sourceType) : undefined, input.jurisdiction ? String(input.jurisdiction) : undefined);
           return json({ requestId, correlationId, outcome: 'SUCCESS', result, warnings: result.confidence === 'LOW' ? ['EVIDENCE_CONFIDENCE_LOW'] : [], finishedAt: new Date().toISOString() }, 200, request);
         }
         if (toolName === 'fiscal.get_document') {
           const documentId = String(input.documentId ?? '').trim();
           if (!documentId) return json({ requestId, correlationId, outcome: 'ERROR', errorCode: 'DOCUMENT_ID_REQUIRED', warnings: [], finishedAt: new Date().toISOString() }, 400, request);
-          const result = await getRagDocument(env.DB, documentId);
+          const result = await getRagDocument(database!, documentId);
           if (!result) return json({ requestId, correlationId, outcome: 'ERROR', errorCode: 'EVIDENCE_DOCUMENT_NOT_FOUND', warnings: [], finishedAt: new Date().toISOString() }, 404, request);
           return json({ requestId, correlationId, outcome: 'SUCCESS', result, warnings: [], finishedAt: new Date().toISOString() }, 200, request);
         }
         if (toolName === 'fiscal.get_split_payment_rules') {
           const query = String(input.query ?? 'Split Payment IBS CBS').trim() || 'Split Payment IBS CBS';
-          const result = await searchRag(env.DB, query, Number(input.limit ?? 5), input.asOf ? String(input.asOf) : undefined);
+          const result = await searchRag(database!, query, Number(input.limit ?? 5), input.asOf ? String(input.asOf) : undefined);
           return json({ requestId, correlationId, outcome: 'SUCCESS', result, warnings: result.confidence === 'LOW' ? ['EVIDENCE_CONFIDENCE_LOW'] : [], finishedAt: new Date().toISOString() }, 200, request);
         }
         if (toolName === 'fiscal.get_credit_eligibility_rules') {
@@ -769,7 +770,7 @@ export default {
         const asOf = url.searchParams.get('asOf') ?? undefined;
         const sourceType = url.searchParams.get('sourceType') ?? undefined;
         const jurisdiction = url.searchParams.get('jurisdiction') ?? undefined;
-        return json({ ok: true, ...await searchRag(env.DB, query, topK, asOf, sourceType, jurisdiction), tenantId: headers.tenantId }, 200, request);
+        return json({ ok: true, ...await searchRag(database!, query, topK, asOf, sourceType, jurisdiction), tenantId: headers.tenantId }, 200, request);
       } catch (error) {
         const status = Number((error as { status?: number }).status) || 500;
         return json({ ok: false, error: error instanceof Error ? error.message : 'RAG_SEARCH_FAILED' }, status, request);
