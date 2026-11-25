@@ -22,7 +22,8 @@ Node.js 22.x, pnpm 10.34.9 through Corepack, TypeScript, Fastify and PostgreSQL.
 - GET /v1/erp-instances
 - POST /v1/erp-instances (OWNER or ADMIN)
 - GET /v1/normative/sources
-- GET /v1/normative/collector-runs (OWNER/ADMIN of NORMATIVE_REVIEW_TENANT_ID)\n- GET /v1/normative/artifact-candidates
+- GET /v1/normative/collector-runs (OWNER/ADMIN of NORMATIVE_REVIEW_TENANT_ID)
+- GET /v1/normative/artifact-candidates
 - POST /v1/normative/artifact-candidates/:candidateId/review (OWNER or ADMIN of NORMATIVE_REVIEW_TENANT_ID)
 - GET /v1/normative/artifact-candidates/:candidateId/reviews (OWNER or ADMIN of NORMATIVE_REVIEW_TENANT_ID)
 - GET /v1/normative/sources/:sourceId/candidates
