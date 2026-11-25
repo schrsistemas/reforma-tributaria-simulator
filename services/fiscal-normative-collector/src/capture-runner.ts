@@ -68,7 +68,11 @@ async function main(): Promise<void> {
   const client = await pool.connect();
   try {
     const lock = await withArtifactCaptureLock(client, () =>
-      withWorkerRun(client, "ARTIFACT_CAPTURE", () => run(client))
+      withWorkerRun(client, "ARTIFACT_CAPTURE", () => run(client), result => {
+        const reconciliation = result.reconciliation as { failed?: number };
+        const summary = result.summary as { failed?: number };
+        return (reconciliation.failed ?? 0) > 0 || (summary.failed ?? 0) > 0;
+      })
     );
     if (!lock.acquired) {
       process.stdout.write(JSON.stringify({ skipped: true, reason: "ARTIFACT_CAPTURE_ALREADY_RUNNING" }) + "\n");
