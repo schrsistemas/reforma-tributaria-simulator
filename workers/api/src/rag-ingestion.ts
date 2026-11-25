@@ -173,3 +173,202 @@ export async function hashDocument(content: string): Promise<string> {
     .map((byte) => byte.toString(16).padStart(2, '0'))
     .join('');
 }
+
+
+export interface LegalChunkUnit {
+  type: 'PREAMBLE' | 'ARTICLE_CAPUT' | 'PARAGRAPH' | 'ITEM' | 'ALINEA' | 'TABLE' | 'ANNEX' | 'FALLBACK';
+  label?: string;
+  article?: string;
+  paragraph?: string;
+  item?: string;
+  alinea?: string;
+  heading?: string;
+}
+
+export interface LegalChunk {
+  text: string;
+  ordinal: number;
+  structure: 'LEGAL' | 'FALLBACK';
+  units: LegalChunkUnit[];
+}
+
+interface LegalSegment {
+  lines: string[];
+  unit: LegalChunkUnit;
+}
+
+/**
+ * Segments normative documents by legal device before applying size limits.
+ *
+ * A chunk never crosses an article or a paragraph/item/alinea boundary.
+ * Oversized individual devices are split by the character fallback while
+ * retaining the same hierarchy metadata. Documents without recognizable
+ * legal structure continue to use the existing character chunker.
+ */
+export function chunkLegalDocument(
+  text: string,
+  maxChars = 1800,
+  overlap = 250,
+): LegalChunk[] {
+  const clean = normalizeDocumentText(text);
+  if (!clean) return [];
+
+  const safeMaxChars = Number.isFinite(maxChars)
+    ? Math.max(1, Math.trunc(maxChars))
+    : 1800;
+  const safeOverlap = Number.isFinite(overlap)
+    ? Math.max(0, Math.min(Math.trunc(overlap), Math.floor(safeMaxChars / 2)))
+    : 250;
+
+  const lines = clean.split('\n').map((line) => line.trim()).filter(Boolean);
+  const articlePattern = /^(Art(?:igo)?\.?\s+\d+[º°o]?(?:-[A-Z])?)(?:\s|$)/i;
+  const paragraphPattern = /^(§\s*\d+[º°o]?|Parágrafo\s+único)(?:\s|[.:—-]|$)/i;
+  const itemPattern = /^([IVXLCDM]+)\s*[-–—.)]\s+/i;
+  const alineaPattern = /^([a-z])\)\s+/i;
+  const annexPattern = /^(ANEXO(?:\s+[IVXLCDM\d]+)?)(?:\s|$)/i;
+  const hasLegalStructure = lines.some((line) =>
+    articlePattern.test(line) || annexPattern.test(line) ||
+    paragraphPattern.test(line) || itemPattern.test(line),
+  );
+
+  if (!hasLegalStructure) {
+    return chunkDocument(clean, safeMaxChars, safeOverlap).map((chunk, ordinal) => ({
+      text: chunk,
+      ordinal,
+      structure: 'FALLBACK',
+      units: [{ type: 'FALLBACK' }],
+    }));
+  }
+
+  const segments: LegalSegment[] = [];
+  let article: string | undefined;
+  let paragraph: string | undefined;
+  let item: string | undefined;
+  let alinea: string | undefined;
+  let heading: string | undefined;
+  let current: LegalSegment | undefined;
+  let tableLines: string[] = [];
+
+  const flushCurrent = (): void => {
+    if (current?.lines.length) segments.push(current);
+    current = undefined;
+  };
+  const flushTable = (): void => {
+    if (!tableLines.length) return;
+    segments.push({
+      lines: tableLines,
+      unit: { type: 'TABLE', article, paragraph, item, alinea, heading },
+    });
+    tableLines = [];
+  };
+  const beginUnit = (unit: LegalChunkUnit, line: string): void => {
+    flushTable();
+    flushCurrent();
+    current = { lines: [line], unit };
+  };
+
+  for (const line of lines) {
+    const articleMatch = line.match(articlePattern);
+    const annexMatch = line.match(annexPattern);
+    const paragraphMatch = line.match(paragraphPattern);
+    const itemMatch = line.match(itemPattern);
+    const alineaMatch = line.match(alineaPattern);
+
+    if (articleMatch) {
+      article = articleMatch[1];
+      paragraph = undefined;
+      item = undefined;
+      alinea = undefined;
+      heading = undefined;
+      beginUnit({ type: 'ARTICLE_CAPUT', label: article, article }, line);
+      continue;
+    }
+    if (annexMatch) {
+      article = undefined;
+      paragraph = undefined;
+      item = undefined;
+      alinea = undefined;
+      heading = annexMatch[1];
+      beginUnit({ type: 'ANNEX', label: heading, heading }, line);
+      continue;
+    }
+    if (/^(CAPÍTULO|TÍTULO|SEÇÃO|SUBSEÇÃO)\b/i.test(line)) {
+      heading = line;
+      paragraph = undefined;
+      item = undefined;
+      alinea = undefined;
+      beginUnit({ type: 'PREAMBLE', label: line, article, heading }, line);
+      continue;
+    }
+    if (paragraphMatch) {
+      paragraph = paragraphMatch[1];
+      item = undefined;
+      alinea = undefined;
+      beginUnit({ type: 'PARAGRAPH', label: paragraph, article, paragraph, heading }, line);
+      continue;
+    }
+    if (itemMatch) {
+      item = itemMatch[1].toUpperCase();
+      alinea = undefined;
+      beginUnit({ type: 'ITEM', label: item, article, paragraph, item, heading }, line);
+      continue;
+    }
+    if (alineaMatch) {
+      alinea = alineaMatch[1].toLowerCase();
+      beginUnit({ type: 'ALINEA', label: alinea, article, paragraph, item, alinea, heading }, line);
+      continue;
+    }
+
+    // Consecutive table rows form one table unit and cannot be merged with
+    // surrounding prose or a different legal device.
+    const looksLikeTableRow = line.includes('|') || /\t/.test(line) ||
+      /^\s*[-+|]{3,}\s*$/.test(line);
+    if (looksLikeTableRow) {
+      flushCurrent();
+      tableLines.push(line);
+      continue;
+    }
+    flushTable();
+    if (current) current.lines.push(line);
+    else {
+      current = {
+        lines: [line],
+        unit: { type: 'PREAMBLE', article, paragraph, item, alinea, heading },
+      };
+    }
+  }
+  flushTable();
+  flushCurrent();
+
+  const output: LegalChunk[] = [];
+  const pushText = (value: string, unit: LegalChunkUnit): void => {
+    const parts = value.length <= safeMaxChars
+      ? [value]
+      : chunkDocument(value, safeMaxChars, safeOverlap);
+    for (const part of parts) {
+      output.push({
+        text: part,
+        ordinal: output.length,
+        structure: 'LEGAL',
+        units: [{ ...unit }],
+      });
+    }
+  };
+
+  for (const segment of segments) {
+    const value = segment.lines.join('\n').trim();
+    if (value) pushText(value, segment.unit);
+  }
+
+  // Defensive fallback: malformed structural input must not discard text.
+  if (!output.length) {
+    return chunkDocument(clean, safeMaxChars, safeOverlap).map((chunk, ordinal) => ({
+      text: chunk,
+      ordinal,
+      structure: 'FALLBACK',
+      units: [{ type: 'FALLBACK' }],
+    }));
+  }
+
+  return output;
+}
