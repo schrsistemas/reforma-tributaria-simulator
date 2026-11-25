@@ -1,0 +1,85 @@
+{
+  "schemaVersion": "1.0.0",
+  "authority": {
+    "organization": "Receita Federal do Brasil",
+    "legalAct": "Portaria Cotec nº 342, de 12 de novembro de 2026",
+    "douPublication": "2026-11-13",
+    "officialNotice": "https://www.gov.br/receitafederal/pt-br/assuntos/noticias/2026/novembro/receita-federal-publica-primeiro-codigo-fonte-aberto-no-github-e-amplia-transparencia-da-reforma-tributaria",
+    "douAct": "https://www.in.gov.br/web/dou/-/portaria-cotec-n-342-de-12-de-novembro-de-2026-744398356",
+    "license": "MIT",
+    "caveat": "A publicação do código não implica suporte, manutenção, validação automática de usos externos ou efeito normativo vinculante."
+  },
+  "integrity": {
+    "description": "Os hashes SHA-512 e SHA-1 abaixo identificam exclusivamente os artefatos iniciais tornados públicos e registrados no art. 2º da Portaria. O commit atual observado é armazenado separadamente.",
+    "sources": [
+      {
+        "id": "official-regular",
+        "name": "Calculadora de Tributos - Regime Regular",
+        "repository": "https://github.com/ReceitaFederal/calculadora-rtc-regime-regular",
+        "initialVersion": "1.6.1",
+        "initialZip": "calculadora-rtc-regime-regular-1.6.1.zip",
+        "initialZipSha512": "bdd0c8501b59718cca5c52778fc7607aa262b746dff6815eef9b4d2271b86d9e45feb04e8add7efcda1fd3f3d3dbf4201023f67fce73c470c29e757be4f32143",
+        "initialGitCommitSha1": "150cccbe414d4a5edea703e4f7a424af5aa222c7",
+        "observedVersion": "1.7.2",
+        "observedMainCommit": "f1eebd7ce3157423b1a6aaca7dc1d6c3395452c4",
+        "observedCommitDate": "2026-11-19T23:05:12Z",
+        "runtime": "Java 25 / Spring Boot 4.1.2 / SQLite / Flyway",
+        "scope": [
+          "CBS",
+          "IBS",
+          "Imposto Seletivo",
+          "regime geral",
+          "bases unificadas",
+          "dados abertos",
+          "grupos tributários DFe"
+        ]
+      },
+      {
+        "id": "official-simple-national",
+        "name": "Calculadora de Tributos - Simples Nacional",
+        "repository": "https://github.com/ReceitaFederal/calculadora-rtc-simples-nacional",
+        "initialVersion": "0.0.6",
+        "initialZip": "calculadora-rtc-simples-nacional-0.0.6.zip",
+        "initialZipSha512": "6fba4ee5419482e20015e6051d47a3df2b1e28de2a09cb5ced700e640534a687084d991245a1b3c0a9b892cded0b6cdfc984b006654015f6068b324d8cc10489",
+        "initialGitCommitSha1": "c5b0f01c8351c3f0d0795cc617b29d233e9f98df",
+        "observedVersion": "1.0.2",
+        "observedMainCommit": "a926d5a76095ac0295a6612a9a54db7ffead2396",
+        "observedCommitDate": "2026-11-20T00:23:06Z",
+        "runtime": "Java 25 / Spring Boot 4.1.2 / SQLite / Flyway",
+        "scope": [
+          "CBS",
+          "IBS",
+          "Simples Nacional",
+          "observabilidade por item",
+          "atividades por vigência"
+        ]
+      },
+      {
+        "id": "official-danfse",
+        "name": "DANFSe Service",
+        "repository": "https://github.com/ReceitaFederal/calculadora-rtc-gerador-danfse",
+        "initialVersion": "1.0.0",
+        "initialZip": "calculadora-rtc-gerador-danfse-1.0.0.zip",
+        "initialZipSha512": "2f0874d9b057b347d0196c97f18f0ee0251dc44630ba7aaa71578430be60ceec08fa476d11ed1ad8911a17857c1d3537e78dc5166507bdc1d87be6c8aa9abdfb",
+        "initialGitCommitSha1": "8d79e6b2f7fad6375340afcb51c85ed370c64a14",
+        "observedVersion": "1.0.0",
+        "observedMainCommit": "8d79e6b2f7fad6375340afcb51c85ed370c64a14",
+        "observedCommitDate": "2026-10-22T21:47:34Z",
+        "runtime": "Go 1.27+",
+        "scope": [
+          "NFS-e",
+          "XML para PDF DANFSe"
+        ]
+      }
+    ]
+  },
+  "integrationPolicy": {
+    "currentMode": "HTTP_ADAPTERS_AND_PINNED_SOURCE_METADATA",
+    "sourceCodeVendoring": "NOT_ENABLED",
+    "regularAndSimpleNational": "Separate services; never share calculation logic across regimes.",
+    "danfse": "Dedicated Go service; XML/PDF binary transport; not routed through JSON text proxy.",
+    "localEngine": "Only used for explicitly identified local scenarios until equivalence is established by regression tests.",
+    "mcp": "Expose only after real executor, tenant authorization, schemas and contract tests exist."
+  },
+  "registryObservedAt": "2026-11-25"
+}
