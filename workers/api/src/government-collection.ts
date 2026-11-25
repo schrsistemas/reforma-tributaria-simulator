@@ -2,7 +2,7 @@ import type { GovernmentSource } from '@rts/domain';
 import type { GovernmentCollector } from './government-collectors.js';
 import { HttpCollector } from './government-collectors.js';
 import { listGovernmentSources } from './government-source-repository.js';
-import { hashDocument, chunkDocument } from './rag-ingestion.js';
+import { hashDocument, chunkDocument, extractOfficialDates } from './rag-ingestion.js';
 import { diffLines, impactedAreas } from '@rts/domain';
 
 interface Env { DB?: D1Database; }
@@ -17,6 +17,8 @@ function resolveCollector(source: GovernmentSource): GovernmentCollector {
 async function ingestGovernmentEvidence(env: Env, source: GovernmentSource, result: { text?: string; fetchedAt: string }) {
   if (!env.DB || !result.text) return { ingested: false, reason: 'NO_TEXT' };
   const contentHash = await hashDocument(result.text);
+  const officialDates = extractOfficialDates(result.text);
+  const publishedAt = officialDates.publishedAt ?? result.fetchedAt;
   const authority = await env.DB.prepare(
     'SELECT name,jurisdiction_level,state_code,municipality_code FROM government_authorities WHERE id=?',
   ).bind(source.authorityId).first<{
@@ -37,12 +39,26 @@ async function ingestGovernmentEvidence(env: Env, source: GovernmentSource, resu
   const previousText = previousChunks.results.map(x=>x.text).join('\n');
   const documentId = crypto.randomUUID();
   const now = new Date().toISOString();
-  await env.DB.prepare('INSERT INTO rag_documents (id,source_id,title,jurisdiction,published_at,source_url,content_hash,version,created_at) VALUES (?,?,?,?,?,?,?,?,?)')
-    .bind(documentId,source.id,source.name,jurisdiction,result.fetchedAt,source.officialUrl,contentHash,'AUTO-'+contentHash.slice(0,12),now).run();
+  await env.DB.prepare(
+    'INSERT INTO rag_documents (id,source_id,title,jurisdiction,published_at,effective_from,source_url,content_hash,version,created_at,published_at_source,effective_from_source) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
+  ).bind(
+    documentId,
+    source.id,
+    source.name,
+    jurisdiction,
+    publishedAt,
+    officialDates.effectiveFrom ?? null,
+    source.officialUrl,
+    contentHash,
+    'AUTO-' + contentHash.slice(0, 12),
+    now,
+    officialDates.publishedAtSource,
+    officialDates.effectiveFromSource,
+  ).run();
   const chunks = chunkDocument(result.text);
   for (let i=0;i<chunks.length;i++) {
     await env.DB.prepare('INSERT INTO rag_chunks (id,document_id,ordinal,text,token_count,metadata_json) VALUES (?,?,?,?,?,?)')
-      .bind(crypto.randomUUID(),documentId,i,chunks[i],chunks[i].split(/\s+/).length,JSON.stringify({sourceId:source.id,sourceType:source.sourceType,authorityId:source.authorityId,authority:authority?.name,jurisdictionLevel:authority?.jurisdiction_level,stateCode:authority?.state_code,municipalityCode:authority?.municipality_code,documentTypes:source.documentTypes,ordinal:i})).run();
+      .bind(crypto.randomUUID(),documentId,i,chunks[i],chunks[i].split(/\s+/).length,JSON.stringify({sourceId:source.id,sourceType:source.sourceType,authorityId:source.authorityId,authority:authority?.name,jurisdictionLevel:authority?.jurisdiction_level,stateCode:authority?.state_code,municipalityCode:authority?.municipality_code,documentTypes:source.documentTypes,publishedAt,publishedAtSource:officialDates.publishedAtSource,effectiveFrom:officialDates.effectiveFrom,effectiveFromSource:officialDates.effectiveFromSource,ordinal:i})).run();
   }
   if (previous?.id) {
     const diff = diffLines(previousText, result.text);
