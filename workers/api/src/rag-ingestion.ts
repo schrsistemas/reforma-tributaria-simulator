@@ -44,7 +44,7 @@ export function chunkDocument(
   const requestedOverlap = Number.isFinite(overlap)
     ? Math.trunc(overlap)
     : 250;
-  const safeOverlap = Math.max(0, Math.min(requestedOverlap, safeMaxChars - 1));
+  const safeOverlap = Math.max(0, Math.min(requestedOverlap, Math.floor(safeMaxChars / 2)));
 
   const chunks: string[] = [];
   let start = 0;
