@@ -15,8 +15,12 @@ CREATE TABLE fiscal.normative_artifact_candidates (
   reviewed_by uuid REFERENCES fiscal.users(id),
   review_note varchar(1000),
   capture_id uuid REFERENCES fiscal.normative_artifact_captures(id),
+  capture_attempts integer NOT NULL DEFAULT 0 CHECK (capture_attempts >= 0),
+  last_capture_attempt_at timestamptz,
+  last_capture_error varchar(100),
   UNIQUE(source_id, artifact_url),
   CHECK (artifact_url ~ '^https://'),
+  CHECK (review_status <> 'CAPTURED' OR capture_id IS NOT NULL),
   CHECK (
     (review_status = 'PENDING' AND reviewed_at IS NULL AND reviewed_by IS NULL)
     OR
@@ -31,7 +35,8 @@ CREATE INDEX ix_normative_artifact_candidates_source
 
 GRANT SELECT, INSERT ON fiscal.normative_artifact_candidates TO fiscal_hub_app;
 GRANT UPDATE (source_page_url, link_text, file_extension, last_seen_at,
-              review_status, reviewed_at, reviewed_by, review_note, capture_id)
+              review_status, reviewed_at, reviewed_by, review_note, capture_id,
+              capture_attempts, last_capture_attempt_at, last_capture_error)
   ON fiscal.normative_artifact_candidates TO fiscal_hub_app;
 
 COMMIT;

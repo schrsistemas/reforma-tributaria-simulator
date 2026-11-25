@@ -61,3 +61,20 @@ The FAQ is explanatory guidance, not a normative act. It must not overwrite a le
 The source checker now discovers links ending in .pdf, .xsd, .xml or .json from HTML/XHTML pages. It resolves relative URLs, decodes common HTML entities, removes fragments, deduplicates canonical URLs and accepts only HTTPS links whose exact hostname is in the same allowlist. Links with credentials, ports other than the default HTTPS port and GNRE's explicitly allowed port 444, unsupported schemes, IP literals or external hosts are discarded.
 
 Discovered links are inserted into `fiscal.normative_artifact_candidates` with review status `PENDING`; conflicts refresh source-page/link metadata and last-seen time without changing human review decisions. The authenticated API exposes candidates at `GET /v1/normative/sources/:sourceId/candidates` and `GET /v1/normative/artifact-candidates`. OWNER/ADMIN users can approve or reject a candidate through `POST /v1/normative/artifact-candidates/:candidateId/review`; every decision is audited. Candidate discovery makes no requests to the linked documents. It does not download, capture, execute or interpret them. Approval does not trigger capture automatically.
+
+
+## Approved artifact capture
+
+Capture is a separate worker and processes only candidates in `APPROVED` state. It requires:
+
+- `S3_BUCKET`
+- `S3_REGION`
+- `S3_ACCESS_KEY_ID`
+- `S3_SECRET_ACCESS_KEY`
+- Optional `S3_ENDPOINT` and `S3_FORCE_PATH_STYLE` for S3-compatible providers such as Cloudflare R2.
+
+Run manually after provisioning the object store and applying migrations:
+
+`pnpm --filter @rts/fiscal-normative-collector capture:approved`
+
+The worker stores the artifact, records SHA-256 metadata, links the capture ID to the candidate and moves it to `CAPTURED`. Failures leave the candidate `APPROVED` for retry and increment `capture_attempts` with the last error code. Duplicate content reuses the existing capture record. A PostgreSQL advisory lock (key pair 20261125/3) prevents overlapping capture runs.

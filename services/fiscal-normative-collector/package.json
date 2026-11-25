@@ -11,7 +11,8 @@
     "test": "tsx --test test/*.test.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "build": "tsc -p tsconfig.json",
-    "discover:artifacts": "tsx src/discovery-runner.ts"
+    "discover:artifacts": "tsx src/discovery-runner.ts",
+    "capture:approved": "tsx src/capture-runner.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.750.0",

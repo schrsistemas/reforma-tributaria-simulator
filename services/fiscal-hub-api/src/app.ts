@@ -300,7 +300,8 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
         `SELECT c.id, c.source_id, s.name AS source_name, c.source_page_url,
                 c.artifact_url, c.link_text, c.file_extension, c.review_status,
                 c.first_discovered_at, c.last_seen_at, c.reviewed_at, c.reviewed_by,
-                c.review_note, c.capture_id
+                c.review_note, c.capture_id, c.capture_attempts,
+                c.last_capture_attempt_at, c.last_capture_error
            FROM fiscal.normative_artifact_candidates c
            JOIN fiscal.normative_sources s ON s.id = c.source_id
           WHERE ($1::varchar IS NULL OR c.review_status = $1)
@@ -375,7 +376,8 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
       const result = await options.pool.query(
         `SELECT id, source_id, source_page_url, artifact_url, link_text, file_extension,
                 review_status, first_discovered_at, last_seen_at, reviewed_at,
-                reviewed_by, review_note, capture_id
+                reviewed_by, review_note, capture_id, capture_attempts,
+                last_capture_attempt_at, last_capture_error
            FROM fiscal.normative_artifact_candidates
           WHERE source_id = $1 AND ($2::varchar IS NULL OR review_status = $2)
           ORDER BY first_discovered_at DESC

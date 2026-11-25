@@ -1,10 +1,7 @@
 import { captureOfficialArtifact, type ArtifactCaptureOptions, type ArtifactCaptureResult } from "./capture.js";
 
 export interface ArtifactCaptureQuery {
-  query<T = unknown>(
-    sql: string,
-    values?: unknown[]
-  ): Promise<{ rows: T[]; rowCount: number | null }>;
+  query<T = unknown>(sql: string, values?: unknown[]): Promise<{ rows: T[]; rowCount: number | null }>;
 }
 
 export async function captureAndRecordArtifact(
@@ -28,6 +25,11 @@ export async function captureAndRecordArtifact(
     [sourceId, sourceUrl, captured.contentType, captured.byteLength, captured.sha256, captured.objectKey]
   );
 
-  if (inserted.rowCount === 0) return { ...captured, status: "DUPLICATE" };
-  return captured;
+  if (inserted.rows[0]) return { ...captured, captureId: inserted.rows[0].id };
+
+  const existing = await db.query<{ id: string }>(
+    "SELECT id FROM fiscal.normative_artifact_captures WHERE source_id = $1 AND content_sha256 = $2 LIMIT 1",
+    [sourceId, captured.sha256]
+  );
+  return { ...captured, status: "DUPLICATE", captureId: existing.rows[0]?.id ?? null };
 }

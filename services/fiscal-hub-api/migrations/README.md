@@ -34,3 +34,5 @@ Migration 0009 expands the registry to the SPED official index and the CT-e/CT-e
 Always validate migrations against a disposable PostgreSQL database before production. There is no automatic migration execution at API startup.
 
 Migration 0010 creates the source-linked artifact discovery queue. Candidates are deduplicated by source and canonical URL, remain pending human review, and can be approved/rejected through the API with audit events. It does not trigger artifact capture or RuleSet publication.
+
+The capture worker selects only `APPROVED` candidates. It records each attempt, leaves failures retryable, links the immutable artifact capture ID and changes status to `CAPTURED` only after the storage and metadata steps succeed. The S3-compatible object store must be provisioned before running it.

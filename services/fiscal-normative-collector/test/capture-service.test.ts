@@ -13,6 +13,9 @@ function fixture(rowCount: number) {
     db: {
       query: async (sql: string, values?: unknown[]) => {
         queries.push({ sql, values });
+        if (sql.includes("SELECT id FROM fiscal.normative_artifact_captures")) {
+          return { rows: [{ id: "22222222-2222-4222-8222-222222222222" }], rowCount: 1 };
+        }
         return { rows: rowCount ? [{ id: "22222222-2222-4222-8222-222222222222" }] : [], rowCount };
       }
     },
@@ -33,6 +36,7 @@ test("records captured artifact metadata in the database", async () => {
     })
   });
   assert.equal(result.status, "CAPTURED");
+  assert.equal(result.captureId, "22222222-2222-4222-8222-222222222222");
   assert.equal(f.queries.length, 1);
   assert.match(f.queries[0]!.sql, /ON CONFLICT \(source_id, content_sha256\) DO NOTHING/);
   assert.equal(f.queries[0]!.values?.[0], sourceId);
@@ -49,4 +53,5 @@ test("returns DUPLICATE when the same source and content hash already exist", as
     })
   });
   assert.equal(result.status, "DUPLICATE");
+  assert.equal(result.captureId, "22222222-2222-4222-8222-222222222222");
 });

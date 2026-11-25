@@ -19,3 +19,8 @@ export function withNormativeMonitorLock<T>(client: AdvisoryLockClient, task: ()
 export function withArtifactDiscoveryLock<T>(client: AdvisoryLockClient, task: () => Promise<T>) {
   return withAdvisoryLock(client, 20261125, 2, task);
 }
+
+/** Serializes S3 capture workers independently of source checks and discovery. */
+export function withArtifactCaptureLock<T>(client: AdvisoryLockClient, task: () => Promise<T>) {
+  return withAdvisoryLock(client, 20261125, 3, task);
+}
