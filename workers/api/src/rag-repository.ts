@@ -21,8 +21,11 @@ export async function searchRag(
 
   const rows = await db
     .prepare(
-      'SELECT c.id chunk_id,c.document_id,c.text,c.metadata_json,d.title,d.jurisdiction,d.source_url,d.published_at,d.effective_from,d.effective_to,d.version,d.content_hash,s.authority ' +
-        'FROM rag_chunks c JOIN rag_documents d ON d.id=c.document_id LEFT JOIN fiscal_sources s ON s.id=d.source_id ' +
+      'SELECT c.id chunk_id,c.document_id,c.text,c.metadata_json,d.title,d.jurisdiction,d.source_url,d.published_at,d.effective_from,d.effective_to,d.version,d.content_hash,COALESCE(s.authority,ga.name) authority ' +
+        'FROM rag_chunks c JOIN rag_documents d ON d.id=c.document_id ' +
+        'LEFT JOIN fiscal_sources s ON s.id=d.source_id ' +
+        'LEFT JOIN government_sources gs ON gs.id=d.source_id ' +
+        'LEFT JOIN government_authorities ga ON ga.id=gs.authority_id ' +
         'WHERE (? IS NULL OR d.jurisdiction=?) ORDER BY d.published_at DESC LIMIT 2000',
     )
     .bind(jurisdiction ?? null, jurisdiction ?? null)
