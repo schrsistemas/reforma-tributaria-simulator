@@ -43,6 +43,8 @@ test("captures only approved candidates and links the immutable capture id", asy
   const update = f.calls.find(call => call.sql.includes("review_status = 'CAPTURED'"));
   assert.equal(update?.values?.[0], candidateId);
   assert.equal(update?.values?.[1], captureId);
+  assert.match(update?.sql ?? "", /capture_attempts = capture_attempts \+ 1/);
+  assert.match(update?.sql ?? "", /last_capture_attempt_at = now\(\)/);
 });
 
 test("keeps failed candidates approved and records retry metadata", async () => {
