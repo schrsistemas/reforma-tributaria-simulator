@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "test": "node --experimental-strip-types --experimental-loader ./test/ts-extension-loader.mjs --test",
+    "test": "node --experimental-strip-types --experimental-loader ./scripts/ts-extension-loader.mjs --test",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
