@@ -42,7 +42,7 @@ export const NFSE_LAYOUT_PROFILES: Readonly<Record<NfseEnvironment, NfseLayoutPr
   RESTRICTED: {
     id: 'SNNFSE_RESTRICTED_NT009_1_00_RELEASE_1',
     environment: 'RESTRICTED',
-    technicalRelease: 'NT 009 v1.0 — release 1, comunicado como implantado em produção restrita em 25/11/2026',
+    technicalRelease: 'NT 009 v1.0 — release 1, conforme comunicado oficial publicado em 29/10/2026',
     publishedSchema: 'NT 009 v1.01 — XSD PRODREST publicado em 20/10/2026; release 2 ainda não comunicado como implantado',
     statusAsOf: '2026-11-25',
     ibsCbsPolicy: 'REQUIRES_RELEASE_SCHEMA_VALIDATION',
