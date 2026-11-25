@@ -17,6 +17,9 @@ import { FISCAL_MCP_TOOLS, getFiscalMcpToolCatalog, validateFiscalToolInput } fr
 import { executeFiscalTool } from './fiscal-tool-runner.js';
 import { fetchNfeAvailability } from './nfe-availability.js';
 
+const FISCAL_COLLECTION_CRON = '0 3 * * *';
+const NFE_AVAILABILITY_CRON = '*/15 * * * *';
+
 export interface Env {
   VERSION: string;
   DB?: D1Database;
@@ -1126,8 +1129,26 @@ export default {
     return json({ error: 'NOT_FOUND' }, 404, request);
   },
 
-  async scheduled(_event: ScheduledEvent, env: Env, _ctx: ExecutionContext): Promise<void> {
-    if (!env.DB) return;
+  async scheduled(event: ScheduledEvent, env: Env, _ctx: ExecutionContext): Promise<void> {
+    // Dedicated monitor cron: never run fiscal or legislative collectors here.
+    if (event.cron === NFE_AVAILABILITY_CRON) {
+      if (!env.DB) return;
+      try {
+        const snapshot = await fetchNfeAvailability();
+        await env.DB.prepare(
+          'INSERT INTO nfe_availability_checks (id,checked_at,source_url,source_last_checked_at,source_version,status_json,recognized_indicators,unknown_indicators,created_at) VALUES (?,?,?,?,?,?,?,?,?)',
+        ).bind(
+          crypto.randomUUID(), snapshot.checkedAt, snapshot.sourceUrl,
+          snapshot.sourceLastCheckedAt ?? null, snapshot.version ?? null,
+          JSON.stringify(snapshot), snapshot.parser.recognizedIndicators,
+          snapshot.parser.unknownIndicators, new Date().toISOString(),
+        ).run();
+      } catch {
+        // Portal or persistence failures must not affect the fiscal schedule.
+      }
+      return;
+    }
+    if (event.cron !== FISCAL_COLLECTION_CRON || !env.DB) return;
     const sources = await listFiscalSources(env);
     for (const source of sources) {
       try {
