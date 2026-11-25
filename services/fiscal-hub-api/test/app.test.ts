@@ -484,3 +484,73 @@ test("artifact candidate review history validates candidate UUID", async () => {
   assert.equal(response.json().error, "INVALID_CANDIDATE_ID");
   await app.close();
 });
+
+
+test("collector run history requires authentication", async () => {
+  const app = await buildApp({
+    pool: fakePool(),
+    jwtSecret: JWT_SECRET,
+    normativeReviewTenantId: TENANT_ID
+  });
+  const response = await app.inject({ method: "GET", url: "/v1/normative/collector-runs" });
+  assert.equal(response.statusCode, 401);
+  await app.close();
+});
+
+test("collector run history is restricted to the designated reviewer tenant", async () => {
+  const app = await buildApp({
+    pool: fakePool(),
+    jwtSecret: JWT_SECRET,
+    normativeReviewTenantId: TENANT_ID
+  });
+  const token = await tokenFor(app, ["ADMIN"], OTHER_TENANT_ID);
+  const response = await app.inject({
+    method: "GET",
+    url: "/v1/normative/collector-runs",
+    headers: { authorization: "Bearer " + token }
+  });
+  assert.equal(response.statusCode, 403);
+  await app.close();
+});
+
+test("collector run history validates filters and returns operational records", async () => {
+  const calls: Array<{ sql: string; values?: unknown[] }> = [];
+  const pool = {
+    query: async (sql: string, values?: unknown[]) => {
+      calls.push({ sql, values });
+      return {
+        rows: [{
+          id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          worker_name: "SOURCE_MONITOR",
+          run_status: "SUCCEEDED",
+          counters: { checked: 9, changed: 1, errors: 0 }
+        }],
+        rowCount: 1
+      };
+    },
+    connect: async () => ({ query: async () => ({ rows: [], rowCount: 0 }), release: () => undefined }),
+    end: async () => undefined
+  } as unknown as Pool;
+  const app = await buildApp({
+    pool,
+    jwtSecret: JWT_SECRET,
+    normativeReviewTenantId: TENANT_ID
+  });
+  const token = await tokenFor(app, ["ADMIN"]);
+  const invalid = await app.inject({
+    method: "GET",
+    url: "/v1/normative/collector-runs?worker=INVALID",
+    headers: { authorization: "Bearer " + token }
+  });
+  assert.equal(invalid.statusCode, 400);
+
+  const response = await app.inject({
+    method: "GET",
+    url: "/v1/normative/collector-runs?worker=SOURCE_MONITOR&status=SUCCEEDED&limit=10",
+    headers: { authorization: "Bearer " + token }
+  });
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.json().items[0].counters.checked, 9);
+  assert.deepEqual(calls[0]!.values, ["SOURCE_MONITOR", "SUCCEEDED", 10]);
+  await app.close();
+});
