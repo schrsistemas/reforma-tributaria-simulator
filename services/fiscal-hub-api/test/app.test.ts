@@ -220,9 +220,9 @@ function candidatePool(): Pool {
   const candidate = {
     id: "44444444-4444-4444-8444-444444444444",
     source_id: "11111111-1111-4111-8111-111111111111",
-    candidate_url: "https://www.gov.br/ato.pdf",
+    artifact_url: "https://www.gov.br/ato.pdf",
     link_text: "Ato normativo",
-    resource_kind: "PDF",
+    file_extension: "pdf",
     review_status: "APPROVED",
     reviewed_by: USER_ID
   };
@@ -255,7 +255,7 @@ test("artifact candidate queue validates status filters", async () => {
 test("artifact candidate queue lists candidates to authenticated users", async () => {
   const app = await buildApp({ pool: candidatePool(), jwtSecret: JWT_SECRET });
   const token = await tokenFor(app, ["VIEWER"]);
-  const response = await app.inject({ method: "GET", url: "/v1/normative/artifact-candidates?status=PENDING_REVIEW&limit=25", headers: { authorization: "Bearer " + token } });
+  const response = await app.inject({ method: "GET", url: "/v1/normative/artifact-candidates?status=PENDING&limit=25", headers: { authorization: "Bearer " + token } });
   assert.equal(response.statusCode, 200);
   assert.equal(response.json().items.length, 1);
   await app.close();

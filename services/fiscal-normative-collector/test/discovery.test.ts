@@ -36,7 +36,7 @@ test("persists candidates with idempotent upsert", async () => {
   assert.equal(result.candidatesUpserted, 2);
   assert.match(result.pageSha256 ?? "", /^[a-f0-9]{64}$/);
   assert.equal(calls.length, 2);
-  assert.match(calls[0]!.sql, /ON CONFLICT \(source_id, candidate_url\) DO UPDATE/);
+  assert.match(calls[0]!.sql, /ON CONFLICT \(source_id, artifact_url\) DO UPDATE/);
   assert.match(calls[0]!.sql, /review_status <> 'REJECTED'/);
 });
 test("blocks redirects without persisting candidate links", async () => {

@@ -46,7 +46,7 @@ const erpSchema = z.object({
   connectorVersion: z.string().trim().max(50).nullable().optional()
 });
 const artifactCandidateListSchema = z.object({
-  status: z.enum(["PENDING_REVIEW", "APPROVED", "REJECTED"]).optional(),
+  status: z.enum(["PENDING", "APPROVED", "REJECTED", "CAPTURED"]).optional(),
   limit: z.coerce.number().int().min(1).max(100).default(50)
 });
 const artifactCandidateReviewSchema = z.object({
@@ -298,13 +298,13 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     try {
       const result = await options.pool.query(
         `SELECT c.id, c.source_id, s.name AS source_name, c.source_page_url,
-                c.candidate_url, c.link_text, c.resource_kind, c.review_status,
-                c.first_seen_at, c.last_seen_at, c.reviewed_at, c.reviewed_by,
+                c.artifact_url, c.link_text, c.file_extension, c.review_status,
+                c.first_discovered_at, c.last_seen_at, c.reviewed_at, c.reviewed_by,
                 c.review_note, c.capture_id
            FROM fiscal.normative_artifact_candidates c
            JOIN fiscal.normative_sources s ON s.id = c.source_id
           WHERE ($1::varchar IS NULL OR c.review_status = $1)
-          ORDER BY c.first_seen_at DESC
+          ORDER BY c.first_discovered_at DESC
           LIMIT $2`,
         [parsed.data.status ?? null, parsed.data.limit]
       );
@@ -329,8 +329,8 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
         const result = await client.query(
           `UPDATE fiscal.normative_artifact_candidates
               SET review_status = $2, reviewed_at = now(), reviewed_by = $3, review_note = $4
-            WHERE id = $1 AND review_status = 'PENDING_REVIEW'
-            RETURNING id, source_id, candidate_url, link_text, resource_kind,
+            WHERE id = $1 AND review_status = 'PENDING'
+            RETURNING id, source_id, artifact_url, link_text, file_extension,
                       review_status, reviewed_at, reviewed_by, review_note`,
           [params.data.candidateId, decision, claims.sub, parsed.data.note ?? null]
         );
@@ -358,6 +358,34 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     } catch (error) {
       request.log.error({ err: error }, "normative artifact candidate review failed");
       return reply.code(500).send({ error: "NORMATIVE_ARTIFACT_CANDIDATE_REVIEW_FAILED" });
+    }
+  });
+
+
+  app.get("/v1/normative/sources/:sourceId/candidates", async (request, reply) => {
+    const claims = await authenticate(request, reply);
+    if (!claims) return;
+    const params = z.object({ sourceId: z.string().uuid() }).safeParse(request.params);
+    if (!params.success) return reply.code(400).send({ error: "INVALID_SOURCE_ID" });
+    const query = z.object({
+      status: z.enum(["PENDING", "APPROVED", "REJECTED", "CAPTURED"]).optional()
+    }).safeParse(request.query);
+    if (!query.success) return reply.code(400).send({ error: "INVALID_REVIEW_STATUS" });
+    try {
+      const result = await options.pool.query(
+        `SELECT id, source_id, source_page_url, artifact_url, link_text, file_extension,
+                review_status, first_discovered_at, last_seen_at, reviewed_at,
+                reviewed_by, review_note, capture_id
+           FROM fiscal.normative_artifact_candidates
+          WHERE source_id = $1 AND ($2::varchar IS NULL OR review_status = $2)
+          ORDER BY first_discovered_at DESC
+          LIMIT 200`,
+        [params.data.sourceId, query.data.status ?? null]
+      );
+      return reply.send({ items: result.rows });
+    } catch (error) {
+      request.log.error({ err: error }, "normative artifact candidate listing failed");
+      return reply.code(500).send({ error: "NORMATIVE_ARTIFACT_CANDIDATES_LIST_FAILED" });
     }
   });
 
@@ -405,33 +433,6 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     } catch (error) {
       request.log.error({ err: error }, "normative artifact history failed");
       return reply.code(500).send({ error: "NORMATIVE_ARTIFACTS_LIST_FAILED" });
-    }
-  });
-
-  app.get("/v1/normative/sources/:sourceId/candidates", async (request, reply) => {
-    const claims = await authenticate(request, reply);
-    if (!claims) return;
-    const params = z.object({ sourceId: z.string().uuid() }).safeParse(request.params);
-    if (!params.success) return reply.code(400).send({ error: "INVALID_SOURCE_ID" });
-    const query = z.object({
-      status: z.enum(["PENDING", "APPROVED", "REJECTED", "CAPTURED"]).optional()
-    }).safeParse(request.query);
-    if (!query.success) return reply.code(400).send({ error: "INVALID_REVIEW_STATUS" });
-    try {
-      const result = await options.pool.query(
-        `SELECT id, source_id, artifact_url, link_text, file_extension,
-                review_status, first_discovered_at
-           FROM fiscal.normative_artifact_candidates
-          WHERE source_id = $1
-            AND ($2::varchar IS NULL OR review_status = $2)
-          ORDER BY first_discovered_at DESC
-          LIMIT 200`,
-        [params.data.sourceId, query.data.status ?? null]
-      );
-      return reply.send({ items: result.rows });
-    } catch (error) {
-      request.log.error({ err: error }, "normative artifact candidate listing failed");
-      return reply.code(500).send({ error: "NORMATIVE_ARTIFACT_CANDIDATES_LIST_FAILED" });
     }
   });
 

@@ -43,10 +43,13 @@ async function runChecks(client: PoolClient): Promise<void> {
     for (const candidate of snapshot.artifactCandidates) {
       await client.query(
         `INSERT INTO fiscal.normative_artifact_candidates
-           (source_id, artifact_url, link_text, file_extension)
-         VALUES ($1,$2,$3,$4)
-         ON CONFLICT (source_id, artifact_url) DO NOTHING`,
-        [source.id, candidate.url, candidate.linkText, candidate.extension]
+           (source_id, source_page_url, artifact_url, link_text, file_extension)
+         VALUES ($1,$2,$3,$4,$5)
+         ON CONFLICT (source_id, artifact_url) DO UPDATE
+           SET source_page_url = EXCLUDED.source_page_url, link_text = EXCLUDED.link_text,
+               file_extension = EXCLUDED.file_extension, last_seen_at = now()
+         WHERE fiscal.normative_artifact_candidates.review_status <> 'REJECTED'`,
+        [source.id, source.official_url, candidate.url, candidate.linkText, candidate.extension]
       );
     }
     await client.query(
