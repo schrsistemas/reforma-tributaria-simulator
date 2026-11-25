@@ -144,7 +144,7 @@ export function resolveSkillPlan(
       };
     })
     .filter(match => match.score > 0)
-    .sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
+    .sort((a, b) => b.score - a.score || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 
   if (matches.length === 0) {
     return {
