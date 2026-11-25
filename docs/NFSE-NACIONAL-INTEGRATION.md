@@ -10,7 +10,7 @@
 | Produção restrita | NT 009 v1.0 — release 1, conforme comunicado oficial publicado em 29/10/2026 | A página de homologação também publica XSD PRODREST v1.01, associado aos ajustes do release 2 | Não selecionar v1.01 como contrato ativo apenas porque o XSD foi publicado; aguardar comunicado de implantação do release 2 e validar o runtime |
 | Evolução para produção | Releases 1 a 3 da NT 009 previstos para 01/12/2026 no comunicado | Releases e esquemas são publicados progressivamente | Tratar como cronograma publicado, não como confirmação de implantação concluída |
 
-**Distinção obrigatória:** a página de homologação atualizada em 20/10/2026 publica a NT 009 v1.01 e o XSD PRODREST v1.01. Entretanto, o comunicado oficial de 25/11/2026 informa que o ambiente de produção restrita está atualmente com a NT 009 v1.0, release 1; os ajustes da v1.01 pertencem ao release 2, a ser disponibilizado primeiro em produção restrita. Portanto, o repositório registra separadamente o release comunicado como implantado e o schema mais novo publicado. Nenhum dos dois é considerado runtime verificado até a execução de probe/contrato no serviço.
+**Distinção obrigatória:** a página de homologação atualizada em 20/10/2026 publica a NT 009 v1.01 e o XSD PRODREST v1.01. Entretanto, o comunicado oficial de 29/10/2026 informa que o ambiente de produção restrita está atualmente com a NT 009 v1.0, release 1; os ajustes da v1.01 pertencem ao release 2, a ser disponibilizado primeiro em produção restrita. Portanto, o repositório registra separadamente o release comunicado como implantado e o schema mais novo publicado. Nenhum dos dois é considerado runtime verificado até a execução de probe/contrato no serviço.
 
 ### IBS/CBS na produção
 
@@ -24,7 +24,44 @@ O comunicado do CGNFS-e de 29/10/2026 informa que o grupo IBS/CBS está aberto n
 - [Documentação atual de produção](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/documentacao-atual)
 - [Documentação técnica de produção restrita](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/producao-restrita)
 
-## 2. Portais e APIs oficiais
+## 2. NT 009 v1.01 — evolução de leiaute
+
+A NT 009 v1.01 foi aprovada pelo Ato Técnico Conjunto RFB/CGIBS nº 7. Entre as alterações publicadas estão:
+
+- Regras de destino do ISSQN para fornecimento de mão de obra (subitem 17.05) e validação dos municípios do tomador/destinatário com os cadastros de CPF/CNPJ.
+- Evoluções do grupo de comércio exterior (`comExt`), incluindo dados de fatura/contrato de câmbio, modalidade de consumo concomitante no Brasil e exterior, nomenclaturas `nDUIMP` e `nDUE`, validação de moeda e campo `vAjusteBCIBSCBSComExt`.
+- Inclusão do município do evento (`atvEvento`) para os subitens indicados na nota, com obrigatoriedade específica no subitem 17.10.
+- Novo fato gerador `99.05.01` para taxas e valores de condomínio edilício, com grupo próprio de cobranças/descontos e grupo de imóvel obrigatório.
+- Informação da versão da Calculadora de Tributos em `verCalcIBSCBS`, preenchida pela SEFIN Nacional nas notas emitidas pelos emissores públicos nacionais.
+- Reorganização de `indDest` e `dest` para a raiz da DPS e reposicionamento de CST/`cClassTrib` antes de `gIBSCBS`; o indicador `ind_gIBSCBS` determina a necessidade do detalhamento.
+
+**Regra de implementação:** estes itens são catálogo documental para orientar a importação do XSD e das regras da NT 009 v1.01. Não gerar XML v1.01 para o ambiente restrito enquanto o release 2 não estiver comunicado como implantado e não houver validação do contrato ativo. Não inferir regras adicionais apenas a partir dos nomes dos campos.
+
+O Anexo VIII de correlação entre item de serviço, NBS, cClassTrib e cIndOp permanece identificado pelo portal como trabalho inicial em desenvolvimento, sem regras de negócio baseadas nele em produção ou no piloto RTC. Não utilizá-lo como fonte normativa de cálculo automático.
+
+## 3. NFS-e Via — NT 010 e manifestação do adquirente
+
+A NFS-e Via é um fluxo documental específico e não deve ser confundido com a emissão convencional de DPS/NFS-e pela SEFIN Nacional.
+
+O perfil documental publicado para a NT 010 registra:
+- NT 010 versão 1.00;
+- leiaute da NFS-e Via versão 1.01;
+- Evento de Manifestação do Adquirente versão 1.00;
+- modalidade de pagamento `6 — Sem cobrança`;
+- disponibilidade anunciada em produção restrita desde 05/10/2026 e em produção desde 19/10/2026.
+
+A manifestação do adquirente admite duas escolhas mutuamente exclusivas:
+1. **Aceite:** confirma que o serviço foi prestado.
+2. **Rejeição:** aponta divergência ou declara desconhecimento da nota.
+
+O domínio `packages/domain/src/nfse-via.ts` registra essas versões e datas e valida a seleção funcional (exatamente uma escolha). Essa validação não é o payload do evento, não define nomes de tags XML e não substitui o XSD ou o contrato oficial. O runtime permanece `NOT_PROBED`.
+
+Referências:
+- [Ato Técnico Conjunto nº 7 — NT 009 v1.01 e NT 010](https://www.gov.br/nfse/pt-br/noticias/publicado-o-ato-tecnico-conjunto-rfb-cgibs-no-7-aprovando-a-versao-1-01-da-nota-tecnica-009-nfs-e-e-a-nota-tecnica-010-da-nfse-via/)
+- [Documentação técnica da NFS-e Via](https://www.gov.br/nfse/pt-br/nfs-e-via/documentacao-tecnica)
+- [RTC — documentação técnica e atualizações](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/rtc)
+
+## 4. Portais e APIs oficiais
 
 O portal oficial mantém APIs distintas. Não tratar a API de distribuição do ADN como se fosse o endpoint de emissão da SEFIN.
 
@@ -55,7 +92,7 @@ O registro de leiautes em `packages/domain/src/nfse.ts` distingue:
 
 Não selecionar automaticamente um XSD mais novo como contrato ativo sem confirmação do release implantado e validação contra o serviço.
 
-## 3. Operações previstas no manual de contribuintes
+## 5. Operações previstas no manual de contribuintes
 
 O manual oficial descreve o fluxo de parâmetros municipais, recepção da DPS, consulta de NFS-e, consulta de DPS e registro/consulta de eventos.
 
@@ -75,7 +112,7 @@ A tabela acima reproduz as operações descritas no Manual dos Contribuintes Emi
 
 Fonte: [Manual dos Contribuintes — Emissor Público API](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/documentacao-atual/manual-contribuintes-emissor-publico-api-sistema-nacional-nfse.pdf).
 
-## 4. Autenticação, assinatura e fronteira de confiança
+## 6. Autenticação, assinatura e fronteira de confiança
 
 O manual exige certificado digital válido em operações de consulta de DPS e descreve assinatura digital para pedidos de eventos. A identificação do certificado também é usada para validar a relação entre o solicitante e os atores da DPS.
 
@@ -89,7 +126,7 @@ A integração deve, portanto, possuir um adaptador de credenciais/certificados 
 
 **Limite atual:** a API do simulador ainda não implementa transporte autenticado, assinatura XML nem emissão real de NFS-e. O link para o Emissor Web é apenas acesso externo. Não simular sucesso de autorização.
 
-## 5. Arquitetura proposta no monorepo
+## 7. Arquitetura proposta no monorepo
 
 Separar os componentes:
 
@@ -118,7 +155,7 @@ Operação de serviço
   -> consulta/eventos quando solicitados
 ```
 
-## 6. Contrato de ambiente obrigatório
+## 8. Contrato de ambiente obrigatório
 
 Toda requisição deve carregar, de forma explícita:
 
@@ -133,7 +170,7 @@ Toda requisição deve carregar, de forma explícita:
 
 Não inferir produção pela ausência de parâmetro. Não permitir que uma operação de homologação seja reenviada automaticamente à produção. O perfil documental não declara o runtime como confirmado: a integração deve fazer verificação explícita do contrato/versão ativa antes de habilitar transmissão.
 
-## 7. Estratégia de implementação
+## 9. Estratégia de implementação
 
 ### Fase 1 — concluída nesta etapa
 
@@ -156,7 +193,7 @@ Não inferir produção pela ausência de parâmetro. Não permitir que uma oper
 - Persistir request/response e eventos com trilha de auditoria.
 - Exigir aprovação explícita antes de habilitar emissão em produção.
 
-## 8. Critérios de aceite
+## 10. Critérios de aceite
 
 - Nenhuma chamada de emissão é possível sem ambiente explícito.
 - O XML gerado é validado pelo XSD do release selecionado.
@@ -167,7 +204,7 @@ Não inferir produção pela ausência de parâmetro. Não permitir que uma oper
 - Chaves privadas e certificados não aparecem em logs, respostas ou frontend.
 - Nenhuma nota é apresentada como autorizada sem retorno positivo da SEFIN.
 
-## 9. Referências oficiais
+## 11. Referências oficiais
 
 - [Emissor Nacional Web — Produção](https://www.nfse.gov.br/EmissorNacional/Login?ReturnUrl=%2femissornacional)
 - [APIs — Produção Restrita e Produção](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/apis-prod-restrita-e-producao)
