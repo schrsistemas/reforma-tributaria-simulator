@@ -132,3 +132,26 @@ test("records unavailable HTTP responses without treating them as content change
   assert.equal(result.status, "UNAVAILABLE");
   assert.equal(result.errorCode, "HTTP_404");
 });
+
+test("returns allowlisted artifact candidates from HTML source pages", async () => {
+  const result = await inspectSource(source, null, {
+    allowedHosts,
+    fetcher: async () => new Response(
+      '<main><a href="/docs/manual.pdf">Manual oficial</a><a href="https://attacker.example/evil.pdf">Externo</a></main>',
+      { headers: { "content-type": "text/html; charset=utf-8" } }
+    )
+  });
+  assert.equal(result.artifactCandidates.length, 1);
+  assert.equal(result.artifactCandidates[0]?.url, "https://www.gov.br/docs/manual.pdf");
+  assert.equal(result.artifactCandidates[0]?.linkText, "Manual oficial");
+});
+
+test("does not discover links in non-HTML source responses", async () => {
+  const result = await inspectSource(source, null, {
+    allowedHosts,
+    fetcher: async () => new Response("%PDF-1.7 sample", {
+      headers: { "content-type": "application/pdf" }
+    })
+  });
+  assert.deepEqual(result.artifactCandidates, []);
+});
