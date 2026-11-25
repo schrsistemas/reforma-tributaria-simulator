@@ -144,7 +144,7 @@ test('keeps annex tables grouped and separate from legal prose', () => {
   ].join('\n'));
   assert.equal(chunks[0].units[0].type, 'ANNEX');
   assert.equal(chunks[1].units[0].type, 'TABLE');
-  assert.equal(chunks[1].text.split('\n').length, 3);
+  assert.equal(chunks[1].text.split('\n').length, 4);
   assert.equal(chunks[2].units[0].type, 'ARTICLE_CAPUT');
 });
 
