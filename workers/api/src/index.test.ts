@@ -61,7 +61,7 @@ test('DANFSe proxy preserves PDF bytes and correlation metadata', async () => {
   let forwardedBody = '';
   globalThis.fetch = async (input, init) => {
     forwardedUrl = String(input);
-    forwardedBody = new TextDecoder().decode(init?.body as ArrayBufferView);
+    forwardedBody = await new Response(init?.body).text();
     return new Response(pdf, {
       status: 200,
       headers: { 'content-type': 'application/pdf', 'content-disposition': 'inline; filename="danfse.pdf"' },
