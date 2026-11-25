@@ -5,7 +5,7 @@ Node.js 22+, TypeScript, Fastify and PostgreSQL.
 ## Local setup
 
 1. Install dependencies with pnpm.
-2. Copy .env.example to .env and set DATABASE_URL and a random JWT_SECRET of at least 32 characters.
+2. Copy .env.example to .env and set DATABASE_URL and a random JWT_SECRET of at least 32 characters. Set NORMATIVE_REVIEW_TENANT_ID to the UUID of the dedicated operator tenant allowed to approve/reject candidates in the shared global normative catalog; if unset, review endpoints fail closed with HTTP 403.
 3. Set MIGRATION_DATABASE_URL to a dedicated migration-owner connection and run `pnpm --filter @rts/fiscal-hub-api migrate` against a disposable PostgreSQL database first. The runner applies migrations 0001–0010 in numeric order and records checksums in `fiscal_meta.schema_migrations`.
 4. Set the fiscal_hub_app password out-of-band and configure DATABASE_URL with that non-owner role.
 5. Provision the first tenant and administrator with the controlled provision:admin command.
@@ -23,7 +23,7 @@ Node.js 22+, TypeScript, Fastify and PostgreSQL.
 - POST /v1/erp-instances (OWNER or ADMIN)
 - GET /v1/normative/sources
 - GET /v1/normative/artifact-candidates
-- POST /v1/normative/artifact-candidates/:candidateId/review (OWNER or ADMIN)
+- POST /v1/normative/artifact-candidates/:candidateId/review (OWNER or ADMIN of NORMATIVE_REVIEW_TENANT_ID)
 - GET /v1/normative/sources/:sourceId/candidates
 - GET /v1/normative/sources/:sourceId/checks
 - GET /v1/normative/sources/:sourceId/artifacts
