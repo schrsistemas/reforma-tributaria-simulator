@@ -8,6 +8,12 @@ VERSION = "0.4.0"
 [triggers]
 crons = ["0 3 * * *"]
 
+# Configure official calculator HTTPS endpoints as Worker vars (no default pilot URL):
+# OFFICIAL_REGULAR_CALCULATOR_URL
+# OFFICIAL_REGULAR_OBSERVABILITY_URL
+# OFFICIAL_SIMPLE_OBSERVABILITY_URL
+# OFFICIAL_SIMPLE_ACTIVITIES_URL
+#
 # Add these bindings after creating the free-tier Cloudflare resources.
 # The repository intentionally does not contain account-specific resource IDs.
 #
