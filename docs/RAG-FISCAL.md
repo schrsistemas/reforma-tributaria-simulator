@@ -19,7 +19,14 @@ A extração é conservadora e não substitui validação jurídica nem parsing 
 
 ## Chunking e evidência
 
-Chunking deve evoluir para respeitar unidades semânticas: artigo, parágrafo, inciso, tabela, seção de manual, regra de leiaute e exemplo oficial. O chunking atual por caracteres com sobreposição é apenas uma estratégia operacional, não segmentação jurídica definitiva.
+A ingestão agora usa segmentação semântica conservadora para documentos com estrutura normativa reconhecível:
+- cada artigo/caput forma uma unidade independente;
+- parágrafos, incisos e alíneas iniciam unidades próprias, mantendo o artigo-pai nos metadados;
+- anexos e blocos contíguos de linhas tabulares são preservados como unidades;
+- unidades maiores que o limite operacional são subdivididas por caracteres, sem atravessar a fronteira do dispositivo;
+- cada chunk recebe `chunkStructure` e `legalUnits` em `metadata_json`, incluindo tipo, rótulo e hierarquia disponível.
+
+Documentos sem marcadores estruturais reconhecíveis continuam usando o chunking por caracteres com sobreposição, identificado como `chunkStructure=FALLBACK`. O parser é heurístico: não substitui análise jurídica, e estruturas não reconhecidas podem cair no fallback. A segmentação não presume que toda linha iniciada por algarismo romano seja inciso válido fora do contexto de um ato estruturado.
 
 Se não houver evidência primária aplicável, o sistema deve sinalizar insuficiência em vez de completar por inferência.
 
