@@ -60,6 +60,10 @@ const collectorRunListSchema = z.object({
   status: z.enum(["RUNNING", "SUCCEEDED", "FAILED"]).optional(),
   limit: z.coerce.number().int().min(1).max(100).default(50)
 });
+const collectorDiagnosticsSchema = z.object({
+  staleRunMinutes: z.coerce.number().int().min(1).max(1440).default(30),
+  staleCaptureMinutes: z.coerce.number().int().min(1).max(1440).default(15)
+});
 
 type Claims = { sub: string; tenantId: string; roles: string[] };
 
@@ -323,6 +327,145 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     } catch (error) {
       request.log.error({ err: error }, "normative collector run history failed");
       return reply.code(500).send({ error: "NORMATIVE_COLLECTOR_RUNS_LIST_FAILED" });
+    }
+  });
+
+  app.get("/v1/normative/diagnostics", async (request, reply) => {
+    const claims = await authenticate(request, reply);
+    if (!claims) return;
+    if (!canManageTenant(claims) || !options.normativeReviewTenantId ||
+        claims.tenantId !== options.normativeReviewTenantId) {
+      return reply.code(403).send({ error: "FORBIDDEN" });
+    }
+    const parsed = collectorDiagnosticsSchema.safeParse(request.query);
+    if (!parsed.success) return reply.code(400).send({ error: "VALIDATION_ERROR" });
+    try {
+      const result = await options.pool.query(
+        `WITH worker_names(worker_name) AS (
+           VALUES ('SOURCE_MONITOR'), ('ARTIFACT_DISCOVERY'), ('ARTIFACT_CAPTURE')
+         ),
+         latest_runs AS (
+           SELECT DISTINCT ON (worker_name)
+                  worker_name, run_status, started_at, finished_at, duration_ms,
+                  counters, failure_code
+             FROM fiscal.normative_collector_runs
+            ORDER BY worker_name, started_at DESC
+         ),
+         worker_health AS (
+           SELECT names.worker_name,
+                  latest.run_status AS latest_status,
+                  latest.started_at AS latest_started_at,
+                  latest.finished_at AS latest_finished_at,
+                  latest.duration_ms AS latest_duration_ms,
+                  latest.counters AS latest_counters,
+                  latest.failure_code AS latest_failure_code,
+                  COALESCE((
+                    SELECT count(*)::integer
+                      FROM fiscal.normative_collector_runs failed
+                     WHERE failed.worker_name = names.worker_name
+                       AND failed.run_status = 'FAILED'
+                       AND failed.started_at > COALESCE((
+                         SELECT max(success.started_at)
+                           FROM fiscal.normative_collector_runs success
+                          WHERE success.worker_name = names.worker_name
+                            AND success.run_status = 'SUCCEEDED'
+                       ), '-infinity'::timestamptz)
+                  ), 0) AS consecutive_failures
+             FROM worker_names names
+             LEFT JOIN latest_runs latest USING (worker_name)
+         ),
+         candidate_counts AS (
+           SELECT count(*) FILTER (WHERE review_status = 'PENDING')::integer AS pending,
+                  count(*) FILTER (WHERE review_status = 'APPROVED')::integer AS approved,
+                  count(*) FILTER (WHERE review_status = 'REJECTED')::integer AS rejected,
+                  count(*) FILTER (WHERE review_status = 'CAPTURED')::integer AS captured
+             FROM fiscal.normative_artifact_candidates
+         ),
+         capture_counts AS (
+           SELECT count(*) FILTER (WHERE capture_status = 'PENDING')::integer AS pending,
+                  count(*) FILTER (WHERE capture_status = 'CAPTURED')::integer AS captured,
+                  count(*) FILTER (WHERE capture_status = 'ERROR')::integer AS errors,
+                  count(*) FILTER (
+                    WHERE capture_status = 'PENDING'
+                      AND capture_started_at < now() - ($2::integer * interval '1 minute')
+                  )::integer AS stale_pending
+             FROM fiscal.normative_artifact_captures
+         ),
+         integrity_counts AS (
+           SELECT
+             (SELECT count(*)::integer
+                FROM fiscal.normative_artifact_candidates candidate
+               WHERE candidate.review_status = 'CAPTURED'
+                 AND NOT EXISTS (
+                   SELECT 1 FROM fiscal.normative_artifact_captures capture
+                    WHERE capture.id = candidate.capture_id
+                      AND capture.capture_status = 'CAPTURED'
+                 )) AS candidates_without_captured_object_metadata,
+             (SELECT count(*)::integer
+                FROM fiscal.normative_artifact_captures capture
+               WHERE capture.capture_status = 'CAPTURED'
+                 AND NOT EXISTS (
+                   SELECT 1 FROM fiscal.normative_artifact_candidates candidate
+                    WHERE candidate.capture_id = capture.id
+                      AND candidate.review_status = 'CAPTURED'
+                 )) AS captured_metadata_without_candidate
+         )
+         SELECT
+           (SELECT jsonb_agg(jsonb_build_object(
+              'worker', worker_name,
+              'latestStatus', COALESCE(latest_status, 'NEVER_RUN'),
+              'latestStartedAt', latest_started_at,
+              'latestFinishedAt', latest_finished_at,
+              'latestDurationMs', latest_duration_ms,
+              'latestCounters', COALESCE(latest_counters, '{}'::jsonb),
+              'latestFailureCode', latest_failure_code,
+              'consecutiveFailures', consecutive_failures
+            ) ORDER BY worker_name) FROM worker_health) AS workers,
+           (SELECT jsonb_build_object(
+              'pending', pending, 'approved', approved,
+              'rejected', rejected, 'captured', captured
+            ) FROM candidate_counts) AS candidates,
+           (SELECT jsonb_build_object(
+              'pending', pending, 'captured', captured,
+              'errors', errors, 'stalePending', stale_pending
+            ) FROM capture_counts) AS captures,
+           (SELECT jsonb_build_object(
+              'candidatesWithoutCapturedMetadata', candidates_without_captured_object_metadata,
+              'capturedMetadataWithoutCandidate', captured_metadata_without_candidate
+            ) FROM integrity_counts) AS integrity,
+           (SELECT count(*)::integer
+              FROM fiscal.normative_collector_runs
+             WHERE run_status = 'RUNNING'
+               AND started_at < now() - ($1::integer * interval '1 minute')) AS stale_runs`,
+        [parsed.data.staleRunMinutes, parsed.data.staleCaptureMinutes]
+      );
+      const diagnostics = result.rows[0] ?? {};
+      const workers = (diagnostics.workers ?? []) as Array<{
+        latestStatus: string; consecutiveFailures: number;
+      }>;
+      const candidates = diagnostics.candidates ?? {};
+      const captures = diagnostics.captures ?? {};
+      const integrity = diagnostics.integrity ?? {};
+      const degraded =
+        Number(diagnostics.stale_runs ?? 0) > 0 ||
+        workers.some(worker => worker.latestStatus === "FAILED" || Number(worker.consecutiveFailures) > 0) ||
+        Number(captures.stalePending ?? 0) > 0 ||
+        Number(captures.errors ?? 0) > 0 ||
+        Number(integrity.candidatesWithoutCapturedMetadata ?? 0) > 0 ||
+        Number(integrity.capturedMetadataWithoutCandidate ?? 0) > 0;
+      return reply.send({
+        status: degraded ? "DEGRADED" : "HEALTHY",
+        thresholds: parsed.data,
+        staleRuns: Number(diagnostics.stale_runs ?? 0),
+        workers,
+        candidates,
+        captures,
+        integrity,
+        storageObjectVerification: "NOT_CHECKED"
+      });
+    } catch (error) {
+      request.log.error({ err: error }, "normative collector diagnostics failed");
+      return reply.code(500).send({ error: "NORMATIVE_COLLECTOR_DIAGNOSTICS_FAILED" });
     }
   });
 
