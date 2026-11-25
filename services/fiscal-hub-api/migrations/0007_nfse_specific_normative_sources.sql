@@ -1,15 +1,20 @@
 BEGIN;
 
--- Specific NFS-e Via sources are monitored independently from the general
--- NFS-e portal so a change in one technical artifact page is traceable.
--- The FAQ is registered as reference guidance, not as a normative act.
+-- Correct the previously registered XSD index URL to the canonical nested path.
+UPDATE fiscal.normative_sources
+   SET official_url = 'https://www.gov.br/nfse/pt-br/nfs-e-via/documentacao-tecnica/arquivos-dos-esquemas-xsd/arquivos-dos-esquemas-xsd',
+       name = 'NFS-e Via — Esquemas XSD'
+ WHERE official_url = 'https://www.gov.br/nfse/pt-br/nfs-e-via/documentacao-tecnica/arquivos-dos-esquemas-xsd';
+
 INSERT INTO fiscal.normative_sources
   (name, authority, source_type, jurisdiction, official_url)
 VALUES
   ('NFS-e Via — Manuais e Anexos', 'Comitê Gestor da NFS-e', 'TECHNICAL_DOCUMENTATION', 'NATIONAL',
    'https://www.gov.br/nfse/pt-br/nfs-e-via/documentacao-tecnica/manuais-e-anexos'),
   ('NFS-e Via — Esquemas XSD', 'Comitê Gestor da NFS-e', 'SCHEMA_REPOSITORY', 'NATIONAL',
-   'https://www.gov.br/nfse/pt-br/nfs-e-via/documentacao-tecnica/arquivos-dos-esquemas-xsd'),
+   'https://www.gov.br/nfse/pt-br/nfs-e-via/documentacao-tecnica/arquivos-dos-esquemas-xsd/arquivos-dos-esquemas-xsd'),
+  ('NFS-e Via — Notas Técnicas', 'Comitê Gestor da NFS-e', 'TECHNICAL_BULLETINS', 'NATIONAL',
+   'https://www.gov.br/nfse/pt-br/nfs-e-via/documentacao-tecnica/notas-tecnicas/notas-tecnicas'),
   ('NFS-e Via — Links oficiais e APIs', 'Comitê Gestor da NFS-e', 'API_DIRECTORY', 'NATIONAL',
    'https://www.gov.br/nfse/pt-br/nfs-e-via/links'),
   ('Ato Conjunto RFB/CGIBS nº 7/2026 — Cronograma NFS-e', 'Receita Federal / Comitê Gestor do IBS', 'NORMATIVE_COMMUNICATION', 'NATIONAL',
