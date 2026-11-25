@@ -12,6 +12,34 @@ A Receita Federal publicou os repositórios em código aberto em 16/11/2026, sob
 
 A aplicação deve acompanhar versões e hashes oficiais, não copiar percentuais isolados para uma regra genérica.
 
+## Versões e integridade verificadas em 25/11/2026
+
+O manifesto `docs/official-calculator-registry.json` separa hashes iniciais registrados na Portaria Cotec nº 342/2026 dos commits atuais observados nos repositórios. Não compare o hash inicial da Portaria com o HEAD posterior.
+
+| Componente | Versão atual observada | Commit observado |
+|---|---:|---|
+| Regime regular | 1.7.2 | `f1eebd7ce3157423b1a6aaca7dc1d6c3395452c4` |
+| Simples Nacional | 1.0.2 | `a926d5a76095ac0295a6612a9a54db7ffead2396` |
+| DANFSe Service | 1.0.0 | `8d79e6b2f7fad6375340afcb51c85ed370c64a14` |
+
+A release 1.7.2 do regime regular alterou a política de arredondamento: valores publicados são arredondados no cálculo e as somas seguintes usam os valores exibidos. Isso afeta centavos, alíquotas efetivas, bases e totais. A versão 1.0.2 do Simples unificou a política de arredondamento com o projeto do regime regular e adicionou testes arquiteturais para impedir implementações paralelas. Os testes de equivalência devem usar os exemplos e as regras da versão exata, não tolerâncias genéricas de centavos.
+
+## Integridade inicial registrada na Portaria
+
+O manifesto registra os três SHA-512 dos ZIPs iniciais e os SHA-1 dos commits Git iniciais, conforme art. 2º da Portaria. O SHA-1 do commit Git identifica a árvore e o commit conforme as convenções Git; o SHA-512 identifica o ZIP indicado. São provas distintas e não intercambiáveis.
+
+A titularidade permanece com a Receita Federal. A licença MIT permite uso e redistribuição nos termos da licença, preservando avisos de copyright e licença; dependências de terceiros mantêm suas licenças. A Portaria também esclarece que a publicação não cria suporte obrigatório, manutenção garantida ou efeito normativo vinculante.
+
+## Política de implantação dos serviços
+
+Os motores Java/Spring exigem Java 25 e banco SQLite gerado por scripts Flyway. O DANFSe é um serviço Go independente. Nenhum desses runtimes deve ser embutido diretamente no Worker TypeScript.
+
+Os endpoints do regime regular agora exigem configuração explícita:
+- `OFFICIAL_REGULAR_CALCULATOR_URL`: URL HTTPS completa para o endpoint oficial de cálculo do regime geral.
+- `OFFICIAL_REGULAR_OBSERVABILITY_URL`: URL HTTPS completa para observabilidade do regime geral.
+
+Os endpoints do Simples já exigem URLs HTTPS configuradas. Não há fallback automático para o host `piloto-cbs.tributos.gov.br`: endpoints de piloto/homologação não devem ser presumidos como produção. O serviço DANFSe ainda requer implantação externa e proxy dedicado com transporte XML/PDF binário; não reutilizar o proxy JSON atual.
+
 ## Separação obrigatória por regime
 
 ### Regime regular
@@ -44,8 +72,8 @@ O Worker disponibiliza os seguintes caminhos, todos exigindo os cabeçalhos de i
 
 | Endpoint do simulador | Método | Destino |
 |---|---|---|
-| `/api/v1/official-calculator/regime-geral` | POST | API oficial de cálculo do regime regular |
-| `/api/v1/official-calculator/regime-geral/observabilidade` | POST | API oficial de observabilidade por item do regime regular |
+| `/api/v1/official-calculator/regime-geral` | POST | URL HTTPS explícita em `OFFICIAL_REGULAR_CALCULATOR_URL` |
+| `/api/v1/official-calculator/regime-geral/observabilidade` | POST | URL HTTPS explícita em `OFFICIAL_REGULAR_OBSERVABILITY_URL` |
 | `/api/v1/official-calculator/simples-nacional/observabilidade` | POST | URL oficial configurada para observabilidade do Simples |
 | `/api/v1/official-calculator/simples-nacional/atividades?data=AAAA-MM-DD` | GET | URL oficial configurada para consulta de atividades |
 
