@@ -83,3 +83,15 @@
 - [x] Implementar proxy XML/PDF binário com limite de entrada e timeout.
 - [ ] Implantar DANFSe Go como serviço separado e configurar endpoint HTTPS.
 - [ ] Criar suíte de regressão diferencial por regime e versão da base oficial.
+
+
+## Monitoramento de fontes oficiais — Receita Federal
+
+- [x] Registrar o feed oficial de notícias da Receita Federal como fonte de descoberta.
+- [x] Registrar notícias RTC de 17 a 24/11/2026 com URL, data, tema e impactos.
+- [x] Definir separação entre notícia (`NEWS_LEAD`) e evidência normativa primária.
+- [ ] Obter e versionar o texto integral da Resolução CGSN nº 196/2026 e mapear vigência por artigo.
+- [ ] Atualizar o motor/Skill do Simples Nacional com os efeitos confirmados da Resolução CGSN nº 196/2026.
+- [ ] Validar Ato Conjunto RFB/CGIBS nº 4/2026 e cronograma dos campos CBS/IBS por DF-e.
+- [ ] Avaliar documentação da API RAD e aguardar disponibilização efetiva do serviço antes de implementar integração de produção.
+- [ ] Implementar monitoramento periódico do feed e detecção de alterações/novas notícias RTC.
