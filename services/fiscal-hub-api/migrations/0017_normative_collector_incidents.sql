@@ -31,7 +31,9 @@ CREATE TABLE fiscal.normative_collector_incident_events (
 CREATE INDEX ix_normative_collector_incident_events_incident_time
   ON fiscal.normative_collector_incident_events(incident_id, occurred_at DESC);
 
-GRANT SELECT, INSERT, UPDATE ON fiscal.normative_collector_incidents TO fiscal_hub_app;
+GRANT SELECT, INSERT ON fiscal.normative_collector_incidents TO fiscal_hub_app;
+GRANT UPDATE (severity, status, summary, last_seen_at, resolved_at, occurrence_count, metadata)
+  ON fiscal.normative_collector_incidents TO fiscal_hub_app;
 REVOKE DELETE ON fiscal.normative_collector_incidents FROM fiscal_hub_app;
 GRANT SELECT, INSERT ON fiscal.normative_collector_incident_events TO fiscal_hub_app;
 REVOKE UPDATE, DELETE ON fiscal.normative_collector_incident_events FROM fiscal_hub_app;
