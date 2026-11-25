@@ -41,7 +41,7 @@ test('hash is stable for equivalent normalized text', async () => {
 });
 
 test('extracts publication and effective dates only from explicit legal metadata', () => {
-  const html = `<html><head><meta property="article:published_time" content="2026-01-15T10:00:00Z"></head><body>Esta norma entra em vigor em 01/03/2026.</body></html>`;
+  const html = `<html><head><meta property="article:published_time" content="2026-01-15T10:00:00Z"></head><body>Lei Complementar nº 214/2025. Esta norma entra em vigor em 01/03/2026.</body></html>`;
   assert.deepEqual(extractOfficialDates(html), {
     publishedAt: '2026-01-15',
     publishedAtSource: 'HTML_META',
@@ -52,7 +52,7 @@ test('extracts publication and effective dates only from explicit legal metadata
 });
 
 test('uses publication date as effective date only for explicit publication clause', () => {
-  const html = `<script type="application/ld+json">{"@context":"https://schema.org","datePublished":"2026-02-10"}</script><p>Esta lei entra em vigor na data de sua publicação.</p>`;
+  const html = `<script type="application/ld+json">{"@context":"https://schema.org","datePublished":"2026-02-10"}</script><p>Lei Complementar nº 214/2025. Esta lei entra em vigor na data de sua publicação.</p>`;
   assert.deepEqual(extractOfficialDates(html), {
     publishedAt: '2026-02-10',
     publishedAtSource: 'JSON_LD',
@@ -72,7 +72,7 @@ test('does not infer legal dates from arbitrary page dates or invalid dates', ()
 });
 
 test('recognizes explicit ISO publication date text and Brazilian effective date', () => {
-  const html = '<p>Publicado em 2026-04-02. Produz efeitos a partir de 15/04/2026.</p>';
+  const html = '<p>Lei Complementar nº 214/2025. Publicado em 2026-04-02. Produz efeitos a partir de 15/04/2026.</p>';
   assert.deepEqual(extractOfficialDates(html), {
     publishedAt: '2026-04-02',
     publishedAtSource: 'EXPLICIT_TEXT',
@@ -83,11 +83,20 @@ test('recognizes explicit ISO publication date text and Brazilian effective date
 });
 
 test('extracts end of effectiveness only from explicit validity wording', () => {
-  const html = '<p>Vigência até 31/12/2026.</p>';
+  const html = '<p>Lei Complementar nº 214/2025. Vigência até 31/12/2026.</p>';
   assert.deepEqual(extractOfficialDates(html), {
     publishedAtSource: 'RETRIEVAL_FALLBACK',
     effectiveFromSource: 'UNKNOWN',
     effectiveTo: '2026-12-31',
     effectiveToSource: 'EXPLICIT_TEXT',
+  });
+});
+
+test('does not assign dates from a page listing multiple legal instruments', () => {
+  const html = '<p>Lei nº 1/2025 publicada em 01/01/2025.</p><p>Lei nº 2/2025 publicada em 02/02/2025.</p>';
+  assert.deepEqual(extractOfficialDates(html), {
+    publishedAtSource: 'RETRIEVAL_FALLBACK',
+    effectiveFromSource: 'UNKNOWN',
+    effectiveToSource: 'UNKNOWN',
   });
 });
