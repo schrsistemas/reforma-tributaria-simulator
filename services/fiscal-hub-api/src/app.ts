@@ -290,6 +290,7 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
       const result = await options.pool.query(
         `SELECT c.id, c.source_id, c.check_status, c.http_status, c.content_type,
                 c.content_length, c.etag, c.last_modified, c.content_sha256,
+                c.normalized_content_sha256, c.fingerprint_version,
                 c.response_ms, c.error_code, c.checked_at
            FROM fiscal.normative_source_checks c
           WHERE c.source_id = $1
