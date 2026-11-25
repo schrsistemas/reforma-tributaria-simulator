@@ -1,4 +1,4 @@
-import Fastify, { type FastifyInstance } from "fastify";
+import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from "fastify";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import jwt from "@fastify/jwt";
@@ -13,6 +13,59 @@ const loginSchema = z.object({
   email: z.string().email().max(254),
   password: z.string().min(1).max(256)
 });
+
+function isValidCnpj(value: string): boolean {
+  if (!/^\d{14}$/.test(value) || /^(\d)\1{13}$/.test(value)) return false;
+  const digit = (base: string, weights: number[]) => {
+    const sum = [...base].reduce((total, char, index) => total + Number(char) * weights[index]!, 0);
+    const remainder = sum % 11;
+    return remainder < 2 ? 0 : 11 - remainder;
+  };
+  const first = digit(value.slice(0, 12), [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
+  const second = digit(value.slice(0, 12) + first, [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
+  return value.endsWith(String(first) + String(second));
+}
+
+const companySchema = z.object({
+  legalName: z.string().trim().min(2).max(200),
+  tradeName: z.string().trim().max(200).nullable().optional(),
+  cnpj: z.string().transform(value => value.replace(/\D/g, "")).refine(isValidCnpj, "CNPJ inválido"),
+  stateRegistration: z.string().trim().max(30).nullable().optional(),
+  municipalRegistration: z.string().trim().max(30).nullable().optional(),
+  uf: z.string().regex(/^[A-Za-z]{2}$/).transform(value => value.toUpperCase()),
+  cityCode: z.string().trim().max(10).nullable().optional(),
+  taxRegime: z.enum(["SIMPLES_NACIONAL", "LUCRO_PRESUMIDO", "LUCRO_REAL", "MEI", "IMUNE_ISENTA", "OUTRO"]).nullable().optional()
+});
+
+const erpSchema = z.object({
+  companyId: z.string().uuid().nullable().optional(),
+  instanceName: z.string().trim().min(2).max(150),
+  erpName: z.string().trim().min(2).max(100),
+  erpVersion: z.string().trim().max(50).nullable().optional(),
+  databaseEngine: z.enum(["FIREBIRD", "POSTGRESQL", "OTHER"]),
+  connectorVersion: z.string().trim().max(50).nullable().optional()
+});
+
+type Claims = { sub: string; tenantId: string; roles: string[] };
+
+async function authenticate(request: FastifyRequest, reply: FastifyReply): Promise<Claims | null> {
+  try {
+    await request.jwtVerify();
+    const claims = request.user as Claims;
+    if (!claims.sub || !claims.tenantId || !Array.isArray(claims.roles)) {
+      reply.code(401).send({ error: "UNAUTHORIZED" });
+      return null;
+    }
+    return claims;
+  } catch {
+    reply.code(401).send({ error: "UNAUTHORIZED" });
+    return null;
+  }
+}
+
+function canManageTenant(claims: Claims): boolean {
+  return claims.roles.includes("OWNER") || claims.roles.includes("ADMIN");
+}
 
 export interface BuildAppOptions {
   pool: Pool;
@@ -87,27 +140,18 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
   });
 
   app.get("/v1/me", async (request, reply) => {
-    try {
-      await request.jwtVerify();
-      const claims = request.user as { sub: string; tenantId: string; roles: string[] };
-      return reply.send({ userId: claims.sub, tenantId: claims.tenantId, roles: claims.roles });
-    } catch {
-      return reply.code(401).send({ error: "UNAUTHORIZED" });
-    }
+    const claims = await authenticate(request, reply);
+    if (!claims) return;
+    return reply.send({ userId: claims.sub, tenantId: claims.tenantId, roles: claims.roles });
   });
 
   app.get("/v1/companies", async (request, reply) => {
-    let tenantId: string;
+    const claims = await authenticate(request, reply);
+    if (!claims) return;
     try {
-      await request.jwtVerify();
-      tenantId = (request.user as { tenantId: string }).tenantId;
-    } catch {
-      return reply.code(401).send({ error: "UNAUTHORIZED" });
-    }
-    try {
-      const rows = await withTenant(options.pool, tenantId, async client => {
+      const rows = await withTenant(options.pool, claims.tenantId, async client => {
         const result = await client.query(
-          "SELECT id, legal_name, trade_name, cnpj, uf, status, created_at FROM fiscal.companies ORDER BY legal_name"
+          "SELECT id, legal_name, trade_name, cnpj, uf, status, created_at FROM fiscal.companies ORDER BY legal_name LIMIT 200"
         );
         return result.rows;
       });
@@ -118,6 +162,106 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     }
   });
 
+  app.post("/v1/companies", async (request, reply) => {
+    const claims = await authenticate(request, reply);
+    if (!claims) return;
+    if (!canManageTenant(claims)) return reply.code(403).send({ error: "FORBIDDEN" });
+    const parsed = companySchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.code(400).send({
+        error: "VALIDATION_ERROR",
+        details: parsed.error.issues.map(issue => ({ path: issue.path.join("."), message: issue.message }))
+      });
+    }
+    const company = parsed.data;
+    try {
+      const rows = await withTenant(options.pool, claims.tenantId, async client => {
+        const inserted = await client.query(
+          `INSERT INTO fiscal.companies
+             (tenant_id, legal_name, trade_name, cnpj, state_registration, municipal_registration, uf, city_code, tax_regime)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+           RETURNING id, legal_name, trade_name, cnpj, uf, city_code, tax_regime, status, created_at`,
+          [claims.tenantId, company.legalName, company.tradeName ?? null, company.cnpj,
+           company.stateRegistration ?? null, company.municipalRegistration ?? null, company.uf,
+           company.cityCode ?? null, company.taxRegime ?? null]
+        );
+        const created = inserted.rows[0]!;
+        await client.query(
+          `INSERT INTO fiscal.audit_events
+             (tenant_id, actor_user_id, event_type, entity_type, entity_id, metadata)
+           VALUES ($1,$2,'COMPANY_CREATED','COMPANY',$3,$4::jsonb)`,
+          [claims.tenantId, claims.sub, created.id, JSON.stringify({ cnpj: company.cnpj, uf: company.uf })]
+        );
+        return [created];
+      });
+      return reply.code(201).send({ item: rows[0] });
+    } catch (error) {
+      const pgError = error as { code?: string };
+      if (pgError.code === "23505") return reply.code(409).send({ error: "COMPANY_CNPJ_ALREADY_EXISTS" });
+      request.log.error({ err: error }, "company creation failed");
+      return reply.code(500).send({ error: "COMPANY_CREATE_FAILED" });
+    }
+  });
+
+  app.get("/v1/erp-instances", async (request, reply) => {
+    const claims = await authenticate(request, reply);
+    if (!claims) return;
+    try {
+      const rows = await withTenant(options.pool, claims.tenantId, async client => {
+        const result = await client.query(
+          `SELECT id, company_id, instance_name, erp_name, erp_version, database_engine,
+                  connector_version, last_sync_at, status, created_at
+             FROM fiscal.erp_instances ORDER BY instance_name LIMIT 200`
+        );
+        return result.rows;
+      });
+      return reply.send({ items: rows });
+    } catch (error) {
+      request.log.error({ err: error }, "ERP instance listing failed");
+      return reply.code(500).send({ error: "ERP_INSTANCE_LIST_FAILED" });
+    }
+  });
+
+  app.post("/v1/erp-instances", async (request, reply) => {
+    const claims = await authenticate(request, reply);
+    if (!claims) return;
+    if (!canManageTenant(claims)) return reply.code(403).send({ error: "FORBIDDEN" });
+    const parsed = erpSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.code(400).send({
+        error: "VALIDATION_ERROR",
+        details: parsed.error.issues.map(issue => ({ path: issue.path.join("."), message: issue.message }))
+      });
+    }
+    const erp = parsed.data;
+    try {
+      const rows = await withTenant(options.pool, claims.tenantId, async client => {
+        const inserted = await client.query(
+          `INSERT INTO fiscal.erp_instances
+             (tenant_id, company_id, instance_name, erp_name, erp_version, database_engine, connector_version)
+           VALUES ($1,$2,$3,$4,$5,$6,$7)
+           RETURNING id, company_id, instance_name, erp_name, erp_version, database_engine,
+                     connector_version, last_sync_at, status, created_at`,
+          [claims.tenantId, erp.companyId ?? null, erp.instanceName, erp.erpName, erp.erpVersion ?? null,
+           erp.databaseEngine, erp.connectorVersion ?? null]
+        );
+        const created = inserted.rows[0]!;
+        await client.query(
+          `INSERT INTO fiscal.audit_events
+             (tenant_id, actor_user_id, event_type, entity_type, entity_id, metadata)
+           VALUES ($1,$2,'ERP_INSTANCE_CREATED','ERP_INSTANCE',$3,$4::jsonb)`,
+          [claims.tenantId, claims.sub, created.id, JSON.stringify({ databaseEngine: erp.databaseEngine, erpName: erp.erpName })]
+        );
+        return [created];
+      });
+      return reply.code(201).send({ item: rows[0] });
+    } catch (error) {
+      const pgError = error as { code?: string };
+      if (pgError.code === "23503") return reply.code(400).send({ error: "COMPANY_NOT_FOUND_IN_TENANT" });
+      request.log.error({ err: error }, "ERP instance creation failed");
+      return reply.code(500).send({ error: "ERP_INSTANCE_CREATE_FAILED" });
+    }
+  });
 
   app.get("/v1/normative/sources", async (request, reply) => {
     const claims = await authenticate(request, reply);
@@ -158,11 +302,8 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
   });
 
   app.get("/v1/normative/documents", async (request, reply) => {
-    try {
-      await request.jwtVerify();
-    } catch {
-      return reply.code(401).send({ error: "UNAUTHORIZED" });
-    }
+    const claims = await authenticate(request, reply);
+    if (!claims) return;
     try {
       const result = await options.pool.query(
         `SELECT d.id, s.name AS source_name, d.document_type, d.document_number,
