@@ -37,7 +37,7 @@ function buildChunkStatements(
         documentId,
         chunk.ordinal,
         chunk.text,
-        chunk.text.split(/\\s+/).length,
+        chunk.text.split(/\s+/).length,
         JSON.stringify({
           sourceId: source.id,
           sourceType: source.sourceType,
