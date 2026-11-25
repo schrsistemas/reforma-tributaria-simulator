@@ -80,6 +80,8 @@ export interface BuildAppOptions {
   jwtSecret: string;
   corsOrigin?: string;
   logger?: boolean;
+  /** Tenant authorized to review the shared global normative catalog. */
+  normativeReviewTenantId?: string;
 }
 
 export async function buildApp(options: BuildAppOptions): Promise<FastifyInstance> {
@@ -319,7 +321,10 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
   app.post("/v1/normative/artifact-candidates/:candidateId/review", async (request, reply) => {
     const claims = await authenticate(request, reply);
     if (!claims) return;
-    if (!canManageTenant(claims)) return reply.code(403).send({ error: "FORBIDDEN" });
+    if (!canManageTenant(claims) || !options.normativeReviewTenantId ||
+        claims.tenantId !== options.normativeReviewTenantId) {
+      return reply.code(403).send({ error: "FORBIDDEN" });
+    }
     const params = z.object({ candidateId: z.string().uuid() }).safeParse(request.params);
     if (!params.success) return reply.code(400).send({ error: "INVALID_CANDIDATE_ID" });
     const parsed = artifactCandidateReviewSchema.safeParse(request.body);
