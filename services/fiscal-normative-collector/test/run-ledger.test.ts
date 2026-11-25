@@ -29,7 +29,8 @@ test("worker ledger records successful runs and JSON counters", async () => {
   assert.match(client.calls[0]!.sql, /RUNNING/);
   assert.match(client.calls[1]!.sql, /SUCCEEDED/);
   assert.equal(client.calls[1]!.values?.[0], "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa");
-  assert.equal(client.calls[1]!.values?.[1], JSON.stringify({ checked: 12, changed: 2, errors: 0 }));
+  assert.equal(client.calls[1]!.values?.[1], "SUCCEEDED");
+  assert.equal(client.calls[1]!.values?.[2], JSON.stringify({ checked: 12, changed: 2, errors: 0 }));
 });
 
 test("worker ledger marks failed runs without persisting exception details", async () => {
@@ -48,4 +49,15 @@ test("worker ledger preserves the original error if failure bookkeeping also fai
   await assert.rejects(withWorkerRun(client, "ARTIFACT_DISCOVERY", async () => {
     throw new Error("original worker failure");
   }), /original worker failure/);
+});
+
+test("worker ledger records partial execution errors as FAILED with counters", async () => {
+  const client = ledgerClient();
+  await withWorkerRun(client, "ARTIFACT_DISCOVERY", async () => ({
+    checked: 10, discovered: 4, errors: 2
+  }), result => result.errors > 0);
+  assert.equal(client.calls[1]!.values?.[1], "FAILED");
+  assert.equal(client.calls[1]!.values?.[2], JSON.stringify({
+    checked: 10, discovered: 4, errors: 2
+  }));
 });
