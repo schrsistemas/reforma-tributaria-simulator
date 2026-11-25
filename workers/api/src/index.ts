@@ -11,6 +11,7 @@ import { createPix, getPix, transitionPixRecord } from './pix-repository.js';
 import { searchRag, getRagDocument } from './rag-repository.js';
 import { evaluateCreditEligibility, CREDIT_ELIGIBILITY_RULE_MATRIX } from '@rts/domain';
 import { listPaymentMethods, listPaymentRejectionScenarios, createPaymentRejectionSimulation, getPaymentRejectionSimulation, listPaymentRejectionSimulations } from './payment-rejection-repository.js';
+import { resolveSkillPlan, SKILL_REGISTRY, SkillDispatchError } from './skill-dispatcher.js';
 
 export interface Env {
   VERSION: string;
@@ -200,7 +201,7 @@ export default {
       return json({
         service: 'reforma-tributaria-simulator',
         apiVersion: 'v1',
-        capabilities: ['simulation', 'tax-engine', 'split-payment', 'tef', 'pix', 'fiscal-knowledge', 'government-source-registry', 'official-consumption-calculator', 'credit-eligibility'],
+        capabilities: ['simulation', 'tax-engine', 'split-payment', 'tef', 'pix', 'fiscal-knowledge', 'government-source-registry', 'official-consumption-calculator', 'credit-eligibility', 'tax-skill-dispatcher'],
         execution: { explicitScenario: true, durableWorkflow: Boolean(env.SIMULATION_WORKFLOW) },
         persistence: { database: Boolean(env.DB), evidenceArchive: Boolean(env.EVIDENCE_BUCKET) },
         authentication: { integrationTokenConfigured: Boolean(env.INTEGRATION_TOKEN), tenantBindingConfigured: Boolean(env.INTEGRATION_TENANT_ID?.trim()) },
@@ -213,6 +214,57 @@ export default {
     } catch (error) {
       const status = Number((error as { status?: number }).status) || 500;
       return json({ ok: false, error: error instanceof Error ? error.message : 'AUTHENTICATION_FAILED' }, status, request);
+    }
+
+    if (request.method === 'GET' && url.pathname === '/api/v1/skills') {
+      return json({
+        ok: true,
+        registryVersion: SKILL_REGISTRY.schemaVersion,
+        orchestrator: SKILL_REGISTRY.orchestrator,
+        instructionLoading: 'HOST_RUNTIME_REQUIRED',
+        skills: SKILL_REGISTRY.skills.map(skill => ({
+          id: skill.id,
+          path: skill.path,
+          role: skill.role,
+          triggers: skill.triggers,
+          dependsOn: skill.dependsOn ?? [],
+        })),
+      }, 200, request);
+    }
+
+    if (request.method === 'POST' && url.pathname === '/api/v1/skills/resolve') {
+      try {
+        const headers = integrationHeaders(request);
+        const body = await readJson(request) as {
+          query?: string;
+          requestedSkillIds?: string[];
+          maxSkills?: number;
+        };
+        if (typeof body.query !== 'string' || !body.query.trim()) {
+          return json({ ok: false, error: 'SKILL_QUERY_REQUIRED' }, 400, request);
+        }
+        if (body.requestedSkillIds !== undefined &&
+            (!Array.isArray(body.requestedSkillIds) || body.requestedSkillIds.some(id => typeof id !== 'string'))) {
+          return json({ ok: false, error: 'SKILL_IDS_INVALID' }, 400, request);
+        }
+        const plan = resolveSkillPlan({
+          query: body.query,
+          requestedSkillIds: body.requestedSkillIds,
+          maxSkills: body.maxSkills,
+        });
+        return json({
+          ok: true,
+          ...plan,
+          tenantId: headers.tenantId,
+          correlationId: headers.correlationId,
+        }, 200, request);
+      } catch (error) {
+        const status = error instanceof SkillDispatchError ? 400 : Number((error as { status?: number }).status) || 500;
+        return json({
+          ok: false,
+          error: error instanceof Error ? error.message : 'SKILL_DISPATCH_FAILED',
+        }, status, request);
+      }
     }
 
     if (request.method === 'GET' && url.pathname === '/api/v1/mcp/tools') {
