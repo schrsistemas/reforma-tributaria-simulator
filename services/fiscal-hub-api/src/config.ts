@@ -6,7 +6,8 @@ const configSchema = z.object({
   HOST: z.string().default("0.0.0.0"),
   DATABASE_URL: z.string().url(),
   JWT_SECRET: z.string().min(32),
-  CORS_ORIGIN: z.string().default("http://localhost:3000")
+  CORS_ORIGIN: z.string().default("http://localhost:3000"),
+  NORMATIVE_REVIEW_TENANT_ID: z.string().uuid().optional()
 });
 
 export type AppConfig = z.infer<typeof configSchema>;
