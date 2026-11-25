@@ -1,20 +1,24 @@
 /**
  * Contratos de seleção de leiaute da NFS-e Nacional.
  *
- * A matriz registra os leiautes publicados oficialmente por ambiente.
- * Publicação de XSD não prova que o runtime do endpoint já foi atualizado.
+ * A matriz distingue o release comunicado como implantado do XSD mais novo
+ * publicado para homologação. Publicação de schema não prova implantação
+ * nem aceitação pelo runtime de um serviço.
  */
 
 export type NfseEnvironment = 'PRODUCTION' | 'RESTRICTED';
 
 export type NfseLayoutId =
   | 'SNNFSE_PRODUCTION_NT004_NT007'
-  | 'SNNFSE_RESTRICTED_NT009_1_01';
+  | 'SNNFSE_RESTRICTED_NT009_1_00_RELEASE_1';
 
 export interface NfseLayoutProfile {
   readonly id: NfseLayoutId;
   readonly environment: NfseEnvironment;
+  /** Release que o comunicado oficial identifica como implantado no ambiente. */
   readonly technicalRelease: string;
+  /** Schema mais recente publicado para o ambiente, quando difere do release ativo comunicado. */
+  readonly publishedSchema?: string;
   readonly statusAsOf: string;
   readonly ibsCbsPolicy:
     | 'OPTIONAL_OPEN_GROUP'
@@ -36,19 +40,20 @@ export const NFSE_LAYOUT_PROFILES: Readonly<Record<NfseEnvironment, NfseLayoutPr
     sourceUrl: 'https://www.gov.br/nfse/pt-br/noticias/nfs-e-nacional-confira-oas-rientacoes-sobre-leiaute-em-producao-regras-de-preenchimento-de-ibs-cbs-e-status-da-nota-tecnica-009/',
   },
   RESTRICTED: {
-    id: 'SNNFSE_RESTRICTED_NT009_1_01',
+    id: 'SNNFSE_RESTRICTED_NT009_1_00_RELEASE_1',
     environment: 'RESTRICTED',
-    technicalRelease: 'NT 009 v1.01 — XSD PRODREST publicado em 20/10/2026',
+    technicalRelease: 'NT 009 v1.0 — release 1, comunicado como implantado em produção restrita em 25/11/2026',
+    publishedSchema: 'NT 009 v1.01 — XSD PRODREST publicado em 20/10/2026; release 2 ainda não comunicado como implantado',
     statusAsOf: '2026-11-25',
     ibsCbsPolicy: 'REQUIRES_RELEASE_SCHEMA_VALIDATION',
     fiscalEffect: 'NO_FISCAL_EFFECT',
-    sourceUrl: 'https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/producao-restrita',
+    sourceUrl: 'https://www.gov.br/nfse/pt-br/noticias/nfs-e-nacional-confira-oas-rientacoes-sobre-leiaute-em-producao-regras-de-preenchimento-de-ibs-cbs-e-status-da-nota-tecnica-009/',
     runtimeVerification: 'NOT_PROBED',
   },
 } as const;
 
 /**
- * Retorna o perfil documental publicado para o ambiente. A disponibilidade
+ * Retorna o perfil documental comunicado para o ambiente. A disponibilidade
  * do runtime deve ser verificada separadamente; runtimeVerification não é
  * promovido para CONFIRMED sem uma chamada de saúde/contrato bem-sucedida.
  */
