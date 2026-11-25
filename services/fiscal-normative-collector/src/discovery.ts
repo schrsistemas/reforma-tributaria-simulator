@@ -53,7 +53,10 @@ export function discoverArtifactCandidates(
   if (base.protocol !== "https:" || !allowedHosts.has(base.hostname.toLowerCase())) return [];
 
   const candidates = new Map<string, ArtifactCandidate>();
-  const anchors = html.match(/<a\b[^>]*>[\s\S]*?<\/a\s*>/gi) ?? [];
+  const document = html
+    .replace(/<!--[\s\S]*?-->/g, " ")
+    .replace(/<(script|style|noscript)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, " ");
+  const anchors = document.match(/<a\b[^>]*>[\s\S]*?<\/a\s*>/gi) ?? [];
   for (const anchor of anchors) {
     const openingTag = anchor.match(/^<a\b[^>]*>/i)?.[0];
     if (!openingTag) continue;
