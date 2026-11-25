@@ -58,7 +58,7 @@ The FAQ is explanatory guidance, not a normative act. It must not overwrite a le
 
 ## Artifact capture library
 
-`src/capture.ts` captures an explicitly supplied official artifact URL. It enforces the exact-host HTTPS allowlist, blocks redirects, limits response size and time, accepts only PDF/HTML/XML/JSON content types, verifies the PDF signature, calculates SHA-256 and writes bytes to an S3-compatible object store. `src/s3-storage.ts` provides the S3-compatible storage adapter. `src/capture-service.ts` records immutable metadata in `fiscal.normative_artifact_captures` and treats an existing source/hash pair as a duplicate.
+`src/capture.ts` downloads and validates an explicitly supplied official artifact URL. It enforces the exact-host HTTPS allowlist, blocks redirects, limits response size and time, accepts only PDF/HTML/XML/JSON content types, verifies the PDF signature and calculates SHA-256. `src/capture-service.ts` first persists a durable PENDING metadata row, then uploads bytes to the deterministic S3 object key, and only after successful upload marks the row CAPTURED. Upload failures transition the row to ERROR; retries reuse the same source/hash row and object key. `src/s3-storage.ts` provides the S3-compatible storage adapter.
 
 The source checker and discovery worker find links ending in .pdf, .xsd, .xml or .json from HTML/XHTML pages. It resolves relative URLs, decodes common HTML entities, removes fragments, deduplicates canonical URLs and accepts only HTTPS links whose exact hostname is in the same allowlist. Links with credentials, ports other than the default HTTPS port and GNRE's explicitly allowed port 444, unsupported schemes, IP literals or external hosts are discarded.
 
@@ -79,7 +79,7 @@ Run manually after provisioning the object store and applying migrations:
 
 `pnpm --filter @rts/fiscal-normative-collector capture:approved`
 
-The worker stores the artifact, records SHA-256 metadata, links the capture ID to the candidate and moves it to `CAPTURED`. Failures leave the candidate `APPROVED` for retry and increment `capture_attempts` with the last error code. Migration 0012 schedules the next eligible attempt with exponential backoff from 1 minute up to 24 hours; successful capture clears the retry deadline. Duplicate content reuses the existing capture record. A PostgreSQL advisory lock (key pair 20261125/3) prevents overlapping capture runs.
+The worker stores the artifact through a durable PENDING → CAPTURED/ERROR lifecycle, links the capture ID to the candidate only after upload confirmation and moves the candidate to `CAPTURED`. Failures leave the candidate `APPROVED` for retry and increment `capture_attempts` with the last error code. Migration 0012 schedules the next eligible attempt with exponential backoff from 1 minute up to 24 hours; successful capture clears the retry deadline. Duplicate content reuses the existing capture record. A PostgreSQL advisory lock (key pair 20261125/3) prevents overlapping capture runs.
 
 
 Capture configuration is separate from discovery. The approved-candidate worker requires `S3_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY_ID` and `S3_SECRET_ACCESS_KEY`; `S3_ENDPOINT` and `S3_FORCE_PATH_STYLE` are optional. `FISCAL_CAPTURE_BATCH_SIZE` defaults to 25 and is capped at 200. The worker is not scheduled automatically and must not be run until PostgreSQL migrations and the S3-compatible bucket are provisioned.
