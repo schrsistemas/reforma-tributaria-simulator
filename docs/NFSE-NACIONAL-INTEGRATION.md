@@ -72,12 +72,12 @@ O guia oficial descreve as seguintes características técnicas para a NFS-e Via
 
 - API REST com processamento assíncrono; o JSON é o formato de troca de mensagens.
 - Documentos XML 1.0 em UTF-8.
-- Canal HTTPS com TLS 1.2 ou superior e autenticação mútua por certificado digital ICP-Brasil.
+- Canal HTTPS com autenticação mútua por certificado digital ICP-Brasil. **A versão mínima de TLS exige confirmação:** a seção 1.1.5 do Anexo II diz TLS 1.2 ou superior, mas a seção 2 lista TLS 1.0, 1.1 e 1.2. O repositório registra essa divergência e mantém a versão efetiva como não verificada até confirmação do contrato/ambiente Serpro.
 - Certificado A1 ou A3 e-CNPJ/e-PJ com uso de autenticação de cliente, conforme o papel do transmissor.
 - Assinatura XMLDSIG no formato *enveloped*, com RSA-SHA256, digest SHA-256 e transformações Enveloped e C14N.
 - Compactação GZip com representação Base64.
 
-A especificação de transporte e assinatura está registrada em `NFSE_VIA_TECHNICAL_PROFILE`. Isso é um perfil documental, não uma implementação de mTLS, XMLDSIG ou compactação. Os detalhes de cada operação, os nomes de propriedades JSON, os paths e os códigos de retorno devem ser extraídos do Swagger de cada ambiente antes de gerar o cliente HTTP.
+A especificação de transporte e assinatura está registrada em `NFSE_VIA_TECHNICAL_PROFILE`, incluindo a divergência de TLS do próprio manual. Isso é um perfil documental, não uma implementação de mTLS, XMLDSIG ou compactação. Os detalhes de cada operação, os nomes de propriedades JSON, os paths e os códigos de retorno devem ser extraídos do Swagger de cada ambiente antes de gerar o cliente HTTP.
 
 **Máquina de estados:** a recepção positiva significa apenas que a mensagem foi recebida para processamento. O sistema deve consultar o resultado posterior. O domínio agora distingue `TRANSMISSION_REJECTED`, `RECEIVED_PENDING_PROCESSING`, `DOCUMENT_ACCEPTED` e `DOCUMENT_REJECTED`; apenas o resultado final positivo marca `documentAuthorized: true`. A classificação é normalizada e não afirma que esses nomes existam no JSON oficial.
 
@@ -240,7 +240,7 @@ Não inferir produção pela ausência de parâmetro. Não permitir que uma oper
 - Erros HTTP, rejeições fiscais e falhas de transporte são estados distintos.
 - Chaves privadas e certificados não aparecem em logs, respostas ou frontend.
 - Nenhuma nota é apresentada como autorizada apenas pela recepção HTTP/API; exige resultado positivo do processamento assíncrono.
-- A assinatura e o canal mTLS seguem o Anexo II v1.02 e os contratos efetivos do Swagger do ambiente.
+- A assinatura segue o Anexo II v1.02; a versão mínima de TLS deve ser confirmada com o contrato/ambiente efetivo antes da implementação de mTLS.
 
 ## 11. Referências oficiais
 
