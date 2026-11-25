@@ -7,7 +7,7 @@
 | Ambiente | Release comunicado como implantado | Schema/documentação publicada | Regra operacional |
 |---|---|---|---|
 | Produção oficial | NT 004 acrescida do domínio `tpRetPisConfins` da NT 007 | Documentação atual de produção e XSD v1.01 publicados para o leiaute vigente | Manter emissões no leiaute NT 004/007 até publicação formal de novo release em produção |
-| Produção restrita | NT 009 v1.0 — release 1, conforme comunicado oficial de 25/11/2026 | A página de homologação também publica XSD PRODREST v1.01, associado aos ajustes do release 2 | Não selecionar v1.01 como contrato ativo apenas porque o XSD foi publicado; aguardar comunicado de implantação do release 2 e validar o runtime |
+| Produção restrita | NT 009 v1.0 — release 1, conforme comunicado oficial publicado em 29/10/2026 | A página de homologação também publica XSD PRODREST v1.01, associado aos ajustes do release 2 | Não selecionar v1.01 como contrato ativo apenas porque o XSD foi publicado; aguardar comunicado de implantação do release 2 e validar o runtime |
 | Evolução para produção | Releases 1 a 3 da NT 009 previstos para 01/12/2026 no comunicado | Releases e esquemas são publicados progressivamente | Tratar como cronograma publicado, não como confirmação de implantação concluída |
 
 **Distinção obrigatória:** a página de homologação atualizada em 20/10/2026 publica a NT 009 v1.01 e o XSD PRODREST v1.01. Entretanto, o comunicado oficial de 25/11/2026 informa que o ambiente de produção restrita está atualmente com a NT 009 v1.0, release 1; os ajustes da v1.01 pertencem ao release 2, a ser disponibilizado primeiro em produção restrita. Portanto, o repositório registra separadamente o release comunicado como implantado e o schema mais novo publicado. Nenhum dos dois é considerado runtime verificado até a execução de probe/contrato no serviço.
@@ -20,7 +20,7 @@ O comunicado do CGNFS-e de 29/10/2026 informa que o grupo IBS/CBS está aberto n
 
 ### Fontes da matriz
 
-- [Comunicado CGNFS-e de 25/11/2026 — leiaute de produção, IBS/CBS e status da NT 009](https://www.gov.br/nfse/pt-br/noticias/nfs-e-nacional-confira-oas-rientacoes-sobre-leiaute-em-producao-regras-de-preenchimento-de-ibs-cbs-e-status-da-nota-tecnica-009/)
+- [Comunicado CGNFS-e de 29/10/2026 — leiaute de produção, IBS/CBS e status da NT 009](https://www.gov.br/nfse/pt-br/noticias/nfs-e-nacional-confira-oas-rientacoes-sobre-leiaute-em-producao-regras-de-preenchimento-de-ibs-cbs-e-status-da-nota-tecnica-009/)
 - [Documentação atual de produção](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/documentacao-atual)
 - [Documentação técnica de produção restrita](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/producao-restrita)
 
@@ -173,4 +173,4 @@ Não inferir produção pela ausência de parâmetro. Não permitir que uma oper
 - [APIs — Produção Restrita e Produção](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/apis-prod-restrita-e-producao)
 - [Documentação atual de produção](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/documentacao-atual)
 - [Documentação técnica de produção restrita](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/producao-restrita)
-- [Comunicado de 25/11/2026 sobre IBS/CBS e NT 009](https://www.gov.br/nfse/pt-br/noticias/nfs-e-nacional-confira-oas-rientacoes-sobre-leiaute-em-producao-regras-de-preenchimento-de-ibs-cbs-e-status-da-nota-tecnica-009/)
+- [Comunicado de 29/10/2026 sobre IBS/CBS e NT 009](https://www.gov.br/nfse/pt-br/noticias/nfs-e-nacional-confira-oas-rientacoes-sobre-leiaute-em-producao-regras-de-preenchimento-de-ibs-cbs-e-status-da-nota-tecnica-009/)
