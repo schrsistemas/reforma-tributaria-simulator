@@ -92,6 +92,7 @@ O Worker de API possui agora uma primeira camada executável de roteamento, base
 - O endpoint de resolução exige autenticação de integração, tenant vinculado e os cabeçalhos de correlação já utilizados pela API.
 - O matching normaliza acentos e caixa, suporta gatilhos em português e inglês, permite seleção explícita de Skills e elimina dependências duplicadas.
 - O plano inclui a Skill orquestradora, marca cada módulo como correspondência ou dependência e sinaliza quando não existe correspondência especializada.
+- Cada módulo declara `toolBindings` para ferramentas fiscais já catalogadas pela API, como `fiscal.search_evidence`, `fiscal.resolve_ruleset`, `fiscal.calculate` e `fiscal.get_document`. A disponibilidade operacional deve ser consultada em `GET /api/v1/mcp/tools`; bindings com `CONFIGURATION_REQUIRED` não devem ser tratados como executáveis.
 - Ciclos, dependências ausentes, IDs desconhecidos e limites de composição são rejeitados.
 
 Exemplo de chamada:
@@ -109,7 +110,7 @@ Content-Type: application/json
 }
 ```
 
-O dispatcher retorna os IDs e caminhos dos arquivos `SKILL.md`, a ordem de dependências e os módulos acionados. **Ele ainda não carrega os corpos dos arquivos de instrução, não invoca um LLM e não executa ferramentas MCP**. Essa etapa depende do host/runtime de agentes. O retorno informa explicitamente `HOST_RUNTIME_REQUIRED` e `NOT_EXECUTED`; portanto, não deve ser confundido com uma análise tributária concluída.
+O dispatcher retorna os IDs e caminhos dos arquivos `SKILL.md`, a ordem de dependências, os módulos acionados e os `toolBindings` associados. **Ele ainda não carrega os corpos dos arquivos de instrução, não invoca um LLM e não executa ferramentas MCP**. Essa etapa depende do host/runtime de agentes. O retorno informa explicitamente `HOST_RUNTIME_REQUIRED` e `NOT_EXECUTED`; portanto, não deve ser confundido com uma análise tributária concluída.
 
 ## Estado e limites reais
 
