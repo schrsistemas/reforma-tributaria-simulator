@@ -40,7 +40,8 @@ export interface PreparedSkillRuntime {
     loadedAs: 'ORCHESTRATOR' | 'DEPENDENCY' | 'MATCH';
     content: string;
   }>;
-  authorizedToolNames: string[];
+  toolBindings: string[];
+  toolAvailability: 'CHECK_MCP_TOOL_CATALOG';
   execution: 'NOT_EXECUTED';
   nextStep: 'HOST_AGENT_EXECUTION_REQUIRED';
 }
@@ -141,7 +142,8 @@ export function prepareSkillRuntime(
     plan,
     context,
     instructions,
-    authorizedToolNames,
+    toolBindings: authorizedToolNames,
+    toolAvailability: 'CHECK_MCP_TOOL_CATALOG',
     execution: 'NOT_EXECUTED',
     nextStep: 'HOST_AGENT_EXECUTION_REQUIRED',
   };
