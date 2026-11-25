@@ -13,7 +13,7 @@ A ingestão automática extrai datas somente quando:
 
 Datas genéricas da página, datas de atualização e datas de coleta nunca são tratadas como publicação ou vigência legal. Quando a fonte não fornece publicação explícita, `published_at` recebe a data de captura apenas como fallback técnico e `published_at_source=RETRIEVAL_FALLBACK`. Esse valor não comprova publicação.
 
-A busca histórica usa `effective_from` quando disponível. Sem esse campo, só admite `published_at` como limite inferior quando `published_at_source` confirma uma origem oficial (`JSON_LD`, `HTML_META` ou `EXPLICIT_TEXT`). Registros sem data legal comprovada são excluídos de consultas com `asOf`, em vez de serem presumidos aplicáveis. Fim de vigência só é preenchido com expressão explícita; ausência de data final não equivale a prova de vigência perpétua.
+A busca histórica exige `effective_from` com proveniência `EXPLICIT_TEXT` ou `PUBLICATION_DATE_CLAUSE`. **Data de publicação nunca é usada como substituta do início de vigência**: normas podem prever vacatio legis ou outra data de efeitos. Registros sem início de vigência legal comprovado são excluídos de consultas com `asOf`, em vez de serem presumidos aplicáveis. Fim de vigência só é preenchido com expressão explícita; ausência de data final não equivale a prova de vigência perpétua.
 
 A extração é conservadora e não substitui validação jurídica nem parsing específico por tipo de ato. Páginas que agregam múltiplos atos não recebem datas atribuídas automaticamente.
 
