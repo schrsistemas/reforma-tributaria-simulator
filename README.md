@@ -215,6 +215,10 @@ A definição das Skills e o dispatcher determinístico de seleção/dependênci
 
 O Worker disponibiliza um dispatcher autenticado em `GET /api/v1/skills` e `POST /api/v1/skills/resolve`, além de `POST /api/v1/skills/prepare`, que carrega as instruções Markdown versionadas e prepara o contexto e os bindings de ferramentas para um host de agentes. A execução do LLM e das ferramentas continua sob responsabilidade desse host. Consulte [a documentação do runtime](docs/SKILLS-TRIBUTARIAS.md#runtime-de-preparação-de-skills-implementado).
 
+## Monitor de disponibilidade NF-e
+
+O monitor consulta o painel oficial do Portal Nacional da NF-e, preserva estados desconhecidos quando o HTML não permite classificação confiável e oferece API autenticada e histórico D1. Consulte [a documentação do monitor](docs/NFE-AVAILABILITY-MONITOR.md) e aplique a migração `0023_nfe_availability_monitor.sql` para habilitar histórico persistido.
+
 ## Portal Nacional de Fontes Governamentais
 
 O simulador está evoluindo para um portal de ligação com fontes oficiais federais, estaduais e municipais. A arquitetura agora separa:
