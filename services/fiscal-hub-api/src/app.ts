@@ -448,7 +448,7 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
       const integrity = diagnostics.integrity ?? {};
       const degraded =
         Number(diagnostics.stale_runs ?? 0) > 0 ||
-        workers.some(worker => worker.latestStatus === "FAILED" || Number(worker.consecutiveFailures) > 0) ||
+        workers.some(worker => worker.latestStatus === "FAILED" || worker.latestStatus === "NEVER_RUN" || Number(worker.consecutiveFailures) > 0) ||
         Number(captures.stalePending ?? 0) > 0 ||
         Number(captures.errors ?? 0) > 0 ||
         Number(integrity.candidatesWithoutCapturedMetadata ?? 0) > 0 ||
