@@ -26,6 +26,10 @@ Receita acumulada, receita do período, atividade efetiva, folha, município/est
 
 \`ibs-cbs-transicao\`, \`evidencia-legislacao-rag\`, \`calculo-fiscal-deterministico\` e \`obrigacoes-compliance\`.
 
+## Calculadora oficial
+
+Para cálculo de CBS/IBS do Simples Nacional, priorize o serviço oficial específico do regime e a Skill `calculadora-oficial-receita`. Preserve estados por item, códigos `VSN-`, versão da aplicação e versão da base. Não reutilize o endpoint ou as regras do regime regular.
+
 ## Limite
 
 Não presumir anexos, alíquotas efetivas, fator R, sublimites ou elegibilidade com dados incompletos. Não tratar a existência de tipos MEI/Simples no domínio como cobertura completa do cálculo do regime.
