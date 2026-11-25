@@ -154,7 +154,10 @@ export function validateFiscalToolInput(
     if (schema.type === 'integer' && (!Number.isInteger(item) || typeof item !== 'number')) {
       return { ok: false, error: `MCP_TOOL_INPUT_TYPE_INVALID:${key}` };
     }
-    if (schema.type === 'boolean' && typeof item !== 'boolean') {\n      return { ok: false, error: `MCP_TOOL_INPUT_TYPE_INVALID:${key}` };\n    }\n    if (schema.enum && (typeof item !== 'string' || !schema.enum.includes(item))) {
+    if (schema.type === 'boolean' && typeof item !== 'boolean') {
+      return { ok: false, error: `MCP_TOOL_INPUT_TYPE_INVALID:${key}` };
+    }
+    if (schema.enum && (typeof item !== 'string' || !schema.enum.includes(item))) {
       return { ok: false, error: `MCP_TOOL_INPUT_ENUM_INVALID:${key}` };
     }
     if (schema.pattern && typeof item === 'string' && !new RegExp(schema.pattern).test(item)) {
