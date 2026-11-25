@@ -80,5 +80,6 @@
 - [ ] Configurar e validar endpoints HTTPS de produção/homologação em ambiente Cloudflare.
 - [ ] Implementar testes de contrato com fixtures oficiais versionadas.
 - [ ] Expor ferramentas MCP oficiais após definição dos schemas completos e autorização.
-- [ ] Implantar DANFSe Go como serviço separado e implementar proxy XML/PDF binário.
+- [x] Implementar proxy XML/PDF binário com limite de entrada e timeout.
+- [ ] Implantar DANFSe Go como serviço separado e configurar endpoint HTTPS.
 - [ ] Criar suíte de regressão diferencial por regime e versão da base oficial.
