@@ -69,3 +69,7 @@ Os workflows de Cloudflare devem ser executados somente por workflow_dispatch. C
 ## Monitor de fontes
 
 O serviço `services/fiscal-normative-collector` verifica URLs cadastradas, restritas a uma allowlist exata de hosts HTTPS. Bloqueia redirects, limita timeout e tamanho de resposta, calcula SHA-256 e registra histórico em `fiscal.normative_source_checks`. Status CHANGED significa apenas que o conteúdo da página consultada mudou; não classifica nem identifica automaticamente um ato normativo novo. O monitor, a descoberta e a captura dependem de execução manual ou cron externo e ainda não estão publicados na VPS. A captura exige bucket e credenciais S3 válidas; não foi executada contra infraestrutura real.
+
+## Recuperação de capturas interrompidas
+
+A migration 0015 adiciona `capture_started_at` para identificar uploads `PENDING` abandonados. Antes de capturar novos candidatos, o worker consulta o objeto determinístico com S3 `HeadObject` e confere os metadados SHA-256 e sourceId. Se o objeto existir e os metadados coincidirem, a captura e o candidato aprovado são finalizados na mesma transação PostgreSQL. Se não existir, a captura passa para `ERROR` e o candidato recebe novo prazo de retry com backoff. Erros do provedor e divergências de metadados não alteram o registro. A reconciliação não exclui objetos nem varre o bucket.
