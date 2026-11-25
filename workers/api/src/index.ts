@@ -13,6 +13,7 @@ import { evaluateCreditEligibility, CREDIT_ELIGIBILITY_RULE_MATRIX } from '@rts/
 import { listPaymentMethods, listPaymentRejectionScenarios, createPaymentRejectionSimulation, getPaymentRejectionSimulation, listPaymentRejectionSimulations } from './payment-rejection-repository.js';
 import { resolveSkillPlan, SKILL_REGISTRY, SkillDispatchError } from './skill-dispatcher.js';
 import { prepareSkillRuntime, SkillRuntimeError } from './skill-runtime.js';
+import { FISCAL_MCP_TOOLS, getFiscalMcpToolCatalog, validateFiscalToolInput } from './fiscal-tool-catalog.js';
 
 export interface Env {
   VERSION: string;
@@ -326,37 +327,31 @@ export default {
       return json({
         ok: true,
         protocol: 'MCP-compatible fiscal tool catalog',
-        tools: [
-          { name: 'fiscal.search_evidence', transport: 'POST /api/v1/mcp/call', status: 'AVAILABLE' },
-          { name: 'fiscal.get_document', transport: 'POST /api/v1/mcp/call', status: 'AVAILABLE' },
-          { name: 'fiscal.resolve_ruleset', transport: 'POST /api/v1/mcp/call', status: 'AVAILABLE' },
-          { name: 'fiscal.calculate', transport: 'POST /api/v1/simulations', status: 'AVAILABLE' },
-          { name: 'fiscal.compare_calculation', transport: 'POST /api/v1/official-calculator/regime-geral', status: 'AVAILABLE' },
-          { name: 'fiscal.calculate_official_regular_observable', transport: 'POST /api/v1/official-calculator/regime-geral/observabilidade', status: 'AVAILABLE' },
-          { name: 'fiscal.calculate_official_simple_observable', transport: 'POST /api/v1/official-calculator/simples-nacional/observabilidade', status: 'CONFIGURATION_REQUIRED' },
-          { name: 'fiscal.list_official_simple_activities', transport: 'GET /api/v1/official-calculator/simples-nacional/atividades', status: 'CONFIGURATION_REQUIRED' },
-          { name: 'fiscal.get_split_payment_rules', transport: 'POST /api/v1/mcp/call', status: 'AVAILABLE' },
-          { name: 'fiscal.evaluate_credit_eligibility', transport: 'POST /api/v1/credit-eligibility', status: 'AVAILABLE' },
-          { name: 'fiscal.get_credit_eligibility_rules', transport: 'GET /api/v1/credit-eligibility/rules', status: 'AVAILABLE' },
-          { name: 'fiscal.get_snapshot', transport: 'GET /api/v1/simulations/:id', status: 'AVAILABLE' },
-          { name: 'payments.list_methods', transport: 'GET /api/v1/payment-methods', status: 'AVAILABLE' },
-          { name: 'payments.list_rejection_scenarios', transport: 'GET /api/v1/payment-rejections/scenarios', status: 'AVAILABLE' },
-          { name: 'payments.simulate_rejection', transport: 'POST /api/v1/payment-rejections/simulations', status: 'AVAILABLE' },
-          { name: 'payments.get_rejection_simulation', transport: 'GET /api/v1/payment-rejections/simulations/:id', status: 'AVAILABLE' }
-        ]
+        catalogScope: 'POST /api/v1/mcp/call only; other HTTP capabilities are documented separately',
+        tools: getFiscalMcpToolCatalog(Boolean(env.DB)),
       }, 200, request);
     }
 
     if (request.method === 'POST' && url.pathname === '/api/v1/mcp/call') {
       try {
         const headers = integrationHeaders(request);
-        if (!env.DB) return json({ ok: false, error: 'DATABASE_NOT_BOUND' }, 503, request);
         const body = await readJson(request) as { requestId?: string; correlationId?: string; toolName?: string; input?: Record<string, unknown> };
-        const requestId = body.requestId ?? crypto.randomUUID();
-        const correlationId = body.correlationId ?? headers.correlationId;
-        const toolName = body.toolName;
-        const input = body.input ?? {};
-        if (!toolName) return json({ requestId, correlationId, outcome: 'ERROR', errorCode: 'MCP_TOOL_REQUIRED', warnings: [], finishedAt: new Date().toISOString() }, 400, request);
+        const requestId = typeof body.requestId === 'string' && body.requestId.trim()
+          ? body.requestId.trim().slice(0, 128)
+          : crypto.randomUUID();
+        // Correlation identity is authoritative from the authenticated HTTP header.
+        const correlationId = headers.correlationId;
+        const toolName = typeof body.toolName === 'string' ? body.toolName : '';
+        const validation = validateFiscalToolInput(toolName, body.input ?? {});
+        if (!validation.ok) {
+          const status = validation.error === 'MCP_TOOL_NOT_IMPLEMENTED' ? 501 : 400;
+          return json({ requestId, correlationId, outcome: 'ERROR', errorCode: validation.error, warnings: [], finishedAt: new Date().toISOString() }, status, request);
+        }
+        const input = validation.input;
+        const definition = FISCAL_MCP_TOOLS.find(tool => tool.name === toolName)!;
+        if (definition.requiresDatabase && !env.DB) {
+          return json({ requestId, correlationId, outcome: 'ERROR', errorCode: 'DATABASE_NOT_BOUND', warnings: [], finishedAt: new Date().toISOString() }, 503, request);
+        }
         if (toolName === 'fiscal.search_evidence') {
           const query = String(input.query ?? '').trim();
           if (!query) return json({ requestId, correlationId, outcome: 'ERROR', errorCode: 'RAG_QUERY_REQUIRED', warnings: [], finishedAt: new Date().toISOString() }, 400, request);
