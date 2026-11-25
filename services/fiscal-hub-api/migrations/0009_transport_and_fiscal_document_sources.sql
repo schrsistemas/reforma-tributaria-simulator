@@ -13,7 +13,7 @@ VALUES
   ('GNRE — Portal Nacional de arrecadação', 'Secretaria da Fazenda de Pernambuco / CONFAZ', 'TAX_COLLECTION_PORTAL', 'NATIONAL',
    'https://www.gnre.pe.gov.br:444/gnre/portal/GNRE_Principal.jsp'),
   ('ANTT — CIOT Para Todos: legislação e orientações', 'Agência Nacional de Transportes Terrestres', 'REGULATORY_PORTAL', 'FEDERAL',
-   'https://www.gov.br/antt/pt-br/assuntos/cargas/ciot-para-todos-1/codigo-identificador-da-operacao-de-transporte-ciot/'),
+   'https://www.gov.br/antt/pt-br/assuntos/cargas/ciot-para-todos-1'),
   ('ANTT — CIOT: documentação técnica e integração', 'Agência Nacional de Transportes Terrestres', 'TECHNICAL_DOCUMENTATION', 'FEDERAL',
    'https://www.gov.br/antt/pt-br/assuntos/cargas/ciot-para-todos-1/documentos-tecnicos'),
   ('ANTT — CIOT: perguntas frequentes', 'Agência Nacional de Transportes Terrestres', 'FAQ_REFERENCE', 'FEDERAL',
