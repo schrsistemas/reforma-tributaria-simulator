@@ -15,36 +15,40 @@
 
 A API expõe listagem e cadastro de empresas, listagem e cadastro de instâncias ERP, autenticação por tenant e consulta do catálogo normativo e das versões de documentos. Cadastro de empresa e instância ERP exige papel OWNER ou ADMIN no token. O CNPJ passa por validação dos dígitos verificadores antes de chegar ao banco. Os cadastros gravam evento de auditoria na mesma transação da operação.
 
-O catálogo de fontes normativas é global e somente leitura pela API nesta versão. As migrations 0004–0008 registram fontes federais, nacionais, fiscais e regulatórias: Planalto, Receita Federal, Ministério da Fazenda, CONFAZ, SPED, NF-e/NFC-e, CT-e/CT-e OS, MDF-e, NFS-e/NFS-e Via, GNRE e ANTT/CIOT. O índice oficial do SPED também referencia BP-e, BP-e TM, NFCom, NF3e, DC-e, GTV-e, NFAg, NFGas e DeRE.
+O catálogo de fontes normativas é global e somente leitura pela API. A fila de candidatos é consultável por usuários autenticados; decisões de aprovação/rejeição exigem OWNER ou ADMIN e geram auditoria. As migrations 0004–0009 registram fontes federais, nacionais, fiscais e regulatórias: Planalto, Receita Federal, Ministério da Fazenda, CONFAZ, SPED, NF-e/NFC-e, CT-e/CT-e OS, MDF-e, NFS-e/NFS-e Via, GNRE e ANTT/CIOT. O índice oficial do SPED também referencia BP-e, BP-e TM, NFCom, NF3e, DC-e, GTV-e, NFAg, NFGas e DeRE.
 
 As categorias são separadas por natureza: documentos fiscais eletrônicos (DF-e), guias de arrecadação (GNRE), registros regulatórios de transporte (CIOT), documentação técnica, legislação e conteúdo explicativo. CIOT não é classificado como DF-e; GNRE não é classificada como nota fiscal. FAQs e páginas de orientação são fontes de referência, não atos normativos.
 
-O catálogo registra URLs oficiais e permite monitorar disponibilidade/hash. Isso não significa que cada portal tenha um crawler específico, que documentos tenham sido capturados, ou que as páginas tenham sido validadas continuamente.
+O catálogo registra URLs oficiais e permite monitorar disponibilidade/hash. O coletor descobre links diretos `.pdf`, `.xsd`, `.xml` e `.json` nas páginas HTML oficiais, valida hosts pela allowlist exata e grava candidatos deduplicados em `fiscal.normative_artifact_candidates`. A descoberta não acessa os documentos encontrados.
+
+Candidatos começam em `PENDING`. OWNER/ADMIN pode aprovar ou rejeitar pela API. O worker `capture:approved` captura somente candidatos `APPROVED`, grava o objeto no storage S3-compatible, registra SHA-256 e metadados imutáveis e só então move o candidato para `CAPTURED`. Falhas permanecem aprovadas para nova tentativa, com contador e último erro. O worker não interpreta conteúdo nem publica regras tributárias.
 
 A associação de instância ERP à empresa usa chave estrangeira composta pelo tenant, impedindo associação cruzada. A migration 0003 também reforça a integridade do vínculo entre eventos de integração e instâncias ERP, valida formato de CNPJ e SHA-256, adiciona índices e restringe alterações/exclusões de auditoria para o usuário runtime.
 
 ## Limites atuais
 
 - O CRUD de usuários, convites, recuperação de senha e gestão de sessão ainda não está implementado.
-- Existe monitor de disponibilidade/hash dos portais e biblioteca de captura de artefatos oficiais. A captura recebe uma URL de documento explicitamente fornecida; ainda não existe descoberta automática de links, fila de candidatos, OCR ou fluxo de revisão/aprovação.
+- Existe monitor de disponibilidade/hash, descoberta de links de artefatos, fila de candidatos, revisão humana e worker de captura de candidatos aprovados. OCR, extração semântica, diff jurídico, análise de impacto e publicação automatizada de RuleSets ainda não estão implementados.
 - Fontes e documentos normativos são somente leitura pela API.
-- As migrations 0001–0008 ainda precisam ser aplicadas e validadas em PostgreSQL real.
+- As migrations 0001–0010 ainda precisam ser aplicadas e validadas em PostgreSQL real.
 - Testes de API atuais usam mocks; não substituem testes reais de PostgreSQL/RLS.
 - O armazenamento S3 precisa ser provisionado e configurado.
 - Nenhum deploy da API na VPS foi executado.
 
 ## Banco
 
-Aplicar migrations em ordem numérica: 0001_fiscal_hub_core.sql até 0008_transport_and_fiscal_document_sources.sql. Use um usuário de migração separado. A API deve conectar como fiscal_hub_app, sem ownership, superuser ou BYPASSRLS.
+Aplicar migrations em ordem numérica: 0001_fiscal_hub_core.sql até 0010_normative_artifact_candidates.sql. Use um usuário de migração separado. A API deve conectar como fiscal_hub_app, sem ownership, superuser ou BYPASSRLS.
 
 ## Execução local
 
 1. Instale dependências com pnpm.
-2. Configure DATABASE_URL e JWT_SECRET.
-3. Aplique as migrations em PostgreSQL descartável.
-4. Defina a senha do fiscal_hub_app fora do repositório.
-5. Provisione tenant e administrador com provision:admin usando credenciais administrativas temporárias.
-6. Execute pnpm --filter @rts/fiscal-hub-api dev.
+2. Configure DATABASE_URL, JWT_SECRET e FISCAL_SOURCE_ALLOWED_HOSTS.
+3. Provisione o bucket S3-compatible e configure S3_BUCKET, S3_REGION, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY e, se necessário, S3_ENDPOINT/S3_FORCE_PATH_STYLE.
+4. Aplique as migrations em PostgreSQL descartável.
+5. Defina a senha do fiscal_hub_app fora do repositório.
+6. Provisione tenant e administrador com provision:admin usando credenciais administrativas temporárias.
+7. Execute pnpm --filter @rts/fiscal-hub-api dev.
+8. Execute `pnpm --filter @rts/fiscal-normative-collector check:sources` e `discover:artifacts`; após revisão, execute `capture:approved`.
 
 ## Política de publicação
 
@@ -52,4 +56,4 @@ Os workflows de Cloudflare devem ser executados somente por workflow_dispatch. C
 
 ## Monitor de fontes
 
-O serviço `services/fiscal-normative-collector` verifica URLs cadastradas, restritas a uma allowlist exata de hosts HTTPS. Bloqueia redirects, limita timeout e tamanho de resposta, calcula SHA-256 e registra histórico em `fiscal.normative_source_checks`. Status CHANGED significa apenas que o conteúdo da página consultada mudou; não classifica nem identifica automaticamente um ato normativo novo. O monitor ainda depende de execução manual ou cron externo e não está publicado na VPS.
+O serviço `services/fiscal-normative-collector` verifica URLs cadastradas, restritas a uma allowlist exata de hosts HTTPS. Bloqueia redirects, limita timeout e tamanho de resposta, calcula SHA-256 e registra histórico em `fiscal.normative_source_checks`. Status CHANGED significa apenas que o conteúdo da página consultada mudou; não classifica nem identifica automaticamente um ato normativo novo. O monitor, a descoberta e a captura dependem de execução manual ou cron externo e ainda não estão publicados na VPS. A captura exige bucket e credenciais S3 válidas; não foi executada contra infraestrutura real.
