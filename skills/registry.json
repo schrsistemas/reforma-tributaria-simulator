@@ -7,10 +7,15 @@
     "mode": "agent-skill-files",
     "entrypoint": "skills/tributario-orchestrator/SKILL.md",
     "moduleDirectory": "skills",
-    "dispatch": "Load the SKILL.md for each matched module before executing its task.",
-    "runtimeIntegration": "Documentation and routing manifest only; a host agent must implement skill discovery/loading and expose authorized tools.",
+    "dispatch": "The API dispatcher resolves matched skills and transitive dependencies; the agent host loads each SKILL.md body before execution.",
+    "runtimeIntegration": "Deterministic routing is implemented by workers/api at GET /api/v1/skills and POST /api/v1/skills/resolve. A host agent must still load instruction bodies and expose authorized tools.",
     "contextSchema": "skills/contracts/fiscal-context.schema.json",
-    "resultSchema": "skills/contracts/skill-result.schema.json"
+    "resultSchema": "skills/contracts/skill-result.schema.json",
+    "dispatcherEndpoints": {
+      "catalog": "GET /api/v1/skills",
+      "resolve": "POST /api/v1/skills/resolve",
+      "authentication": "Integration token bound to X-Zynkronyx-Tenant"
+    }
   },
   "principles": [
     "official-evidence-first",
