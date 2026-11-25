@@ -4,11 +4,13 @@
 
 ## 1. Ambientes e leiautes
 
-| Ambiente | Leiaute comunicado | Regra operacional |
-|---|---|---|
-| Produção oficial | NT 004 acrescida do domínio `tpRetPisConfins` da NT 007 | Manter emissões no leiaute NT 004/007 até publicação formal de novo release em produção |
-| Produção restrita | NT 009 v1.01; a página oficial de homologação foi atualizada em 20/10/2026 e publica os anexos DPS/NFS-e e XSD PRODREST v1.01 | Utilizar o schema publicado para validação; confirmar separadamente a versão efetivamente aceita pelo endpoint |
-| Evolução para produção | Releases 1 a 3 da NT 009 previstos para 01/12/2026 no comunicado | Tratar como cronograma publicado, não como confirmação de implantação concluída |
+| Ambiente | Release comunicado como implantado | Schema/documentação publicada | Regra operacional |
+|---|---|---|---|
+| Produção oficial | NT 004 acrescida do domínio `tpRetPisConfins` da NT 007 | Documentação atual de produção e XSD v1.01 publicados para o leiaute vigente | Manter emissões no leiaute NT 004/007 até publicação formal de novo release em produção |
+| Produção restrita | NT 009 v1.0 — release 1, conforme comunicado oficial de 25/11/2026 | A página de homologação também publica XSD PRODREST v1.01, associado aos ajustes do release 2 | Não selecionar v1.01 como contrato ativo apenas porque o XSD foi publicado; aguardar comunicado de implantação do release 2 e validar o runtime |
+| Evolução para produção | Releases 1 a 3 da NT 009 previstos para 01/12/2026 no comunicado | Releases e esquemas são publicados progressivamente | Tratar como cronograma publicado, não como confirmação de implantação concluída |
+
+**Distinção obrigatória:** a página de homologação atualizada em 20/10/2026 publica a NT 009 v1.01 e o XSD PRODREST v1.01. Entretanto, o comunicado oficial de 25/11/2026 informa que o ambiente de produção restrita está atualmente com a NT 009 v1.0, release 1; os ajustes da v1.01 pertencem ao release 2, a ser disponibilizado primeiro em produção restrita. Portanto, o repositório registra separadamente o release comunicado como implantado e o schema mais novo publicado. Nenhum dos dois é considerado runtime verificado até a execução de probe/contrato no serviço.
 
 ### IBS/CBS na produção
 
@@ -18,7 +20,7 @@ O comunicado do CGNFS-e de 29/10/2026 informa que o grupo IBS/CBS está aberto n
 
 ### Fontes da matriz
 
-- [Comunicado CGNFS-e de 29/10/2026 — leiaute de produção, IBS/CBS e NT 009](https://www.gov.br/nfse/pt-br/noticias/nfs-e-nacional-confira-oas-rientacoes-sobre-leiaute-em-producao-regras-de-preenchimento-de-ibs-cbs-e-status-da-nota-tecnica-009/)
+- [Comunicado CGNFS-e de 25/11/2026 — leiaute de produção, IBS/CBS e status da NT 009](https://www.gov.br/nfse/pt-br/noticias/nfs-e-nacional-confira-oas-rientacoes-sobre-leiaute-em-producao-regras-de-preenchimento-de-ibs-cbs-e-status-da-nota-tecnica-009/)
 - [Documentação atual de produção](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/documentacao-atual)
 - [Documentação técnica de produção restrita](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/producao-restrita)
 
@@ -40,14 +42,18 @@ O portal oficial mantém APIs distintas. Não tratar a API de distribuição do 
 - [SEFIN Nacional — restrita](https://sefin.producaorestrita.nfse.gov.br/API/SefinNacional/docs/index)
 - [Parâmetros Municipais — restrita](https://adn.producaorestrita.nfse.gov.br/parametrizacao/docs/index.html)
 
-A matriz oficial de endpoints e ambientes está em [APIs — Produção Restrita e Produção](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/apis-prod-restrita-e-producao). O pacote de homologação publicado pode ser conferido em [Documentação Técnica (Homologação/testes)](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/producao-restrita). A documentação oficial de homologação/testes, atualizada em 20/10/2026, lista a NT 009 v1.01, anexos I/II PRODREST v1.01 e XSD PRODREST v1.01. Isso comprova a publicação do pacote de leiaute para homologação, não a versão efetivamente ativa no runtime do serviço. A produção restrita não gera documento fiscal com validade jurídica. Não compartilhar dados reais de clientes nos testes quando dados sintéticos forem suficientes.
-
+A matriz oficial de endpoints e ambientes está em [APIs — Produção Restrita e Produção](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/apis-prod-restrita-e-producao). O pacote de homologação publicado pode ser conferido em [Documentação Técnica (Homologação/testes)](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/producao-restrita). A documentação oficial de homologação/testes, atualizada em 20/10/2026, lista a NT 009 v1.01, anexos I/II PRODREST v1.01 e XSD PRODREST v1.01. O comunicado de 25/11/2026, contudo, identifica a v1.0 release 1 como o release atualmente implantado e a v1.01 como os ajustes do release 2. A publicação do schema não comprova que o endpoint já aceite o release 2. A produção restrita não gera documento fiscal com validade jurídica. Não compartilhar dados reais de clientes nos testes quando dados sintéticos forem suficientes.
 
 ### Catálogo de APIs no código
 
 O pacote `@rts/domain` mantém o catálogo em `packages/domain/src/nfse-api-catalog.ts`, com perfis separados para `ADN_CONTRIBUTORS`, `SEFIN_NATIONAL` e `MUNICIPAL_PARAMETERS`, em produção e produção restrita. O catálogo guarda hosts e URLs oficiais de documentação; ele não inventa paths de operação nem substitui a importação dos OpenAPI.
 
-O registro de leiautes em `packages/domain/src/nfse.ts` diferencia o pacote XSD publicado da confirmação do runtime. No estado atual, `runtimeVerification` permanece `NOT_PROBED` até que a integração consiga consultar e validar o contrato ativo de cada serviço.
+O registro de leiautes em `packages/domain/src/nfse.ts` distingue:
+- o release comunicado como implantado no ambiente;
+- o schema mais recente publicado para homologação;
+- a confirmação efetiva do runtime, que permanece `NOT_PROBED`.
+
+Não selecionar automaticamente um XSD mais novo como contrato ativo sem confirmação do release implantado e validação contra o serviço.
 
 ## 3. Operações previstas no manual de contribuintes
 
@@ -164,8 +170,7 @@ Não inferir produção pela ausência de parâmetro. Não permitir que uma oper
 ## 9. Referências oficiais
 
 - [Emissor Nacional Web — Produção](https://www.nfse.gov.br/EmissorNacional/Login?ReturnUrl=%2femissornacional)
-- [Swagger Contribuintes — Produção](https://www.nfse.gov.br/swagger/contribuintesissqn/)
-- [Swagger Contribuintes — Produção Restrita](https://www.producaorestrita.nfse.gov.br/swagger/contribuintesissqn/)
+- [APIs — Produção Restrita e Produção](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/apis-prod-restrita-e-producao)
 - [Documentação atual de produção](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/documentacao-atual)
 - [Documentação técnica de produção restrita](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/producao-restrita)
-- [Comunicado de 29/10/2026 sobre IBS/CBS e NT 009](https://www.gov.br/nfse/pt-br/noticias/nfs-e-nacional-confira-oas-rientacoes-sobre-leiaute-em-producao-regras-de-preenchimento-de-ibs-cbs-e-status-da-nota-tecnica-009/)
+- [Comunicado de 25/11/2026 sobre IBS/CBS e NT 009](https://www.gov.br/nfse/pt-br/noticias/nfs-e-nacional-confira-oas-rientacoes-sobre-leiaute-em-producao-regras-de-preenchimento-de-ibs-cbs-e-status-da-nota-tecnica-009/)
