@@ -213,7 +213,7 @@ O projeto mantém uma suíte de Skills compatíveis com diretórios `SKILL.md`, 
 
 A definição das Skills e o dispatcher determinístico de seleção/dependências estão versionados e integrados à API. O carregamento dos corpos `SKILL.md` e a execução de ferramentas por um agente ainda dependem do host/runtime. O motor tributário atual também mantém as limitações documentadas em cada Skill.
 
-O Worker também disponibiliza um dispatcher determinístico autenticado em `GET /api/v1/skills` e `POST /api/v1/skills/resolve`, que seleciona módulos e resolve dependências a partir do manifesto. O dispatcher ainda não carrega os corpos dos `SKILL.md` nem executa LLM/MCP; essa integração pertence ao host/runtime de agentes. Consulte [a documentação do dispatcher](docs/SKILLS-TRIBUTARIAS.md#dispatcher-determinístico-implementado).
+O Worker disponibiliza um dispatcher autenticado em `GET /api/v1/skills` e `POST /api/v1/skills/resolve`, além de `POST /api/v1/skills/prepare`, que carrega as instruções Markdown versionadas e prepara o contexto e os bindings de ferramentas para um host de agentes. A execução do LLM e das ferramentas continua sob responsabilidade desse host. Consulte [a documentação do runtime](docs/SKILLS-TRIBUTARIAS.md#runtime-de-preparação-de-skills-implementado).
 
 ## Portal Nacional de Fontes Governamentais
 
