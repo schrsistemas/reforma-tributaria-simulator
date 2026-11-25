@@ -29,11 +29,17 @@ async function runChecks(client: PoolClient): Promise<void> {
   let errors = 0;
 
   for (const source of sources.rows) {
-    const previous = await client.query<{ normalized_content_sha256: string | null }>(
-      "SELECT normalized_content_sha256 FROM fiscal.normative_source_checks WHERE source_id = $1 AND normalized_content_sha256 IS NOT NULL ORDER BY checked_at DESC LIMIT 1",
+    const previous = await client.query<{
+      normalized_content_sha256: string | null;
+      fingerprint_version: string;
+    }>(
+      "SELECT normalized_content_sha256, fingerprint_version FROM fiscal.normative_source_checks WHERE source_id = $1 ORDER BY checked_at DESC LIMIT 1",
       [source.id]
     );
-    const snapshot = await inspectSource(source, previous.rows[0]?.normalized_content_sha256 ?? null, { allowedHosts });
+    const previousFingerprint = previous.rows[0]?.fingerprint_version === "html-content-v1"
+      ? previous.rows[0].normalized_content_sha256
+      : null;
+    const snapshot = await inspectSource(source, previousFingerprint, { allowedHosts });
     await client.query(
       "INSERT INTO fiscal.normative_source_checks (source_id, check_status, http_status, content_type, content_length, etag, last_modified, content_sha256, normalized_content_sha256, fingerprint_version, response_ms, error_code) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)",
       [source.id, snapshot.status, snapshot.httpStatus, snapshot.contentType, snapshot.contentLength,
