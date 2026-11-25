@@ -16,7 +16,7 @@ Apply migrations in numeric order with a dedicated migration-owner account:
 12. 0012_normative_artifact_capture_backoff.sql
 13. 0013_normative_artifact_candidate_reviews.sql
 14. 0014_normative_artifact_capture_lifecycle.sql
-15. 0015_normative_artifact_capture_reconciliation.sql
+15. 0015_normative_artifact_capture_reconciliation.sql\n16. 0016_normative_collector_run_ledger.sql
 
 The runtime role must not own these objects and must remain NOSUPERUSER/NOBYPASSRLS. Set its password out-of-band after applying migration 0002.
 
@@ -31,4 +31,4 @@ Migration 0014 introduces the durable artifact-capture lifecycle. Metadata is in
 
 Always validate migrations against a disposable PostgreSQL database before production. Run pnpm --filter @rts/fiscal-hub-api migrate with MIGRATION_DATABASE_URL set to the dedicated migration-owner connection. The runner refuses to fall back to DATABASE_URL, applies each file transactionally, serializes concurrent runs with an advisory lock and records a SHA-256 checksum. A changed checksum for an applied migration stops execution. Migrations are never run automatically at API startup.
 
-Migration 0015 adds capture_started_at to identify abandoned PENDING uploads. The capture worker checks stale rows with S3 HeadObject before processing new approvals. Matching objects are finalized and linked to their candidate transactionally; missing objects are marked ERROR and the candidate receives exponential retry scheduling. Storage inspection errors and metadata mismatches are left untouched for investigation. No object deletion is performed by reconciliation.
+Migration 0015 adds capture_started_at to identify abandoned PENDING uploads. The capture worker checks stale rows with S3 HeadObject before processing new approvals. Matching objects are finalized and linked to their candidate transactionally; missing objects are marked ERROR and the candidate receives exponential retry scheduling. Storage inspection errors and metadata mismatches are left untouched for investigation. No object deletion is performed by reconciliation.\n\nMigration 0016 adds a global execution ledger for the three collector workers. Each run is inserted as RUNNING and finalized as SUCCEEDED or FAILED with timestamps, generated duration, JSON counters and a sanitized failure code. Runtime access is SELECT/INSERT plus UPDATE on lifecycle fields only; DELETE is revoked. This table is operational metadata, not tenant business data.
