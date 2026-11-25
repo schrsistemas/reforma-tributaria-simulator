@@ -5,6 +5,7 @@ import type { Pool } from "pg";
 
 const JWT_SECRET = "x".repeat(40);
 const TENANT_ID = "11111111-1111-4111-8111-111111111111";
+const OTHER_TENANT_ID = "99999999-9999-4999-8999-999999999999";
 const USER_ID = "22222222-2222-4222-8222-222222222222";
 
 function fakePool(rows: unknown[] = []): Pool {
@@ -41,8 +42,8 @@ function tenantPool(): Pool {
   } as unknown as Pool;
 }
 
-async function tokenFor(app: Awaited<ReturnType<typeof buildApp>>, roles: string[]): Promise<string> {
-  return app.jwt.sign({ sub: USER_ID, tenantId: TENANT_ID, roles });
+async function tokenFor(app: Awaited<ReturnType<typeof buildApp>>, roles: string[], tenantId = TENANT_ID): Promise<string> {
+  return app.jwt.sign({ sub: USER_ID, tenantId, roles });
 }
 
 test("liveness endpoint does not require database access", async () => {
@@ -268,17 +269,47 @@ test("artifact candidate review rejects viewer role", async () => {
   await app.close();
 });
 test("artifact candidate review validates explicit decisions", async () => {
-  const app = await buildApp({ pool: candidatePool(), jwtSecret: JWT_SECRET });
+  const app = await buildApp({ pool: candidatePool(), jwtSecret: JWT_SECRET, normativeReviewTenantId: TENANT_ID });
   const token = await tokenFor(app, ["ADMIN"]);
   const response = await app.inject({ method: "POST", url: "/v1/normative/artifact-candidates/44444444-4444-4444-8444-444444444444/review", headers: { authorization: "Bearer " + token }, payload: { decision: "CAPTURE_NOW" } });
   assert.equal(response.statusCode, 400);
   await app.close();
 });
 test("artifact candidate review audits an administrator decision", async () => {
-  const app = await buildApp({ pool: candidatePool(), jwtSecret: JWT_SECRET });
+  const app = await buildApp({ pool: candidatePool(), jwtSecret: JWT_SECRET, normativeReviewTenantId: TENANT_ID });
   const token = await tokenFor(app, ["ADMIN"]);
   const response = await app.inject({ method: "POST", url: "/v1/normative/artifact-candidates/44444444-4444-4444-8444-444444444444/review", headers: { authorization: "Bearer " + token }, payload: { decision: "APPROVE", note: "Documento oficial conferido." } });
   assert.equal(response.statusCode, 200);
   assert.equal(response.json().item.review_status, "APPROVED");
+  await app.close();
+});
+
+test("global normative review is disabled when no reviewer tenant is configured", async () => {
+  const app = await buildApp({ pool: candidatePool(), jwtSecret: JWT_SECRET });
+  const token = await tokenFor(app, ["ADMIN"]);
+  const response = await app.inject({
+    method: "POST",
+    url: "/v1/normative/artifact-candidates/44444444-4444-4444-8444-444444444444/review",
+    headers: { authorization: "Bearer " + token },
+    payload: { decision: "APPROVE" }
+  });
+  assert.equal(response.statusCode, 403);
+  await app.close();
+});
+
+test("tenant administrators outside the designated reviewer tenant cannot change global candidates", async () => {
+  const app = await buildApp({
+    pool: candidatePool(),
+    jwtSecret: JWT_SECRET,
+    normativeReviewTenantId: TENANT_ID
+  });
+  const token = await tokenFor(app, ["ADMIN"], OTHER_TENANT_ID);
+  const response = await app.inject({
+    method: "POST",
+    url: "/v1/normative/artifact-candidates/44444444-4444-4444-8444-444444444444/review",
+    headers: { authorization: "Bearer " + token },
+    payload: { decision: "APPROVE" }
+  });
+  assert.equal(response.statusCode, 403);
   await app.close();
 });
