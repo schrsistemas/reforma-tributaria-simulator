@@ -1,5 +1,5 @@
 export type EvidenceLevel='PRIMARY'|'SECONDARY'|'UNVERIFIED';
-export interface FiscalEvidence { documentId:string; chunkId:string; authority:string; url:string; publishedAt?:string; effectiveFrom?:string; effectiveTo?:string; version:string; contentHash:string; evidenceLevel:EvidenceLevel; }
+export interface FiscalEvidence { documentId:string; chunkId:string; authority:string; url:string; publishedAt?:string; publishedAtSource?:string; effectiveFrom?:string; effectiveFromSource?:string; effectiveTo?:string; effectiveToSource?:string; version:string; contentHash:string; evidenceLevel:EvidenceLevel; }
 export interface RagQuery { query:string; jurisdiction?:string; asOf?:string; topics?:string[]; limit?:number; }
 export interface RagHit { chunkId:string; documentId:string; score:number; text:string; evidence:FiscalEvidence; }
 export interface RulesetResolution { rulesetId:string; version:string; resolvedAt:string; evidence:FiscalEvidence[]; }
