@@ -23,7 +23,7 @@ function fixture(initialStatus: "NONE" | "CAPTURED" | "ERROR" = "NONE", uploadFa
       }
       if (sql.includes("SET capture_status = 'PENDING'")) {
         status = "PENDING";
-        return { rows: [{ id: captureId, capture_status: status, storage_key: values?.[4] }], rowCount: 1 };
+        return { rows: [{ id: captureId, capture_status: status, storage_key: queries.find(q => q.sql.includes("INSERT INTO"))?.values?.[5] }], rowCount: 1 };
       }
       if (sql.includes("SET capture_status = 'CAPTURED'")) {
         status = "CAPTURED";
