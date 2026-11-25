@@ -126,7 +126,7 @@ export function prepareSkillRuntime(
     };
   });
 
-  const authorizedToolNames = [...new Set(
+  const toolBindings = [...new Set(
     plan.orderedSkills.flatMap(skill => skill.toolBindings),
   )].sort();
 
@@ -142,7 +142,7 @@ export function prepareSkillRuntime(
     plan,
     context,
     instructions,
-    toolBindings: authorizedToolNames,
+    toolBindings,
     toolAvailability: 'CHECK_MCP_TOOL_CATALOG',
     execution: 'NOT_EXECUTED',
     nextStep: 'HOST_AGENT_EXECUTION_REQUIRED',
