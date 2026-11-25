@@ -648,3 +648,53 @@ test("collector diagnostics validates threshold bounds", async () => {
   assert.equal(response.statusCode, 400);
   await app.close();
 });
+
+
+test("collector incidents require the designated reviewer tenant", async () => {
+  const app = await buildApp({
+    pool: fakePool(),
+    jwtSecret: JWT_SECRET,
+    normativeReviewTenantId: TENANT_ID
+  });
+  const token = await tokenFor(app, ["ADMIN"], OTHER_TENANT_ID);
+  const response = await app.inject({
+    method: "GET",
+    url: "/v1/normative/incidents",
+    headers: { authorization: "Bearer " + token }
+  });
+  assert.equal(response.statusCode, 403);
+  await app.close();
+});
+
+test("collector incidents validate filters before querying", async () => {
+  const app = await buildApp({
+    pool: fakePool(),
+    jwtSecret: JWT_SECRET,
+    normativeReviewTenantId: TENANT_ID
+  });
+  const token = await tokenFor(app, ["OWNER"]);
+  const response = await app.inject({
+    method: "GET",
+    url: "/v1/normative/incidents?status=ACTIVE",
+    headers: { authorization: "Bearer " + token }
+  });
+  assert.equal(response.statusCode, 400);
+  await app.close();
+});
+
+test("collector incident evaluation rejects non-reviewer tenant", async () => {
+  const app = await buildApp({
+    pool: fakePool(),
+    jwtSecret: JWT_SECRET,
+    normativeReviewTenantId: TENANT_ID
+  });
+  const token = await tokenFor(app, ["OWNER"], OTHER_TENANT_ID);
+  const response = await app.inject({
+    method: "POST",
+    url: "/v1/normative/incidents/evaluate",
+    headers: { authorization: "Bearer " + token },
+    payload: {}
+  });
+  assert.equal(response.statusCode, 403);
+  await app.close();
+});
