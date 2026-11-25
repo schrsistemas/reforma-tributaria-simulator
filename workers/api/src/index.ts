@@ -228,6 +228,7 @@ export default {
           role: skill.role,
           triggers: skill.triggers,
           dependsOn: skill.dependsOn ?? [],
+          toolBindings: skill.toolBindings ?? [],
         })),
       }, 200, request);
     }
