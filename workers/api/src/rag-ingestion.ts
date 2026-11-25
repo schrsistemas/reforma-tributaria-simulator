@@ -18,9 +18,9 @@ function validIsoDate(year: number, month: number, day: number): string | undefi
 function parseOfficialDate(value: string | undefined): string | undefined {
   if (!value) return undefined;
   const input = value.trim();
-  const iso = input.match(/^(\\d{4})-(\\d{2})-(\\d{2})(?:$|T)/);
+  const iso = input.match(/^(\d{4})-(\d{2})-(\d{2})(?:$|T)/);
   if (iso) return validIsoDate(Number(iso[1]), Number(iso[2]), Number(iso[3]));
-  const br = input.match(/^(\\d{1,2})[\\/.](\\d{1,2})[\\/.](\\d{4})$/);
+  const br = input.match(/^(\d{1,2})[\/.](\d{1,2})[\/.](\d{4})$/);
   if (br) return validIsoDate(Number(br[3]), Number(br[2]), Number(br[1]));
   return undefined;
 }
@@ -30,11 +30,11 @@ function parseOfficialDate(value: string | undefined): string | undefined {
  * Generic dates, page update timestamps and retrieval time are not treated
  * as legal publication or commencement dates.
  */
-export function extractOfficialDates(htmlOrText: string, retrievedAt: string): OfficialDates {
+export function extractOfficialDates(htmlOrText: string): OfficialDates {
   const metadata: Record<string, string> = {};
-  const scripts = htmlOrText.match(/<script[^>]*type=["']application\\/ld\\+json["'][^>]*>[\\s\\S]*?<\\/script>/gi) ?? [];
+  const scripts = htmlOrText.match(/<script[^>]*type=["']application\/ld\+json["'][^>]*>[\s\S]*?<\/script>/gi) ?? [];
   for (const script of scripts) {
-    const body = script.replace(/^<script[^>]*>/i, '').replace(/<\\/script>$/i, '');
+    const body = script.replace(/^<script[^>]*>/i, '').replace(/<\/script>$/i, '');
     try {
       const parsed: unknown = JSON.parse(body);
       const visit = (value: unknown): void => {
@@ -51,7 +51,7 @@ export function extractOfficialDates(htmlOrText: string, retrievedAt: string): O
     }
   }
 
-  const metaTags = htmlOrText.match(/<meta\\b[^>]*>/gi) ?? [];
+  const metaTags = htmlOrText.match(/<meta\b[^>]*>/gi) ?? [];
   for (const tag of metaTags) {
     const key = tag.match(/(?:property|name|itemprop)=["']([^"']+)["']/i)?.[1]?.toLowerCase();
     const value = tag.match(/content=["']([^"']+)["']/i)?.[1];
@@ -61,14 +61,14 @@ export function extractOfficialDates(htmlOrText: string, retrievedAt: string): O
   }
 
   const plain = htmlOrText
-    .replace(/<script[\\s\\S]*?<\\/script>/gi, ' ')
-    .replace(/<style[\\s\\S]*?<\\/style>/gi, ' ')
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
     .replace(/<[^>]+>/g, ' ')
     .replace(/&nbsp;/gi, ' ')
     .replace(/&amp;/gi, '&')
-    .replace(/\\s+/g, ' ');
+    .replace(/\s+/g, ' ');
 
-  const explicitPublication = plain.match(/(?:publicad[oa]\\s+em|data\\s+de\\s+publica[cç][aã]o\\s*[:：]?|publica[cç][aã]o\\s*[:：])\\s*(\\d{1,2}[\\/.]\\d{1,2}[\\/.]\\d{4}|\\d{4}-\\d{2}-\\d{2})/i)?.[1];
+  const explicitPublication = plain.match(/(?:publicad[oa]\s+em|data\s+de\s+publica[cç][aã]o\s*[:：]?|publica[cç][aã]o\s*[:：])\s*(\d{1,2}[\/.]\d{1,2}[\/.]\d{4}|\d{4}-\d{2}-\d{2})/i)?.[1];
   const publishedAt = parseOfficialDate(metadata.JSON_LD) ??
     parseOfficialDate(metadata.HTML_META) ??
     parseOfficialDate(explicitPublication);
@@ -78,11 +78,11 @@ export function extractOfficialDates(htmlOrText: string, retrievedAt: string): O
       : 'EXPLICIT_TEXT'
     : 'RETRIEVAL_FALLBACK';
 
-  const explicitEffective = plain.match(/(?:entra\\s+em\\s+vigor|produz\\s+efeitos|vig[eê]ncia\\s+(?:inicia|in[ií]cio)\\s+em)\\s*(?:a\\s+partir\\s+de\\s*)?(?:no\\s+dia\\s*)?(\\d{1,2}[\\/.]\\d{1,2}[\\/.]\\d{4}|\\d{4}-\\d{2}-\\d{2})/i)?.[1];
+  const explicitEffective = plain.match(/(?:entra\s+em\s+vigor|produz\s+efeitos|vig[eê]ncia\s+(?:inicia|in[ií]cio)\s+em)\s*(?:a\s+partir\s+de\s*)?(?:no\s+dia\s*)?(\d{1,2}[\/.]\d{1,2}[\/.]\d{4}|\d{4}-\d{2}-\d{2})/i)?.[1];
   const effectiveFrom = parseOfficialDate(explicitEffective);
   if (effectiveFrom) return { publishedAt, publishedAtSource, effectiveFrom, effectiveFromSource: 'EXPLICIT_TEXT' };
 
-  if (publishedAt && /entra\\s+em\\s+vigor\\s+na\\s+data\\s+de\\s+sua\\s+publica[cç][aã]o/i.test(plain)) {
+  if (publishedAt && /entra\s+em\s+vigor\s+na\s+data\s+de\s+sua\s+publica[cç][aã]o/i.test(plain)) {
     return { publishedAt, publishedAtSource, effectiveFrom: publishedAt, effectiveFromSource: 'PUBLICATION_DATE_CLAUSE' };
   }
   return { publishedAt, publishedAtSource, effectiveFromSource: 'UNKNOWN' };
