@@ -11,6 +11,7 @@ Apply migrations in numeric order with a dedicated migration-owner account:
 7. 0007_nfse_specific_normative_sources.sql
 8. 0008_normative_source_fingerprints.sql
 9. 0009_transport_and_fiscal_document_sources.sql
+10. 0010_normative_artifact_candidates.sql
 
 The runtime role must not own these objects and must remain NOSUPERUSER/NOBYPASSRLS. Set its password out-of-band after applying migration 0002.
 
@@ -26,6 +27,6 @@ Migration 0007 adds specific NFS-e Via documentation, XSD, API-directory and off
 
 Migration 0008 adds versioned content fingerprints to source checks while retaining the raw response SHA-256 as immutable evidence.
 
-Migration 0009 expands the registry to the SPED official index and the CT-e/CT-e OS, MDF-e, NF-e/NFC-e, GNRE and ANTT CIOT portals. CIOT is registered as an ANTT transport-regulatory source, not as a fiscal document. GNRE is registered as a tax-collection portal. The SPED index also covers related DF-e families such as BP-e, BP-e TM, NFCom, NF3e, DC-e, GTV-e, NFAg, NFGas and DeRE. The migration is idempotent by official URL and updates the existing NF-e portal entry to include NFC-e.
+Migration 0010 stores allowlisted document-link candidates discovered from official HTML pages. Candidates are pending review; the migration grants only SELECT/INSERT to the runtime role and does not enable automatic capture.\n\nMigration 0009 expands the registry to the SPED official index and the CT-e/CT-e OS, MDF-e, NF-e/NFC-e, GNRE and ANTT CIOT portals. CIOT is registered as an ANTT transport-regulatory source, not as a fiscal document. GNRE is registered as a tax-collection portal. The SPED index also covers related DF-e families such as BP-e, BP-e TM, NFCom, NF3e, DC-e, GTV-e, NFAg, NFGas and DeRE. The migration is idempotent by official URL and updates the existing NF-e portal entry to include NFC-e.
 
 Always validate migrations against a disposable PostgreSQL database before production. There is no automatic migration execution at API startup.
