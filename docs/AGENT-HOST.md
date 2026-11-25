@@ -19,7 +19,7 @@ A lista executável é a interseção entre:
 1. `toolBindings` do plano de Skills;
 2. `authorizedTools` concedidas pelo host/tenant.
 
-Bindings nunca concedem permissão. O executor concreto ainda deve validar o schema de entrada de cada ferramenta, aplicar isolamento por tenant, chamar somente operações internas permitidas e preservar a proveniência dos resultados. O Agent Host não transforma nomes de ferramentas em rotas HTTP nem executa chamadas arbitrárias.
+Bindings nunca concedem permissão. O executor concreto valida o schema de entrada de cada ferramenta, aplica a allowlist publicada e preserva a proveniência de tenant/request/correlation. O catálogo `workers/api/src/fiscal-tool-catalog.ts` contém somente ferramentas realmente implementadas no dispatcher MCP e publica schemas com `additionalProperties: false`. O runner `workers/api/src/fiscal-tool-runner.ts` implementa `executeFiscalTool` e `createFiscalAgentToolRunner`, consumindo diretamente as funções internas RAG, RuleSet e Fiscal Domain; ele não faz chamadas HTTP recursivas nem aceita nomes arbitrários.
 
 ## Limites padrão
 
@@ -37,14 +37,27 @@ O resultado contém estado (`COMPLETED`, `NEEDS_HUMAN_REVIEW` ou `FAILED`), resp
 
 `execution: EXECUTED` significa que o ciclo do Agent Host foi executado com os adapters injetados. Não significa que um cálculo fiscal tenha sido aprovado, que a legislação tenha sido confirmada ou que uma obrigação tenha sido transmitida.
 
+## Ferramentas fiscais já conectadas
+
+O runner executa as seguintes ferramentas MCP por funções internas:
+
+- `fiscal.search_evidence` — pesquisa RAG com data de referência, jurisdição e proveniência.
+- `fiscal.get_document` — recupera documento e chunks indexados.
+- `fiscal.get_split_payment_rules` — pesquisa evidência normativa de Split Payment.
+- `fiscal.get_credit_eligibility_rules` — retorna a matriz determinística de crédito.
+- `fiscal.evaluate_credit_eligibility` — executa o avaliador do Fiscal Domain.
+- `fiscal.resolve_ruleset` — resolve RuleSet publicado e vigente.
+
+As ferramentas RAG/RuleSet exigem D1. A matriz e o avaliador determinístico não dependem de D1. O catálogo retorna `DATABASE_REQUIRED` quando a dependência não está ligada. As entradas são validadas antes da execução e propriedades não declaradas são rejeitadas.
+
 ## Próxima integração necessária
 
 1. Implementar um adapter de modelo usando o provedor escolhido e sua configuração real.
-2. Implementar um `AgentToolRunner` que mapeie somente ferramentas do catálogo para funções internas reais, com schema e autorização por tenant.
-3. Expor uma rota autenticada após os dois adapters existirem.
-4. Adicionar testes de integração com D1/RAG e as ferramentas fiscais reais.
+2. Definir autorização efetiva de ferramentas por tenant no host; `toolBindings` continuam sendo apenas teto de capacidade.
+3. Expor uma rota autenticada depois de registrar o provider e a política de autorização.
+4. Adicionar testes de integração com D1/RAG e as ferramentas fiscais reais em ambiente de teste.
 5. Configurar e verificar secrets/bindings no ambiente Cloudflare antes de habilitar execução remota.
 
 ## Testes
 
-Os testes unitários em `workers/api/src/agent-host.test.ts` usam provider e tool runner falsos. Eles cobrem autorização, sequência, erros, limites, timeout e rastreabilidade. A existência dos testes não significa que tenham sido executados; o resultado deve ser confirmado pelo comando de testes ou pelo CI.
+Os testes em `workers/api/src/agent-host.test.ts` usam provider e tool runner falsos e cobrem autorização, sequência, erros, limites, timeout e rastreabilidade. Os testes em `workers/api/src/fiscal-tool-catalog.test.ts` e `workers/api/src/fiscal-tool-runner.test.ts` cobrem schemas, disponibilidade D1, resultados sem evidência, RuleSet ausente e propagação de metadados. A aprovação deve ser confirmada pela CI do commit correspondente.
