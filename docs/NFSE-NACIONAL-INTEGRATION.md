@@ -66,6 +66,22 @@ O perfil documental publicado para a NT 010 registra:
 
 O portal técnico atualmente lista o Manual para Emissão da NFS-e Via v1.02 e os seguintes anexos: Anexos I, II, III, V e VI v1.02; Anexo IV — Leiautes RN ADN v1.00.05. Esses documentos devem ser tratados como referências documentais atuais, sem presumir que seus contratos foram importados para o repositório.
 
+#### Contrato de transporte documentado no Anexo II v1.02
+
+O guia oficial descreve as seguintes características técnicas para a NFS-e Via:
+
+- API REST com processamento assíncrono; o JSON é o formato de troca de mensagens.
+- Documentos XML 1.0 em UTF-8.
+- Canal HTTPS com TLS 1.2 ou superior e autenticação mútua por certificado digital ICP-Brasil.
+- Certificado A1 ou A3 e-CNPJ/e-PJ com uso de autenticação de cliente, conforme o papel do transmissor.
+- Assinatura XMLDSIG no formato *enveloped*, com RSA-SHA256, digest SHA-256 e transformações Enveloped e C14N.
+- Compactação GZip com representação Base64.
+
+A especificação de transporte e assinatura está registrada em `NFSE_VIA_TECHNICAL_PROFILE`. Isso é um perfil documental, não uma implementação de mTLS, XMLDSIG ou compactação. Os detalhes de cada operação, os nomes de propriedades JSON, os paths e os códigos de retorno devem ser extraídos do Swagger de cada ambiente antes de gerar o cliente HTTP.
+
+**Máquina de estados:** a recepção positiva significa apenas que a mensagem foi recebida para processamento. O sistema deve consultar o resultado posterior. O domínio agora distingue `TRANSMISSION_REJECTED`, `RECEIVED_PENDING_PROCESSING`, `DOCUMENT_ACCEPTED` e `DOCUMENT_REJECTED`; apenas o resultado final positivo marca `documentAuthorized: true`. A classificação é normalizada e não afirma que esses nomes existam no JSON oficial.
+
+
 A manifestação do adquirente admite duas escolhas mutuamente exclusivas:
 1. **Aceite:** confirma que o serviço foi prestado.
 2. **Rejeição:** aponta divergência ou declara desconhecimento da nota.
@@ -75,6 +91,7 @@ O domínio `packages/domain/src/nfse-via.ts` registra essas versões e datas e v
 Referências:
 - [Ato Técnico Conjunto nº 7 — NT 009 v1.01 e NT 010](https://www.gov.br/nfse/pt-br/noticias/publicado-o-ato-tecnico-conjunto-rfb-cgibs-no-7-aprovando-a-versao-1-01-da-nota-tecnica-009-nfs-e-e-a-nota-tecnica-010-da-nfse-via/)
 - [Documentação técnica da NFS-e Via](https://www.gov.br/nfse/pt-br/nfs-e-via/documentacao-tecnica)
+- [Anexo II v1.02 — Guia para utilização das APIs](https://www.gov.br/nfse/pt-br/nfs-e-via/documentacao-tecnica/manuais-e-anexos/anexo-ii-guia-para-utilizacao-das-apis-v-1-02.pdf)
 - [Manuais e anexos NFS-e Via — Manual v1.02 e Anexos I, II, III, V e VI v1.02; Anexo IV v1.00.05](https://www.gov.br/nfse/pt-br/nfs-e-via/documentacao-tecnica/manuais-e-anexos)
 - [Links oficiais NFS-e Via — produção e produção restrita](https://www.gov.br/nfse/pt-br/nfs-e-via/links)
 - [RTC — documentação técnica e atualizações](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/rtc)
@@ -167,8 +184,10 @@ Operação de serviço
   -> DPS Builder compõe XML
   -> XSD + regras locais validam
   -> assinatura digital
-  -> SEFIN Transport envia POST /nfse
-  -> retorno: NFS-e ou rejeição
+  -> SEFIN Transport envia requisição conforme OpenAPI vigente
+  -> recepção positiva: PROCESSING PENDING (não é autorização)
+  -> consulta do resultado assíncrono
+  -> DOCUMENT ACCEPTED ou DOCUMENT REJECTED
   -> persistência auditável
   -> consulta/eventos quando solicitados
 ```
@@ -220,7 +239,8 @@ Não inferir produção pela ausência de parâmetro. Não permitir que uma oper
 - Produção e produção restrita possuem fixtures e testes separados.
 - Erros HTTP, rejeições fiscais e falhas de transporte são estados distintos.
 - Chaves privadas e certificados não aparecem em logs, respostas ou frontend.
-- Nenhuma nota é apresentada como autorizada sem retorno positivo da SEFIN.
+- Nenhuma nota é apresentada como autorizada apenas pela recepção HTTP/API; exige resultado positivo do processamento assíncrono.
+- A assinatura e o canal mTLS seguem o Anexo II v1.02 e os contratos efetivos do Swagger do ambiente.
 
 ## 11. Referências oficiais
 
