@@ -70,8 +70,8 @@ export function extractOfficialDates(htmlOrText: string): OfficialDates {
     .replace(/&amp;/gi, '&')
     .replace(/\s+/g, ' ');
 
-  const documentIdentifiers = plain.match(/(?:lei\\s+complementar|lei|decreto|portaria|instru[cç][aã]o\\s+normativa|resolu[cç][aã]o)\\s+(?:n[ºo.]?\\s*)?\\d+(?:[./-]\\d+)*(?:\\/\\d{4})?/gi) ?? [];
-  const uniqueDocumentIdentifiers = new Set(documentIdentifiers.map((value) => value.toLowerCase().replace(/\\s+/g, ' ').trim()));
+  const documentIdentifiers = plain.match(/(?:lei\s+complementar|lei|decreto|portaria|instru[cç][aã]o\s+normativa|resolu[cç][aã]o)\s+(?:n[ºo.]?\s*)?\d+(?:[./-]\d+)*(?:\/\d{4})?/gi) ?? [];
+  const uniqueDocumentIdentifiers = new Set(documentIdentifiers.map((value) => value.toLowerCase().replace(/\s+/g, ' ').trim()));
   if (uniqueDocumentIdentifiers.size !== 1) {
     return {
       publishedAtSource: 'RETRIEVAL_FALLBACK',
