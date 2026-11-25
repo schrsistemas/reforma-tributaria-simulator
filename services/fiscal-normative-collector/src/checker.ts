@@ -39,8 +39,7 @@ export function normalizeHtmlForFingerprint(html: string): string {
     .replace(/\s+(?:nonce|integrity|crossorigin|class|style|id|data-[\w:-]+|aria-busy)\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "")
     .replace(/\s+/g, " ")
     .replace(/>\s+</g, "><")
-    .trim()
-    .toLowerCase();
+    .trim();
 }
 
 function fingerprint(body: Uint8Array, contentType: string): {
