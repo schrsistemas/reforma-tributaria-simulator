@@ -115,7 +115,7 @@ O dispatcher retorna os IDs e caminhos dos arquivos `SKILL.md`, a ordem de depen
 
 - Os arquivos \`SKILL.md\` e o manifesto estão versionados no GitHub.
 - A convenção é compatível com runtimes que carregam Skills a partir de diretórios.
-- A conexão automática depende do host/agente que descobre e carrega esses diretórios. O repositório ainda não instala Skills em outros agentes por conta própria.
+- O Worker já descobre o manifesto, seleciona Skills e resolve dependências. O host/agente ainda precisa carregar o conteúdo dos diretórios `SKILL.md` e executar as ferramentas autorizadas; o repositório não instala Skills em agentes externos por conta própria.
 - As ferramentas MCP são contratos/capacidades documentadas; disponibilidade operacional depende do servidor e das permissões do runtime.
 - O motor atual \`@rts/tax-engine\` é um calculador genérico de IBS/CBS e declara limitações para CST/cClassTrib, NCM/NBS, alíquotas por localização, reduções, créditos, IS, Simples Nacional e bases específicas. As Skills não ampliam magicamente essa cobertura.
 - Não há publicação automática de RuleSet por Skill.
