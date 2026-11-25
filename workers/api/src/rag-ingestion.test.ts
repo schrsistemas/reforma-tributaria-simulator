@@ -47,6 +47,7 @@ test('extracts publication and effective dates only from explicit legal metadata
     publishedAtSource: 'HTML_META',
     effectiveFrom: '2026-03-01',
     effectiveFromSource: 'EXPLICIT_TEXT',
+    effectiveToSource: 'UNKNOWN',
   });
 });
 
@@ -57,6 +58,7 @@ test('uses publication date as effective date only for explicit publication clau
     publishedAtSource: 'JSON_LD',
     effectiveFrom: '2026-02-10',
     effectiveFromSource: 'PUBLICATION_DATE_CLAUSE',
+    effectiveToSource: 'UNKNOWN',
   });
 });
 
@@ -65,6 +67,7 @@ test('does not infer legal dates from arbitrary page dates or invalid dates', ()
   assert.deepEqual(extractOfficialDates(html), {
     publishedAtSource: 'RETRIEVAL_FALLBACK',
     effectiveFromSource: 'UNKNOWN',
+    effectiveToSource: 'UNKNOWN',
   });
 });
 
@@ -75,5 +78,16 @@ test('recognizes explicit ISO publication date text and Brazilian effective date
     publishedAtSource: 'EXPLICIT_TEXT',
     effectiveFrom: '2026-04-15',
     effectiveFromSource: 'EXPLICIT_TEXT',
+    effectiveToSource: 'UNKNOWN',
+  });
+});
+
+test('extracts end of effectiveness only from explicit validity wording', () => {
+  const html = '<p>Vigência até 31/12/2026.</p>';
+  assert.deepEqual(extractOfficialDates(html), {
+    publishedAtSource: 'RETRIEVAL_FALLBACK',
+    effectiveFromSource: 'UNKNOWN',
+    effectiveTo: '2026-12-31',
+    effectiveToSource: 'EXPLICIT_TEXT',
   });
 });
