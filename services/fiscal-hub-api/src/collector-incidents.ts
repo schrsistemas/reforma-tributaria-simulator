@@ -1,6 +1,6 @@
-import type { Pool, PoolClient } from "pg";
+import type { Pool, QueryResultRow } from "pg";
 
-type IncidentCondition = {
+type IncidentCondition = QueryResultRow & {
   incident_key: string;
   incident_type: string;
   severity: "WARNING" | "CRITICAL";
