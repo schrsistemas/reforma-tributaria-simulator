@@ -129,6 +129,7 @@ test('separates paragraphs, roman items and lettered subitems', () => {
   ]);
   assert.ok(chunks.every((chunk) => chunk.units[0].article === 'Art. 1º'));
   assert.equal(chunks[1].units[0].paragraph, '§ 1º');
+  assert.match(chunks[1].text, /Art\. 1º[\s\S]*§ 1º/);
   assert.equal(chunks[2].units[0].item, 'I');
   assert.equal(chunks[3].units[0].alinea, 'a');
 });
