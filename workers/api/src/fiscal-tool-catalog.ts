@@ -15,6 +15,8 @@ export interface FiscalToolDefinition {
       pattern?: string;
       minimum?: number;
       maximum?: number;
+      minLength?: number;
+      maxLength?: number;
     }>;
     required: string[];
     additionalProperties: false;
@@ -36,11 +38,11 @@ export const FISCAL_MCP_TOOLS: FiscalToolDefinition[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        query: { type: 'string', description: 'Consulta fiscal não vazia.' },
+        query: { type: 'string', minLength: 1, maxLength: 500, description: 'Consulta fiscal não vazia, com até 500 caracteres.' },
         limit: { type: 'integer', minimum: 1, maximum: 10 },
         asOf: dateProperty,
-        sourceType: { type: 'string' },
-        jurisdiction: { type: 'string' },
+        sourceType: { type: 'string', minLength: 1, maxLength: 64 },
+        jurisdiction: { type: 'string', minLength: 1, maxLength: 64 },
       },
       required: ['query'],
       additionalProperties: false,
@@ -52,7 +54,7 @@ export const FISCAL_MCP_TOOLS: FiscalToolDefinition[] = [
     requiresDatabase: true,
     inputSchema: {
       type: 'object',
-      properties: { documentId: { type: 'string' } },
+      properties: { documentId: { type: 'string', minLength: 1, maxLength: 128 } },
       required: ['documentId'],
       additionalProperties: false,
     },
@@ -64,7 +66,7 @@ export const FISCAL_MCP_TOOLS: FiscalToolDefinition[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        query: { type: 'string' },
+        query: { type: 'string', minLength: 1, maxLength: 500 },
         limit: { type: 'integer', minimum: 1, maximum: 10 },
         asOf: dateProperty,
       },
@@ -127,8 +129,8 @@ export const FISCAL_MCP_TOOLS: FiscalToolDefinition[] = [
       type: 'object',
       properties: {
         asOf: dateProperty,
-        rulesetId: { type: 'string' },
-        version: { type: 'string' },
+        rulesetId: { type: 'string', minLength: 1, maxLength: 128 },
+        version: { type: 'string', minLength: 1, maxLength: 64 },
       },
       required: [],
       additionalProperties: false,
@@ -173,6 +175,25 @@ export function validateFiscalToolInput(
     }
     if (schema.pattern && typeof item === 'string' && !new RegExp(schema.pattern).test(item)) {
       return { ok: false, error: `MCP_TOOL_INPUT_FORMAT_INVALID:${key}` };
+    }
+    if (typeof item === 'string' && schema.minLength !== undefined && item.trim().length < schema.minLength) {
+      return { ok: false, error: `MCP_TOOL_INPUT_MIN_LENGTH_INVALID:${key}` };
+    }
+    if (typeof item === 'string' && schema.maxLength !== undefined && item.length > schema.maxLength) {
+      return { ok: false, error: `MCP_TOOL_INPUT_MAX_LENGTH_INVALID:${key}` };
+    }
+    if (schema.pattern && typeof item === 'string') {
+      const match = item.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (!new RegExp(schema.pattern).test(item) || !match) {
+        return { ok: false, error: `MCP_TOOL_INPUT_FORMAT_INVALID:${key}` };
+      }
+      const year = Number(match[1]);
+      const month = Number(match[2]);
+      const day = Number(match[3]);
+      const date = new Date(Date.UTC(year, month - 1, day));
+      if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
+        return { ok: false, error: `MCP_TOOL_INPUT_FORMAT_INVALID:${key}` };
+      }
     }
     if (schema.minimum !== undefined && typeof item === 'number' && item < schema.minimum) {
       return { ok: false, error: `MCP_TOOL_INPUT_MINIMUM_INVALID:${key}` };
