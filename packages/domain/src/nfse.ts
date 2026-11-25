@@ -1,15 +1,15 @@
 /**
  * Contratos de seleção de leiaute da NFS-e Nacional.
  *
- * A matriz registra somente releases confirmados por comunicado oficial.
- * Não inferir a implantação de um release a partir da mera publicação de XSD.
+ * A matriz registra os leiautes publicados oficialmente por ambiente.
+ * Publicação de XSD não prova que o runtime do endpoint já foi atualizado.
  */
 
 export type NfseEnvironment = 'PRODUCTION' | 'RESTRICTED';
 
 export type NfseLayoutId =
   | 'SNNFSE_PRODUCTION_NT004_NT007'
-  | 'SNNFSE_RESTRICTED_NT009_1_0_RELEASE_1';
+  | 'SNNFSE_RESTRICTED_NT009_1_01';
 
 export interface NfseLayoutProfile {
   readonly id: NfseLayoutId;
@@ -20,6 +20,7 @@ export interface NfseLayoutProfile {
     | 'OPTIONAL_OPEN_GROUP'
     | 'REQUIRES_RELEASE_SCHEMA_VALIDATION';
   readonly fiscalEffect: 'VALID_FISCAL_DOCUMENT' | 'NO_FISCAL_EFFECT';
+  readonly runtimeVerification: 'NOT_PROBED' | 'CONFIRMED';
   readonly sourceUrl: string;
 }
 
@@ -31,23 +32,25 @@ export const NFSE_LAYOUT_PROFILES: Readonly<Record<NfseEnvironment, NfseLayoutPr
     statusAsOf: '2026-11-25',
     ibsCbsPolicy: 'OPTIONAL_OPEN_GROUP',
     fiscalEffect: 'VALID_FISCAL_DOCUMENT',
+    runtimeVerification: 'NOT_PROBED',
     sourceUrl: 'https://www.gov.br/nfse/pt-br/noticias/nfs-e-nacional-confira-oas-rientacoes-sobre-leiaute-em-producao-regras-de-preenchimento-de-ibs-cbs-e-status-da-nota-tecnica-009/',
   },
   RESTRICTED: {
-    id: 'SNNFSE_RESTRICTED_NT009_1_0_RELEASE_1',
+    id: 'SNNFSE_RESTRICTED_NT009_1_01',
     environment: 'RESTRICTED',
-    technicalRelease: 'NT 009 v1.00 — release 1',
+    technicalRelease: 'NT 009 v1.01 — XSD PRODREST publicado em 20/10/2026',
     statusAsOf: '2026-11-25',
     ibsCbsPolicy: 'REQUIRES_RELEASE_SCHEMA_VALIDATION',
     fiscalEffect: 'NO_FISCAL_EFFECT',
-    sourceUrl: 'https://www.gov.br/nfse/pt-br/noticias/nfs-e-nacional-confira-oas-rientacoes-sobre-leiaute-em-producao-regras-de-preenchimento-de-ibs-cbs-e-status-da-nota-tecnica-009/',
+    sourceUrl: 'https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/producao-restrita',
+    runtimeVerification: 'NOT_PROBED',
   },
 } as const;
 
 /**
- * Retorna apenas o perfil oficialmente identificado como implantado no
- * ambiente indicado na data de referência. Releases futuros precisam ser
- * adicionados explicitamente após confirmação do CGNFS-e.
+ * Retorna o perfil documental publicado para o ambiente. A disponibilidade
+ * do runtime deve ser verificada separadamente; runtimeVerification não é
+ * promovido para CONFIRMED sem uma chamada de saúde/contrato bem-sucedida.
  */
 export function resolveNfseLayout(environment: NfseEnvironment): NfseLayoutProfile {
   return NFSE_LAYOUT_PROFILES[environment];
