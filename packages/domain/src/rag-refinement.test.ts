@@ -22,6 +22,7 @@ function candidate(overrides: Partial<RagCandidate> = {}): RagCandidate {
     title: 'Norma fiscal',
     publishedAt: '2026-01-01',
     effectiveFrom: '2026-01-01',
+    effectiveFromSource: 'EXPLICIT_TEXT',
     effectiveTo: '2026-12-31',
     authority: 'Receita Federal',
     sourceType: 'LAW',
@@ -85,19 +86,30 @@ test('não usa horário de captura como início de vigência em consultas histó
   assert.equal(temporalMatch(fallback, '2026-07-01'), false);
 });
 
-test('usa publicação oficial como limite inferior apenas quando a origem é comprovada', () => {
+test('não confunde publicação oficial com início de vigência', () => {
   const officialPublication = candidate({
     publishedAt: '2026-06-01',
     publishedAtSource: 'HTML_META',
     effectiveFrom: undefined,
+    effectiveFromSource: undefined,
     effectiveTo: undefined,
   });
-  assert.equal(temporalMatch(officialPublication, '2026-05-31'), false);
-  assert.equal(temporalMatch(officialPublication, '2026-06-01'), true);
-  assert.equal(temporalMatch(officialPublication, '2026-07-01'), true);
+  assert.equal(temporalMatch(officialPublication, '2026-06-01'), false);
+  assert.equal(temporalMatch(officialPublication, '2026-07-01'), false);
+});
+
+test('aceita vigência histórica somente com proveniência explícita', () => {
+  const verified = candidate({
+    effectiveFrom: '2026-06-01',
+    effectiveFromSource: 'PUBLICATION_DATE_CLAUSE',
+    effectiveTo: undefined,
+  });
+  assert.equal(temporalMatch(verified, '2026-05-31'), false);
+  assert.equal(temporalMatch(verified, '2026-06-01'), true);
+  assert.equal(temporalMatch(verified, '2026-07-01'), true);
 });
 
 test('não aceita datas históricas inválidas ou fim de vigência inválido', () => {
-  const item = candidate({ effectiveFrom: 'invalid', effectiveTo: undefined });
+  const item = candidate({ effectiveFrom: 'invalid', effectiveFromSource: 'EXPLICIT_TEXT', effectiveTo: undefined });
   assert.equal(temporalMatch(item, '2026-06-01'), false);
 });
