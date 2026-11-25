@@ -2,6 +2,7 @@ import { Pool, type PoolClient } from "pg";
 import { S3ArtifactStorage } from "./s3-storage.js";
 import { captureApprovedArtifacts } from "./capture-approved.js";
 import { withArtifactCaptureLock } from "./monitor.js";
+import { reconcilePendingCaptures } from "./reconciliation.js";
 
 function required(name: string): string {
   const value = process.env[name]?.trim();
@@ -23,6 +24,10 @@ if (forcePathStyleRaw && forcePathStyleRaw !== "true" && forcePathStyleRaw !== "
   throw new Error("S3_FORCE_PATH_STYLE must be true or false");
 }
 const batchSize = Number(process.env.FISCAL_CAPTURE_BATCH_SIZE ?? "25");
+const reconciliationStaleMinutes = Number(process.env.FISCAL_CAPTURE_RECONCILE_STALE_MINUTES ?? "15");
+if (!Number.isInteger(reconciliationStaleMinutes) || reconciliationStaleMinutes < 1 || reconciliationStaleMinutes > 1440) {
+  throw new Error("FISCAL_CAPTURE_RECONCILE_STALE_MINUTES must be an integer between 1 and 1440");
+}
 if (!Number.isInteger(batchSize) || batchSize < 1 || batchSize > 200) {
   throw new Error("FISCAL_CAPTURE_BATCH_SIZE must be an integer between 1 and 200");
 }
@@ -44,6 +49,10 @@ const storage = new S3ArtifactStorage({
 });
 
 async function run(client: PoolClient): Promise<void> {
+  const reconciliation = await reconcilePendingCaptures(client, storage, {
+    staleMinutes: reconciliationStaleMinutes,
+    batchSize: Math.min(500, batchSize * 4)
+  });
   const summary = await captureApprovedArtifacts(client, {
     allowedHosts,
     storage,
