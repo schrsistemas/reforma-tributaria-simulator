@@ -15,7 +15,7 @@
 
 A API expõe listagem e cadastro de empresas, listagem e cadastro de instâncias ERP, autenticação por tenant e consulta do catálogo normativo e das versões de documentos. Cadastro de empresa e instância ERP exige papel OWNER ou ADMIN no token. O CNPJ passa por validação dos dígitos verificadores antes de chegar ao banco. Os cadastros gravam evento de auditoria na mesma transação da operação.
 
-O catálogo de fontes normativas é global e somente leitura pela API. A fila de candidatos é consultável por usuários autenticados; decisões de aprovação/rejeição exigem OWNER ou ADMIN e geram auditoria. As migrations 0004–0009 registram fontes federais, nacionais, fiscais e regulatórias: Planalto, Receita Federal, Ministério da Fazenda, CONFAZ, SPED, NF-e/NFC-e, CT-e/CT-e OS, MDF-e, NFS-e/NFS-e Via, GNRE e ANTT/CIOT. O índice oficial do SPED também referencia BP-e, BP-e TM, NFCom, NF3e, DC-e, GTV-e, NFAg, NFGas e DeRE.
+O catálogo de fontes normativas é global e somente leitura pela API. A fila de candidatos é consultável por usuários autenticados; decisões de aprovação/rejeição exigem OWNER ou ADMIN e geram auditoria. A migration 0011 revoga os privilégios DML amplos herdados por padrão pelo papel runtime e mantém apenas as colunas necessárias para descoberta, revisão e captura. As migrations 0004–0009 registram fontes federais, nacionais, fiscais e regulatórias: Planalto, Receita Federal, Ministério da Fazenda, CONFAZ, SPED, NF-e/NFC-e, CT-e/CT-e OS, MDF-e, NFS-e/NFS-e Via, GNRE e ANTT/CIOT. O índice oficial do SPED também referencia BP-e, BP-e TM, NFCom, NF3e, DC-e, GTV-e, NFAg, NFGas e DeRE.
 
 As categorias são separadas por natureza: documentos fiscais eletrônicos (DF-e), guias de arrecadação (GNRE), registros regulatórios de transporte (CIOT), documentação técnica, legislação e conteúdo explicativo. CIOT não é classificado como DF-e; GNRE não é classificada como nota fiscal. FAQs e páginas de orientação são fontes de referência, não atos normativos.
 
@@ -30,14 +30,14 @@ A associação de instância ERP à empresa usa chave estrangeira composta pelo 
 - O CRUD de usuários, convites, recuperação de senha e gestão de sessão ainda não está implementado.
 - Existe monitor de disponibilidade/hash, descoberta de links de artefatos, fila de candidatos, revisão humana e worker de captura de candidatos aprovados. OCR, extração semântica, diff jurídico, análise de impacto e publicação automatizada de RuleSets ainda não estão implementados.
 - Fontes e documentos normativos são somente leitura pela API.
-- As migrations 0001–0010 ainda precisam ser aplicadas e validadas em PostgreSQL real.
+- As migrations 0001–0011 ainda precisam ser aplicadas e validadas em PostgreSQL real.
 - Testes de API atuais usam mocks; não substituem testes reais de PostgreSQL/RLS.
 - O armazenamento S3 precisa ser provisionado e configurado.
 - Nenhum deploy da API na VPS foi executado.
 
 ## Banco
 
-Aplicar migrations em ordem numérica: 0001_fiscal_hub_core.sql até 0010_normative_artifact_candidates.sql. Use um usuário de migração separado. A API deve conectar como fiscal_hub_app, sem ownership, superuser ou BYPASSRLS.
+Aplicar migrations em ordem numérica: 0001_fiscal_hub_core.sql até 0011_normative_artifact_candidate_privileges.sql. Use um usuário de migração separado. A API deve conectar como fiscal_hub_app, sem ownership, superuser ou BYPASSRLS.
 
 ## Execução local
 
