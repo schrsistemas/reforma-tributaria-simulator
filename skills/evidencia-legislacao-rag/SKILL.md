@@ -24,6 +24,20 @@ description: Pesquisa legislação tributária brasileira e evidências oficiais
 6. Verificar relações de alteração, regulamentação, revogação e conflito.
 7. Entregar citação precisa e link oficial quando disponível.
 
+## Monitoramento de notícias oficiais
+
+Use `https://www.gov.br/receitafederal/pt-br/assuntos/noticias` como feed de descoberta de atualizações da Receita Federal. Filtre especialmente as categorias Tributação, Serviços e as publicações marcadas RTC, e registre título, URL canônica, publicação, atualização, órgão, tema e data da coleta.
+
+Notícia é `NEWS_LEAD`, nunca evidência normativa suficiente para alterar cálculo. Para cada notícia:
+1. extrair atos citados (resolução, portaria, ato conjunto, nota técnica, manual, schema ou API);
+2. localizar e ler o texto primário integral no DOU ou no repositório oficial competente;
+3. registrar vigência por dispositivo, inclusive efeitos escalonados;
+4. localizar versão do componente oficial (calculadora, schema, API, leiaute) relacionada;
+5. abrir tarefa de impacto para Skills, RuleSets, motor, documentos, integrações e testes;
+6. só publicar alteração de regra após validação da fonte primária e regressão.
+
+O registro de notícias e seus impactos fica em `docs/official-news-monitor.json`. Notícias devem ser mantidas como trilha de descoberta, sem serem promovidas automaticamente a normas.
+
 ## Temporalidade
 
 Data de publicação não é data de início de vigência. Para pergunta histórica, exigir vigência comprovada. Se a origem da data for fallback técnico, legado desconhecido ou inferência, não usar como prova de vigência.
