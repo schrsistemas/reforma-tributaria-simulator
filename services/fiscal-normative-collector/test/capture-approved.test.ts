@@ -16,6 +16,9 @@ function fixture(fetchStatus = 200) {
         return { rows: [{ id: candidateId, source_id: sourceId, artifact_url: "https://www.gov.br/ato.pdf" }], rowCount: 1 };
       }
       if (sql.includes("INSERT INTO fiscal.normative_artifact_captures")) {
+        return { rows: [{ id: captureId, capture_status: "PENDING", storage_key: values?.[5] }], rowCount: 1 };
+      }
+      if (sql.includes("SET capture_status = 'CAPTURED'")) {
         return { rows: [{ id: captureId }], rowCount: 1 };
       }
       if (sql.includes("UPDATE fiscal.normative_artifact_candidates") && sql.includes("review_status = 'CAPTURED'")) {
