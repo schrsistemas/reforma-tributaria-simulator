@@ -304,6 +304,29 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     }
   });
 
+
+  app.get("/v1/normative/sources/:sourceId/artifacts", async (request, reply) => {
+    const claims = await authenticate(request, reply);
+    if (!claims) return;
+    const params = z.object({ sourceId: z.string().uuid() }).safeParse(request.params);
+    if (!params.success) return reply.code(400).send({ error: "INVALID_SOURCE_ID" });
+    try {
+      const result = await options.pool.query(
+        `SELECT id, source_id, source_url, content_type, byte_length,
+                content_sha256, captured_at, capture_status
+           FROM fiscal.normative_artifact_captures
+          WHERE source_id = $1
+          ORDER BY captured_at DESC
+          LIMIT 100`,
+        [params.data.sourceId]
+      );
+      return reply.send({ items: result.rows });
+    } catch (error) {
+      request.log.error({ err: error }, "normative artifact history failed");
+      return reply.code(500).send({ error: "NORMATIVE_ARTIFACTS_LIST_FAILED" });
+    }
+  });
+
   app.get("/v1/normative/documents/:documentId/versions", async (request, reply) => {
     const claims = await authenticate(request, reply);
     if (!claims) return;

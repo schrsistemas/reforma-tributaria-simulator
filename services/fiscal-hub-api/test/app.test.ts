@@ -191,3 +191,26 @@ test("normative source check history validates the source UUID", async () => {
   assert.equal(response.json().error, "INVALID_SOURCE_ID");
   await app.close();
 });
+
+test("normative artifact history requires authentication", async () => {
+  const app = await buildApp({ pool: fakePool(), jwtSecret: JWT_SECRET });
+  const response = await app.inject({
+    method: "GET",
+    url: "/v1/normative/sources/11111111-1111-4111-8111-111111111111/artifacts"
+  });
+  assert.equal(response.statusCode, 401);
+  await app.close();
+});
+
+test("normative artifact history validates the source UUID", async () => {
+  const app = await buildApp({ pool: fakePool(), jwtSecret: JWT_SECRET });
+  const token = await tokenFor(app, ["VIEWER"]);
+  const response = await app.inject({
+    method: "GET",
+    url: "/v1/normative/sources/not-a-uuid/artifacts",
+    headers: { authorization: "Bearer " + token }
+  });
+  assert.equal(response.statusCode, 400);
+  assert.equal(response.json().error, "INVALID_SOURCE_ID");
+  await app.close();
+});

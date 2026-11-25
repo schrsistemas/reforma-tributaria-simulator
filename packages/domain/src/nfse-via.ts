@@ -20,22 +20,6 @@ export interface NfseViaTechnicalProfile {
   readonly rnAdnLayoutVersion: '1.00.05';
   readonly municipalityApiGuideVersion: '1.02';
   readonly buyerManifestationGuideVersion: '1.02';
-  readonly transportProtocol: 'HTTPS_MUTUAL_TLS';
-  readonly tlsVersionPolicy: 'MANUAL_CONFLICT_TLS_1_2_PLUS_VS_TLS_1_0_TO_1_2';
-  readonly runtimeTlsMinimum: 'NOT_VERIFIED';
-  readonly apiMessageFormat: 'JSON';
-  readonly documentFormat: 'XML_1_0_UTF8';
-  readonly documentSignature: 'XMLDSIG_ENVELOPED';
-  readonly signatureAlgorithm: 'RSA_SHA256';
-  readonly digestAlgorithm: 'SHA256';
-  readonly canonicalizationAlgorithm: 'C14N';
-  readonly certificateAuthority: 'ICP_BRASIL';
-  readonly certificateTypes: readonly ['A1', 'A3'];
-  readonly certificateUsage: 'E_CNPJ_E_APLICACAO';
-  readonly compressionFormat: 'GZIP_BASE64';
-  readonly processingMode: 'ASYNCHRONOUS';
-  readonly receiptImpliesAuthorization: false;
-  readonly apiGuideUrl: string;
   readonly noChargePaymentModalityCode: '6';
   readonly restrictedAvailableFrom: '2026-10-05';
   readonly productionAvailableFrom: '2026-10-19';
@@ -57,22 +41,6 @@ export const NFSE_VIA_TECHNICAL_PROFILE: NfseViaTechnicalProfile = {
   rnAdnLayoutVersion: '1.00.05',
   municipalityApiGuideVersion: '1.02',
   buyerManifestationGuideVersion: '1.02',
-  transportProtocol: 'HTTPS_MUTUAL_TLS',
-  tlsVersionPolicy: 'MANUAL_CONFLICT_TLS_1_2_PLUS_VS_TLS_1_0_TO_1_2',
-  runtimeTlsMinimum: 'NOT_VERIFIED',
-  apiMessageFormat: 'JSON',
-  documentFormat: 'XML_1_0_UTF8',
-  documentSignature: 'XMLDSIG_ENVELOPED',
-  signatureAlgorithm: 'RSA_SHA256',
-  digestAlgorithm: 'SHA256',
-  canonicalizationAlgorithm: 'C14N',
-  certificateAuthority: 'ICP_BRASIL',
-  certificateTypes: ['A1', 'A3'],
-  certificateUsage: 'E_CNPJ_E_APLICACAO',
-  compressionFormat: 'GZIP_BASE64',
-  processingMode: 'ASYNCHRONOUS',
-  receiptImpliesAuthorization: false,
-  apiGuideUrl: 'https://www.gov.br/nfse/pt-br/nfs-e-via/documentacao-tecnica/manuais-e-anexos/anexo-ii-guia-para-utilizacao-das-apis-v-1-02.pdf',
   noChargePaymentModalityCode: '6',
   restrictedAvailableFrom: '2026-10-05',
   productionAvailableFrom: '2026-10-19',
@@ -81,56 +49,6 @@ export const NFSE_VIA_TECHNICAL_PROFILE: NfseViaTechnicalProfile = {
   manualsAndAnnexesUrl: 'https://www.gov.br/nfse/pt-br/nfs-e-via/documentacao-tecnica/manuais-e-anexos',
   officialEnvironmentLinksUrl: 'https://www.gov.br/nfse/pt-br/nfs-e-via/links',
 } as const;
-
-/**
- * Estados normalizados de processamento assíncrono.
- *
- * O adaptador HTTP deve mapear as respostas reais do Swagger para este
- * contrato. Estes nomes não representam propriedades do JSON oficial.
- */
-export type NfseViaReceiptStatus = 'RECEIVED' | 'REJECTED';
-export type NfseViaProcessingStatus = 'NOT_AVAILABLE' | 'PENDING' | 'ACCEPTED' | 'REJECTED';
-
-export type NfseViaSubmissionAssessment =
-  | { readonly status: 'TRANSMISSION_REJECTED'; readonly documentAuthorized: false }
-  | { readonly status: 'RECEIVED_PENDING_PROCESSING'; readonly documentAuthorized: false }
-  | { readonly status: 'DOCUMENT_ACCEPTED'; readonly documentAuthorized: true }
-  | { readonly status: 'DOCUMENT_REJECTED'; readonly documentAuthorized: false }
-  | {
-      readonly status: 'INCONSISTENT_RESPONSE';
-      readonly documentAuthorized: false;
-      readonly reason: 'PROCESSING_RESULT_WITHOUT_SUCCESSFUL_RECEIPT';
-    };
-
-/**
- * Separa a confirmação de recepção do resultado posterior de processamento.
- * Recepção positiva nunca é tratada isoladamente como autorização.
- */
-export function assessNfseViaSubmission(input: {
-  readonly receipt: NfseViaReceiptStatus;
-  readonly processing: NfseViaProcessingStatus;
-}): NfseViaSubmissionAssessment {
-  if (input.receipt === 'REJECTED') {
-    if (input.processing !== 'NOT_AVAILABLE') {
-      return {
-        status: 'INCONSISTENT_RESPONSE',
-        documentAuthorized: false,
-        reason: 'PROCESSING_RESULT_WITHOUT_SUCCESSFUL_RECEIPT',
-      };
-    }
-    return { status: 'TRANSMISSION_REJECTED', documentAuthorized: false };
-  }
-
-  if (input.processing === 'ACCEPTED') {
-    return { status: 'DOCUMENT_ACCEPTED', documentAuthorized: true };
-  }
-
-  if (input.processing === 'REJECTED') {
-    return { status: 'DOCUMENT_REJECTED', documentAuthorized: false };
-  }
-
-  return { status: 'RECEIVED_PENDING_PROCESSING', documentAuthorized: false };
-}
 
 export type NfseViaManifestationKind = 'ACCEPT' | 'REJECT';
 

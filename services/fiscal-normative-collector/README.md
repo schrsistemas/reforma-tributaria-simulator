@@ -1,6 +1,6 @@
 # Fiscal Normative Source Monitor
 
-This service checks the availability and content hash of configured official source landing pages. It does not crawl arbitrary URLs, download or archive legal documents, extract text, interpret legislation, or publish tax rules.
+This service checks the availability and content hash of configured official source landing pages. The source-page checker does not crawl arbitrary URLs, archive legal documents, extract text, interpret legislation, or publish tax rules.
 
 ## Configuration
 
@@ -15,7 +15,7 @@ pnpm --filter @rts/fiscal-normative-collector check:sources
 
 Schedule from an external cron or VPS scheduler only after configuring the runtime connection and allowlist. Do not run multiple concurrent checks against the same source.
 
-## Status
+## Source monitor status
 
 - AVAILABLE: successful fetch and content hash equal to the previous successful hash, or no previous hash exists.
 - CHANGED: successful fetch with a different content hash.
@@ -24,3 +24,9 @@ Schedule from an external cron or VPS scheduler only after configuring the runti
 - ERROR: network or timeout failure.
 
 A CHANGED status indicates that the portal response changed; it does not prove that a new normative act was published. Every alert requires human review and document-level verification.
+
+## Artifact capture library
+
+`src/capture.ts` captures an explicitly supplied official artifact URL. It enforces the exact-host HTTPS allowlist, blocks redirects, limits response size and time, accepts only PDF/HTML/XML/JSON content types, verifies the PDF signature, calculates SHA-256 and writes bytes to an S3-compatible object store. `src/s3-storage.ts` provides the S3-compatible storage adapter. `src/capture-service.ts` records immutable metadata in `fiscal.normative_artifact_captures` and treats an existing source/hash pair as a duplicate.
+
+The capture library is not called automatically by the source-page checker and does not yet discover or queue candidate document links. Discovery policy, object-store provisioning and human approval of candidate documents must be configured before scheduled ingestion. The service does not execute or interpret downloaded content.
