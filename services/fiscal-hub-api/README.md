@@ -41,7 +41,7 @@ Use the provision:admin script only with a migration-owner connection in a contr
 
 ## Runtime database role
 
-Apply migrations 0001–0013 with `MIGRATION_DATABASE_URL` as the migration owner. Never run the migration command using the restricted runtime role. Set the fiscal_hub_app password out-of-band with psql \\password fiscal_hub_app, then use that non-owner, NOSUPERUSER, NOBYPASSRLS role in the API DATABASE_URL. See migrations/README.md.
+Apply migrations 0001–0014 with `MIGRATION_DATABASE_URL` as the migration owner. Never run the migration command using the restricted runtime role. Set the fiscal_hub_app password out-of-band with psql \\password fiscal_hub_app, then use that non-owner, NOSUPERUSER, NOBYPASSRLS role in the API DATABASE_URL. See migrations/README.md.
 
 ## Database roles
 
