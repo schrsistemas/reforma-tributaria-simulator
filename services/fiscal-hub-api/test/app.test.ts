@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { buildApp } from "../src/app.js";
+import vercelHandler from "../src/app.js";
+import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Pool } from "pg";
 
 const JWT_SECRET = "x".repeat(40);
@@ -312,4 +314,69 @@ test("tenant administrators outside the designated reviewer tenant cannot change
   });
   assert.equal(response.statusCode, 403);
   await app.close();
+});
+
+
+test("Vercel liveness handler works without production configuration", async () => {
+  const originalDatabaseUrl = process.env.DATABASE_URL;
+  const originalJwtSecret = process.env.JWT_SECRET;
+  delete process.env.DATABASE_URL;
+  delete process.env.JWT_SECRET;
+
+  const response = {
+    statusCode: 0,
+    headers: {} as Record<string, string>,
+    body: "",
+    setHeader(name: string, value: string) { this.headers[name] = value; },
+    end(body?: string) { this.body = body ?? ""; }
+  };
+
+  try {
+    await vercelHandler(
+      { url: "/health/live" } as IncomingMessage,
+      response as unknown as ServerResponse
+    );
+    assert.equal(response.statusCode, 200);
+    assert.deepEqual(JSON.parse(response.body), {
+      ok: true,
+      service: "fiscal-hub-api"
+    });
+  } finally {
+    if (originalDatabaseUrl === undefined) delete process.env.DATABASE_URL;
+    else process.env.DATABASE_URL = originalDatabaseUrl;
+    if (originalJwtSecret === undefined) delete process.env.JWT_SECRET;
+    else process.env.JWT_SECRET = originalJwtSecret;
+  }
+});
+
+test("Vercel readiness returns 503 while PostgreSQL configuration is absent", async () => {
+  const originalDatabaseUrl = process.env.DATABASE_URL;
+  const originalJwtSecret = process.env.JWT_SECRET;
+  delete process.env.DATABASE_URL;
+  delete process.env.JWT_SECRET;
+
+  const response = {
+    statusCode: 0,
+    headers: {} as Record<string, string>,
+    body: "",
+    setHeader(name: string, value: string) { this.headers[name] = value; },
+    end(body?: string) { this.body = body ?? ""; }
+  };
+
+  try {
+    await vercelHandler(
+      { url: "/health/ready" } as IncomingMessage,
+      response as unknown as ServerResponse
+    );
+    assert.equal(response.statusCode, 503);
+    assert.deepEqual(JSON.parse(response.body), {
+      ok: false,
+      database: "unconfigured"
+    });
+  } finally {
+    if (originalDatabaseUrl === undefined) delete process.env.DATABASE_URL;
+    else process.env.DATABASE_URL = originalDatabaseUrl;
+    if (originalJwtSecret === undefined) delete process.env.JWT_SECRET;
+    else process.env.JWT_SECRET = originalJwtSecret;
+  }
 });

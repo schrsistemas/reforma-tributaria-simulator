@@ -501,6 +501,31 @@ export default async function vercelHandler(
   request: IncomingMessage,
   response: ServerResponse
 ): Promise<void> {
+  const pathname = (request.url ?? "/").split("?")[0] ?? "/";
+
+  // Liveness must remain available even before production secrets and
+  // PostgreSQL have been provisioned.
+  if (pathname === "/health/live") {
+    response.statusCode = 200;
+    response.setHeader("content-type", "application/json; charset=utf-8");
+    response.end(JSON.stringify({ ok: true, service: "fiscal-hub-api" }));
+    return;
+  }
+
+  // Do not let missing deployment configuration become an opaque 500.
+  // Readiness reports the dependency as unconfigured; application routes
+  // remain unavailable until both required settings are present.
+  if (!process.env.DATABASE_URL || !process.env.JWT_SECRET) {
+    response.statusCode = 503;
+    response.setHeader("content-type", "application/json; charset=utf-8");
+    response.end(JSON.stringify(
+      pathname === "/health/ready"
+        ? { ok: false, database: "unconfigured" }
+        : { error: "SERVICE_NOT_CONFIGURED" }
+    ));
+    return;
+  }
+
   if (!vercelAppPromise) {
     const config = loadConfig();
     const pool = createPool(config.DATABASE_URL);
