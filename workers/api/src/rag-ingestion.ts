@@ -309,8 +309,7 @@ export function chunkLegalDocument(
       paragraph = undefined;
       item = undefined;
       alinea = undefined;
-      heading = undefined;
-      beginUnit({ type: 'ARTICLE_CAPUT', label: article, article }, line);
+      beginUnit({ type: 'ARTICLE_CAPUT', label: article, article, heading }, line);
       continue;
     }
     if (annexMatch) {
@@ -386,8 +385,22 @@ export function chunkLegalDocument(
   };
 
   for (const segment of segments) {
-    const value = segment.lines.join('\n').trim();
-    if (value) pushText(value, segment.unit);
+    const rawText = segment.lines.join('\n').trim();
+    const unit = segment.unit;
+    const parentContext = unit.type === 'ARTICLE_CAPUT'
+      ? [unit.heading]
+      : unit.type === 'PARAGRAPH'
+        ? [unit.heading, unit.article]
+        : unit.type === 'ITEM'
+          ? [unit.heading, unit.article, unit.paragraph]
+          : unit.type === 'ALINEA'
+            ? [unit.heading, unit.article, unit.paragraph, unit.item]
+            : unit.type === 'TABLE'
+              ? [unit.heading, unit.article, unit.paragraph, unit.item]
+              : [];
+    const contextPrefix = parentContext.filter(Boolean).join(' > ');
+    const value = contextPrefix ? contextPrefix + '\n' + rawText : rawText;
+    if (value) pushText(value, unit);
   }
 
   // Defensive fallback: malformed structural input must not discard text.
