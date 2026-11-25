@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://reforma-tributaria-simulator.example/schemas/skill-result.schema.json",
+  "$id": "urn:reforma-tributaria-simulator:schema:fiscal-skill-result:1.0.0",
   "title": "Fiscal Skill Result",
   "type": "object",
   "additionalProperties": false,
