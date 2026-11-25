@@ -21,7 +21,7 @@ Este diretório contém Skills compatíveis com a convenção de diretório `SKI
 
 A Skill principal carrega apenas os módulos necessários à tarefa. Módulos podem declarar dependências; o runtime do agente deve carregar os respectivos \`SKILL.md\` antes de delegar. O manifesto \`registry.json\` é o catálogo de roteamento desta implementação.
 
-O Worker executa o roteamento determinístico do manifesto por `GET /api/v1/skills` e `POST /api/v1/skills/resolve`, incluindo seleção por gatilhos, dependências transitivas e ordenação. O host de agentes ainda deve carregar o conteúdo de cada `SKILL.md` e executar apenas ferramentas autorizadas. A existência dos arquivos não cria automaticamente novos conectores, MCP servers ou permissões.
+O Worker executa o roteamento determinístico do manifesto por `GET /api/v1/skills` e `POST /api/v1/skills/resolve`, incluindo seleção por gatilhos, dependências transitivas e ordenação. O host de agentes ainda deve carregar o conteúdo de cada `SKILL.md` e executar apenas ferramentas autorizadas. A existência dos arquivos não cria automaticamente novos conectores, MCP servers ou permissões. O manifesto também declara `toolBindings` por módulo; consulte `GET /api/v1/mcp/tools` para verificar se cada ferramenta está disponível ou exige configuração.
 
 ## Princípios
 
