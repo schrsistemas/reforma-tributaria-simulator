@@ -30,3 +30,12 @@ Aplicar `migrations/0023_nfe_availability_monitor.sql` no D1 do ambiente antes d
 ## Limitação deliberada
 
 O parser é conservador: se o Portal alterar nomes de imagens ou remover os atributos de cor, o indicador ficará `UNKNOWN`. Antes de automatizar alertas ou tomar decisões de emissão, validar os atributos reais do HTML em produção e ampliar testes com amostras recentes do portal. A consulta do painel mede a disponibilidade publicada pelo portal, não substitui a chamada SOAP autenticada de cada contribuinte ao WebService.
+
+## Agendamento isolado
+
+O Worker mantém dois crons independentes:
+
+- `0 3 * * *`: coleta fiscal e governamental existente.
+- `*/15 * * * *`: somente consulta do painel NF-e e gravação do snapshot.
+
+O cron NF-e verifica o binding D1 antes de fazer qualquer requisição externa. Enquanto D1 não estiver configurado, encerra sem consumir chamadas ao Portal Nacional. A migration `0023` precisa estar aplicada antes de habilitar a persistência. Esse isolamento impede que a frequência de 15 minutos altere a cadência das fontes legislativas.
