@@ -42,6 +42,8 @@ These sources do not all have the same legal nature. CIOT is a transport-regulat
 
 A CHANGED status indicates that the portal response changed; it does not prove that a new normative act was published. Every alert requires human review and document-level verification.
 
+The checker stores two digests: `content_sha256` is the SHA-256 of the exact response bytes, while `normalized_content_sha256` is the versioned comparison fingerprint. For HTML/XHTML, `html-content-v1` excludes script/style/noscript blocks, comments, doctype and selected volatile attributes while preserving text and link targets. For non-HTML content, the normalized digest equals the raw digest. The raw digest is never discarded. A fingerprint algorithm change must use a new version identifier and must not be compared as if it were the previous algorithm.
+
 ## NFS-e Via source classes
 
 Migration `0007_nfse_specific_normative_sources.sql` registers independent URLs for the NFS-e Via manuals/annexes, XSD index, official API links, the official notice about Ato Conjunto RFB/CGIBS nº 7/2026, and FAQ v1.5.
