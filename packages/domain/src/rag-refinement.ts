@@ -10,6 +10,7 @@ export interface RagCandidate {
   effectiveFrom?: string;
   effectiveFromSource?: string;
   effectiveTo?: string;
+  effectiveToSource?: string;
   authority?: string;
   sourceType?: string;
   jurisdiction?: string;
