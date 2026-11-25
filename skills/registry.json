@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "1.0.0",
+  "schemaVersion": "1.1.0",
   "name": "reforma-tributaria-simulator-skills",
   "description": "Skill set modular para pesquisa, análise e operação fiscal brasileira.",
   "orchestrator": "tributario-orchestrator",
@@ -59,7 +59,8 @@
       ],
       "dependsOn": [
         "evidencia-legislacao-rag",
-        "calculo-fiscal-deterministico"
+        "calculo-fiscal-deterministico",
+        "calculadora-oficial-receita"
       ],
       "toolBindings": [
         "fiscal.search_evidence",
@@ -109,7 +110,8 @@
         "ibs-cbs-transicao",
         "evidencia-legislacao-rag",
         "calculo-fiscal-deterministico",
-        "obrigacoes-compliance"
+        "obrigacoes-compliance",
+        "calculadora-oficial-receita"
       ],
       "toolBindings": [
         "fiscal.search_evidence",
@@ -137,7 +139,8 @@
         "validação de xml"
       ],
       "dependsOn": [
-        "evidencia-legislacao-rag"
+        "evidencia-legislacao-rag",
+        "calculadora-oficial-receita"
       ],
       "toolBindings": [
         "fiscal.search_evidence",
@@ -247,6 +250,28 @@
         "fiscal.search_evidence",
         "fiscal.get_document"
       ]
+    },
+    {
+      "id": "calculadora-oficial-receita",
+      "path": "skills/calculadora-oficial-receita/SKILL.md",
+      "role": "capability",
+      "triggers": [
+        "calculadora oficial",
+        "calculadora da receita",
+        "código fonte da receita",
+        "código-fonte da receita",
+        "portaria cotec 342",
+        "calculadora de tributos",
+        "calculadora rtc",
+        "DANFSe oficial",
+        "gerador danfse",
+        "comparar com cálculo oficial"
+      ],
+      "dependsOn": [
+        "evidencia-legislacao-rag",
+        "calculo-fiscal-deterministico"
+      ],
+      "toolBindings": []
     }
   ]
 }
