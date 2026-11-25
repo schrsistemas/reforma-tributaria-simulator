@@ -8,7 +8,9 @@
     "entrypoint": "skills/tributario-orchestrator/SKILL.md",
     "moduleDirectory": "skills",
     "dispatch": "Load the SKILL.md for each matched module before executing its task.",
-    "runtimeIntegration": "Documentation and routing manifest only; a host agent must implement skill discovery/loading and expose authorized tools."
+    "runtimeIntegration": "Documentation and routing manifest only; a host agent must implement skill discovery/loading and expose authorized tools.",
+    "contextSchema": "skills/contracts/fiscal-context.schema.json",
+    "resultSchema": "skills/contracts/skill-result.schema.json"
   },
   "principles": [
     "official-evidence-first",
