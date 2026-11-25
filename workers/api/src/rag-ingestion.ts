@@ -90,7 +90,7 @@ export function extractOfficialDates(htmlOrText: string): OfficialDates {
       : 'EXPLICIT_TEXT'
     : 'RETRIEVAL_FALLBACK';
 
-  const explicitEffective = plain.match(/(?:entra\s+em\s+vigor|produz\s+efeitos|vig[eê]ncia\s+(?:inicia|in[ií]cio)\s+em)\s*(?:a\s+partir\s+de\s*)?(?:no\s+dia\s*)?(\d{1,2}[\/.]\d{1,2}[\/.]\d{4}|\d{4}-\d{2}-\d{2})/i)?.[1];
+  const explicitEffective = plain.match(/(?:entra\s+em\s+vigor|produz\s+efeitos|vig[eê]ncia\s+(?:inicia|in[ií]cio)\s+em)\s*(?:(?:em|a\s+partir\s+de|no\s+dia)\s*)?(\d{1,2}[\/.]\d{1,2}[\/.]\d{4}|\d{4}-\d{2}-\d{2})/i)?.[1];
   const effectiveFrom = parseOfficialDate(explicitEffective);
   const explicitEnd = plain.match(/(?:vig[eê]ncia\s+(?:at[eé]|vai\s+at[eé])|vigora\s+at[eé]|produz\s+efeitos\s+at[eé])\s*(\d{1,2}[\/.]\d{1,2}[\/.]\d{4}|\d{4}-\d{2}-\d{2})/i)?.[1];
   const effectiveTo = parseOfficialDate(explicitEnd);
