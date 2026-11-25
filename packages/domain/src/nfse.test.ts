@@ -13,18 +13,19 @@ test('produção seleciona NT 004 acrescida do domínio NT 007', () => {
   assert.equal(profile.ibsCbsPolicy, 'OPTIONAL_OPEN_GROUP');
 });
 
-test('produção restrita seleciona somente NT 009 v1.00 release 1 confirmado', () => {
+test('produção restrita seleciona somente NT 009 v1.01 publicado para produção restrita', () => {
   const profile = resolveNfseLayout('RESTRICTED');
-  assert.equal(profile.id, 'SNNFSE_RESTRICTED_NT009_1_0_RELEASE_1');
+  assert.equal(profile.id, 'SNNFSE_RESTRICTED_NT009_1_01');
   assert.equal(profile.fiscalEffect, 'NO_FISCAL_EFFECT');
-  assert.match(profile.technicalRelease, /release 1/);
+  assert.equal(profile.runtimeVerification, 'NOT_PROBED');
+  assert.match(profile.technicalRelease, /v1\.01/);
 });
 
-test('a matriz não presume que NT 009 v1.01 release 2 já esteja implantada', () => {
+test('a matriz não presume que a publicação do XSD prove implantação do runtime', () => {
   assert.equal(Object.keys(NFSE_LAYOUT_PROFILES).length, 2);
   assert.equal(
     NFSE_LAYOUT_PROFILES.RESTRICTED.technicalRelease,
-    'NT 009 v1.00 — release 1',
+    'NT 009 v1.01 — XSD PRODREST publicado em 20/10/2026',
   );
 });
 
