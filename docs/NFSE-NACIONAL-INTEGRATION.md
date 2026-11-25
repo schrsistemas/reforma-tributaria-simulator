@@ -23,19 +23,25 @@ O comunicado do CGNFS-e de 29/10/2026 informa que o grupo IBS/CBS está aberto n
 - [Documentação atual de produção](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/documentacao-atual)
 - [Documentação técnica de produção restrita](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/producao-restrita)
 
-## 2. Portais oficiais
+## 2. Portais e APIs oficiais
+
+O portal oficial mantém APIs distintas. Não tratar a API de distribuição do ADN como se fosse o endpoint de emissão da SEFIN.
 
 ### Produção
 
 - [Emissor Nacional Web](https://www.nfse.gov.br/EmissorNacional/)
-- [Swagger API Contribuintes](https://www.nfse.gov.br/swagger/contribuintesissqn/)
+- [ADN — API Contribuintes](https://adn.nfse.gov.br/contribuintes/docs/index.html)
+- [SEFIN Nacional — emissão/consulta](https://sefin.nfse.gov.br/SefinNacional/docs/index)
+- [Parâmetros Municipais](https://adn.nfse.gov.br/parametrizacao/docs/index.html)
 
 ### Produção restrita
 
 - [Emissor Nacional Web — restrita](https://www.producaorestrita.nfse.gov.br/EmissorNacional/)
-- [Swagger API Contribuintes — restrita](https://www.producaorestrita.nfse.gov.br/swagger/contribuintesissqn/)
+- [ADN — API Contribuintes — restrita](https://adn.producaorestrita.nfse.gov.br/contribuintes/docs/index.html)
+- [SEFIN Nacional — restrita](https://sefin.producaorestrita.nfse.gov.br/API/SefinNacional/docs/index)
+- [Parâmetros Municipais — restrita](https://adn.producaorestrita.nfse.gov.br/parametrizacao/docs/index.html)
 
-A produção restrita não gera documento fiscal com validade jurídica. Não compartilhar dados reais de clientes nos testes quando dados sintéticos forem suficientes.
+A matriz oficial de endpoints e ambientes está em [APIs — Produção Restrita e Produção](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/apis-prod-restrita-e-producao). A produção restrita não gera documento fiscal com validade jurídica. Não compartilhar dados reais de clientes nos testes quando dados sintéticos forem suficientes.
 
 ## 3. Operações previstas no manual de contribuintes
 
@@ -53,7 +59,7 @@ O manual oficial descreve o fluxo de parâmetros municipais, recepção da DPS, 
 | Registrar evento | `POST /nfse/{chaveAcesso}/eventos` | Enviar pedido de registro de evento |
 | Consultar eventos | `GET /nfse/{chaveAcesso}/eventos` | Listar eventos vinculados à nota |
 
-A descrição exata de parâmetros, cabeçalhos, payloads, códigos de retorno e limites deve ser obtida do Swagger correspondente ao ambiente ativo. Não fixar exemplos de payload como contrato definitivo sem validar o OpenAPI atual.
+A tabela acima reproduz as operações descritas no Manual dos Contribuintes Emissor Público API v1.2 (outubro/2025), não substitui os contratos OpenAPI atualmente publicados. A página oficial de APIs, atualizada em 20/08/2026, separa os serviços de ADN, parametrização e SEFIN Nacional. Antes de gerar clientes HTTP, importar os OpenAPI diretamente dos Swagger oficiais de cada ambiente e comparar paths, schemas, cabeçalhos, autenticação e códigos de retorno. Não assumir que uma rota descrita em manual antigo continua idêntica no contrato vigente.
 
 Fonte: [Manual dos Contribuintes — Emissor Público API](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/documentacao-atual/manual-contribuintes-emissor-publico-api-sistema-nacional-nfse.pdf).
 
