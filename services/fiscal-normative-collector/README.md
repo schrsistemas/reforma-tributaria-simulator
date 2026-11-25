@@ -90,4 +90,4 @@ The approved-capture runner first reconciles stale PENDING metadata rows, then p
 
 S3ArtifactStorage uses HeadObject to verify whether the deterministic object key exists and checks its sha256/sourceId metadata before finalizing a capture. If the object exists and metadata matches, the capture row and matching approved candidate are finalized in one PostgreSQL transaction. If the object is absent, the capture becomes ERROR and the candidate is scheduled for retry using the existing exponential backoff. Provider/network errors and metadata mismatches are reported without changing the row. Reconciliation never deletes objects and does not attempt to enumerate arbitrary bucket keys.
 
-Run the same command to execute reconciliation and capture: `pnpm --filter @rts/fiscal-normative-collector capture:approved`. The standalone alias `reconcile:captures` currently invokes the same guarded runner, including the approved-candidate phase.
+Run the same command to execute reconciliation and capture: `pnpm --filter @rts/fiscal-normative-collector capture:approved`. 
