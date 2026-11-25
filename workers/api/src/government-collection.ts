@@ -2,7 +2,7 @@ import type { GovernmentSource } from '@rts/domain';
 import type { GovernmentCollector } from './government-collectors.js';
 import { HttpCollector } from './government-collectors.js';
 import { listGovernmentSources } from './government-source-repository.js';
-import { hashDocument, chunkLegalDocument, extractOfficialDates } from './rag-ingestion.js';
+import { hashDocument, chunkLegalDocument, extractOfficialDates, type LegalChunk, type OfficialDates } from './rag-ingestion.js';
 import { diffLines, impactedAreas } from '@rts/domain';
 
 interface Env { DB?: D1Database; }
@@ -11,6 +11,54 @@ function resolveCollector(source: GovernmentSource): GovernmentCollector {
   const collector = collectors.find(candidate => candidate.supports(source));
   if (!collector) throw new Error(`COLLECTOR_NOT_IMPLEMENTED_${source.collectorType}`);
   return collector;
+}
+
+
+interface AuthorityRow {
+  name: string;
+  jurisdiction_level: string;
+  state_code: string | null;
+  municipality_code: string | null;
+}
+
+function buildChunkStatements(
+  db: D1Database,
+  documentId: string,
+  source: GovernmentSource,
+  authority: AuthorityRow | null,
+  publishedAt: string,
+  officialDates: OfficialDates,
+  chunks: LegalChunk[],
+): D1PreparedStatement[] {
+  return chunks.map((chunk) =>
+    db.prepare('INSERT INTO rag_chunks (id,document_id,ordinal,text,token_count,metadata_json) VALUES (?,?,?,?,?,?)')
+      .bind(
+        crypto.randomUUID(),
+        documentId,
+        chunk.ordinal,
+        chunk.text,
+        chunk.text.split(/\\s+/).length,
+        JSON.stringify({
+          sourceId: source.id,
+          sourceType: source.sourceType,
+          authorityId: source.authorityId,
+          authority: authority?.name,
+          jurisdictionLevel: authority?.jurisdiction_level,
+          stateCode: authority?.state_code,
+          municipalityCode: authority?.municipality_code,
+          documentTypes: source.documentTypes,
+          publishedAt,
+          publishedAtSource: officialDates.publishedAtSource,
+          effectiveFrom: officialDates.effectiveFrom,
+          effectiveFromSource: officialDates.effectiveFromSource,
+          effectiveTo: officialDates.effectiveTo,
+          effectiveToSource: officialDates.effectiveToSource,
+          chunkStructure: chunk.structure,
+          legalUnits: chunk.units,
+          ordinal: chunk.ordinal,
+        }),
+      ),
+  );
 }
 
 
@@ -33,7 +81,31 @@ async function ingestGovernmentEvidence(env: Env, source: GovernmentSource, resu
         .join(':')
     : 'UNKNOWN';
   const existing = await env.DB.prepare('SELECT id,content_hash FROM rag_documents WHERE source_id=? ORDER BY published_at DESC LIMIT 1').bind(source.id).first<{id:string;content_hash:string}>();
-  if (existing?.content_hash === contentHash) return { ingested: false, reason: 'UNCHANGED', documentId: existing.id };
+  const chunks = chunkLegalDocument(result.text);
+  if (existing?.content_hash === contentHash) {
+    const firstChunk = await env.DB.prepare(
+      'SELECT metadata_json FROM rag_chunks WHERE document_id=? ORDER BY ordinal LIMIT 1',
+    ).bind(existing.id).first<{ metadata_json: string | null }>();
+    let alreadySemantic = false;
+    try {
+      const metadata = JSON.parse(firstChunk?.metadata_json ?? '{}') as { chunkStructure?: string };
+      alreadySemantic = Boolean(metadata.chunkStructure);
+    } catch {
+      alreadySemantic = false;
+    }
+    if (alreadySemantic) {
+      return { ingested: false, reason: 'UNCHANGED', documentId: existing.id };
+    }
+
+    // Rebuild legacy chunks in-place: the source content/version is unchanged,
+    // so this is an index-format upgrade, not a new regulatory version.
+    const statements = [
+      env.DB.prepare('DELETE FROM rag_chunks WHERE document_id=?').bind(existing.id),
+      ...buildChunkStatements(env.DB, existing.id, source, authority, publishedAt, officialDates, chunks),
+    ];
+    await env.DB.batch(statements);
+    return { ingested: true, reindexed: true, documentId: existing.id, chunkCount: chunks.length };
+  }
   const previous = existing ? await env.DB.prepare('SELECT id FROM rag_documents WHERE id=?').bind(existing.id).first<{id:string}>() : null;
   const previousChunks = previous ? await env.DB.prepare('SELECT text FROM rag_chunks WHERE document_id=? ORDER BY ordinal').bind(previous.id).all<{text:string}>() : { results: [] as Array<{text:string}> };
   const previousText = previousChunks.results.map(x=>x.text).join('\n');
@@ -57,11 +129,8 @@ async function ingestGovernmentEvidence(env: Env, source: GovernmentSource, resu
     officialDates.effectiveFromSource,
     officialDates.effectiveToSource,
   ).run();
-  const chunks = chunkLegalDocument(result.text);
-  for (const chunk of chunks) {
-    await env.DB.prepare('INSERT INTO rag_chunks (id,document_id,ordinal,text,token_count,metadata_json) VALUES (?,?,?,?,?,?)')
-      .bind(crypto.randomUUID(),documentId,chunk.ordinal,chunk.text,chunk.text.split(/\s+/).length,JSON.stringify({sourceId:source.id,sourceType:source.sourceType,authorityId:source.authorityId,authority:authority?.name,jurisdictionLevel:authority?.jurisdiction_level,stateCode:authority?.state_code,municipalityCode:authority?.municipality_code,documentTypes:source.documentTypes,publishedAt,publishedAtSource:officialDates.publishedAtSource,effectiveFrom:officialDates.effectiveFrom,effectiveFromSource:officialDates.effectiveFromSource,effectiveTo:officialDates.effectiveTo,effectiveToSource:officialDates.effectiveToSource,chunkStructure:chunk.structure,legalUnits:chunk.units,ordinal:chunk.ordinal})).run();
-  }
+  const chunkStatements = buildChunkStatements(env.DB, documentId, source, authority, publishedAt, officialDates, chunks);
+  if (chunkStatements.length) await env.DB.batch(chunkStatements);
   if (previous?.id) {
     const diff = diffLines(previousText, result.text);
     const areas = impactedAreas(result.text);
