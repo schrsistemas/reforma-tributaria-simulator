@@ -21,7 +21,7 @@ Consulte \`../registry.json\` para mapear a solicitação. Carregue os módulos 
 - NF-e, NFC-e, CT-e, NFS-e, eventos, XML, schemas e leiautes → \`documentos-fiscais\`.
 - Split Payment, liquidação, segregação, estorno e conciliação → \`split-payment\`.
 - Pesquisa de lei, decreto, ato, nota técnica, vigência ou conflito de fontes → \`evidencia-legislacao-rag\`.
-- Valores, memória de cálculo, RuleSet, cenários ou comparação → \`calculo-fiscal-deterministico\`.
+- Valores, memória de cálculo, RuleSet, cenários ou comparação → \`calculo-fiscal-deterministico\`.\n- Integração e comparação com calculadoras oficiais da Receita ou geração de DANFSe → \`calculadora-oficial-receita\`.
 - Declarações, escriturações, prazos e conformidade → \`obrigacoes-compliance\`.
 
 Carregue múltiplas Skills quando a tarefa cruzar domínios. Exemplo: uma venda com NF-e, contribuinte do Simples e Split Payment requer as Skills de regime, documento, pagamento e evidência; não force uma resposta de domínio único.
