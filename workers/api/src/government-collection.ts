@@ -2,7 +2,7 @@ import type { GovernmentSource } from '@rts/domain';
 import type { GovernmentCollector } from './government-collectors.js';
 import { HttpCollector } from './government-collectors.js';
 import { listGovernmentSources } from './government-source-repository.js';
-import { hashDocument, chunkDocument, extractOfficialDates } from './rag-ingestion.js';
+import { hashDocument, chunkLegalDocument, extractOfficialDates } from './rag-ingestion.js';
 import { diffLines, impactedAreas } from '@rts/domain';
 
 interface Env { DB?: D1Database; }
@@ -57,10 +57,10 @@ async function ingestGovernmentEvidence(env: Env, source: GovernmentSource, resu
     officialDates.effectiveFromSource,
     officialDates.effectiveToSource,
   ).run();
-  const chunks = chunkDocument(result.text);
-  for (let i=0;i<chunks.length;i++) {
+  const chunks = chunkLegalDocument(result.text);
+  for (const chunk of chunks) {
     await env.DB.prepare('INSERT INTO rag_chunks (id,document_id,ordinal,text,token_count,metadata_json) VALUES (?,?,?,?,?,?)')
-      .bind(crypto.randomUUID(),documentId,i,chunks[i],chunks[i].split(/\s+/).length,JSON.stringify({sourceId:source.id,sourceType:source.sourceType,authorityId:source.authorityId,authority:authority?.name,jurisdictionLevel:authority?.jurisdiction_level,stateCode:authority?.state_code,municipalityCode:authority?.municipality_code,documentTypes:source.documentTypes,publishedAt,publishedAtSource:officialDates.publishedAtSource,effectiveFrom:officialDates.effectiveFrom,effectiveFromSource:officialDates.effectiveFromSource,effectiveTo:officialDates.effectiveTo,effectiveToSource:officialDates.effectiveToSource,ordinal:i})).run();
+      .bind(crypto.randomUUID(),documentId,chunk.ordinal,chunk.text,chunk.text.split(/\\s+/).length,JSON.stringify({sourceId:source.id,sourceType:source.sourceType,authorityId:source.authorityId,authority:authority?.name,jurisdictionLevel:authority?.jurisdiction_level,stateCode:authority?.state_code,municipalityCode:authority?.municipality_code,documentTypes:source.documentTypes,publishedAt,publishedAtSource:officialDates.publishedAtSource,effectiveFrom:officialDates.effectiveFrom,effectiveFromSource:officialDates.effectiveFromSource,effectiveTo:officialDates.effectiveTo,effectiveToSource:officialDates.effectiveToSource,chunkStructure:chunk.structure,legalUnits:chunk.units,ordinal:chunk.ordinal})).run();
   }
   if (previous?.id) {
     const diff = diffLines(previousText, result.text);
