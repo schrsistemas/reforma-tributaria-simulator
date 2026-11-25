@@ -19,3 +19,4 @@ export * from './rag-refinement.js';
 export * from './regulatory-diff.js';
 export * from './inventory.js';
 export * from './ai-contracts.js';
+export * from './nfse.js';
