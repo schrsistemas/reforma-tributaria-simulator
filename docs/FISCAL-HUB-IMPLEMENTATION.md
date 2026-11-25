@@ -30,7 +30,7 @@ A associação de instância ERP à empresa usa chave estrangeira composta pelo 
 - O CRUD de usuários, convites, recuperação de senha e gestão de sessão ainda não está implementado.
 - Existe monitor de disponibilidade/hash, descoberta de links de artefatos, fila de candidatos, revisão humana e worker de captura de candidatos aprovados. OCR, extração semântica, diff jurídico, análise de impacto e publicação automatizada de RuleSets ainda não estão implementados.
 - Fontes e documentos normativos são somente leitura pela API.
-- As migrations 0001–0014 ainda precisam ser aplicadas e validadas em PostgreSQL real.
+- As migrations 0001–0015 ainda precisam ser aplicadas e validadas em PostgreSQL real.
 - Testes de API atuais usam mocks; não substituem testes reais de PostgreSQL/RLS.
 - O armazenamento S3 precisa ser provisionado e configurado.
 - Nenhum deploy da API na VPS foi executado.
@@ -49,7 +49,7 @@ Para ativar a API, configurar `DATABASE_URL` e `JWT_SECRET` no ambiente Producti
 
 ## Banco
 
-Aplicar migrations em ordem numérica: 0001_fiscal_hub_core.sql até 0014_normative_artifact_capture_lifecycle.sql. Use um usuário de migração separado. A API deve conectar como fiscal_hub_app, sem ownership, superuser ou BYPASSRLS.
+Aplicar migrations em ordem numérica: 0001_fiscal_hub_core.sql até 0015_normative_artifact_capture_reconciliation.sql. Use um usuário de migração separado. A API deve conectar como fiscal_hub_app, sem ownership, superuser ou BYPASSRLS.
 
 ## Execução local
 
