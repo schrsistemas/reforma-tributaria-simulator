@@ -31,10 +31,12 @@ test('matches Portuguese tax request and expands transitive dependencies once', 
 });
 
 test('resolves multiple domains and deduplicates shared dependencies', () => {
-  const plan = resolveSkillPlan({ query: 'Validar NF-e XML e legislação IBS' }, registry);
+  const plan = resolveSkillPlan({ query: 'Validar NF-e XML e IBS' }, registry);
   const ids = plan.orderedSkills.map(skill => skill.id);
 
-  assert.deepEqual(plan.matchedSkills.map(skill => skill.id), ['ibs-cbs', 'documents']);
+  // documents has two matching triggers; IBS has one. Both are explicit
+  // matches, while evidence is loaded once as their shared dependency.
+  assert.deepEqual(plan.matchedSkills.map(skill => skill.id), ['documents', 'ibs-cbs']);
   assert.equal(ids.filter(id => id === 'evidence').length, 1);
   assert.ok(ids.indexOf('evidence') < ids.indexOf('ibs-cbs'));
   assert.ok(ids.indexOf('evidence') < ids.indexOf('documents'));
@@ -97,8 +99,8 @@ test('rejects missing registry dependencies', () => {
 
 test('rejects empty query and invalid plan limits', () => {
   assert.throws(() => resolveSkillPlan({ query: '  ' }, registry), /SKILL_QUERY_REQUIRED/);
-  assert.throws(() => resolveSkillPlan({ query: 'tema', maxSkills: 0 }, registry), /SKILL_MAXIMUM_INVALID/);
-  assert.throws(() => resolveSkillPlan({ query: 'tema', maxSkills: 1 }, registry), /SKILL_PLAN_LIMIT_EXCEEDED/);
+  assert.throws(() => resolveSkillPlan({ query: 'IBS', maxSkills: 0 }, registry), /SKILL_MAXIMUM_INVALID/);
+  assert.throws(() => resolveSkillPlan({ query: 'IBS', maxSkills: 1 }, registry), /SKILL_PLAN_LIMIT_EXCEEDED/);
 });
 
 test('routes real registry Portuguese multi-domain request with all required dependencies', () => {
