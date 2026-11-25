@@ -83,3 +83,11 @@ The worker stores the artifact through a durable PENDING → CAPTURED/ERROR life
 
 
 Capture configuration is separate from discovery. The approved-candidate worker requires `S3_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY_ID` and `S3_SECRET_ACCESS_KEY`; `S3_ENDPOINT` and `S3_FORCE_PATH_STYLE` are optional. `FISCAL_CAPTURE_BATCH_SIZE` defaults to 25 and is capped at 200. The worker is not scheduled automatically and must not be run until PostgreSQL migrations and the S3-compatible bucket are provisioned.
+
+## Interrupted capture reconciliation
+
+The approved-capture runner first reconciles stale PENDING metadata rows, then processes new eligible APPROVED candidates. Migration 0015 adds capture_started_at. The default stale threshold is 15 minutes and can be changed with FISCAL_CAPTURE_RECONCILE_STALE_MINUTES (integer 1–1440). The reconciliation batch is four times FISCAL_CAPTURE_BATCH_SIZE, capped at 500.
+
+S3ArtifactStorage uses HeadObject to verify whether the deterministic object key exists and checks its sha256/sourceId metadata before finalizing a capture. If the object exists and metadata matches, the capture row and matching approved candidate are finalized in one PostgreSQL transaction. If the object is absent, the capture becomes ERROR and the candidate is scheduled for retry using the existing exponential backoff. Provider/network errors and metadata mismatches are reported without changing the row. Reconciliation never deletes objects and does not attempt to enumerate arbitrary bucket keys.
+
+Run the same command to execute reconciliation and capture: `pnpm --filter @rts/fiscal-normative-collector capture:approved`. The standalone alias `reconcile:captures` currently invokes the same guarded runner, including the approved-candidate phase.
