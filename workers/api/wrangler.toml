@@ -13,6 +13,7 @@ crons = ["0 3 * * *"]
 # OFFICIAL_REGULAR_OBSERVABILITY_URL
 # OFFICIAL_SIMPLE_OBSERVABILITY_URL
 # OFFICIAL_SIMPLE_ACTIVITIES_URL
+# OFFICIAL_DANFSE_ENDPOINT_URL
 #
 # Add these bindings after creating the free-tier Cloudflare resources.
 # The repository intentionally does not contain account-specific resource IDs.
