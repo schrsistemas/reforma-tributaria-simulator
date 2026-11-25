@@ -21,7 +21,7 @@ function fixture(initialStatus: "NONE" | "CAPTURED" | "ERROR" = "NONE", uploadFa
       if (sql.includes("SELECT id, capture_status, storage_key")) {
         return { rows: status === "NONE" ? [] : [{ id: captureId, capture_status: status, storage_key: queries.find(q => q.sql.includes("INSERT INTO"))?.values?.[5] }], rowCount: status === "NONE" ? 0 : 1 };
       }
-      if (sql.includes("SET source_url")) {
+      if (sql.includes("SET capture_status = 'PENDING'")) {
         status = "PENDING";
         return { rows: [{ id: captureId, capture_status: status, storage_key: values?.[4] }], rowCount: 1 };
       }
@@ -71,7 +71,7 @@ test("reuses ERROR metadata and retries upload with the deterministic object key
   const result = await captureAndRecordArtifact(f.db, sourceId, url, options(f.storage));
   assert.equal(result.status, "CAPTURED");
   assert.equal(result.captureId, captureId);
-  assert.ok(f.queries.some(q => q.sql.includes("SET source_url") && q.sql.includes("capture_status = 'PENDING'")));
+  assert.ok(f.queries.some(q => q.sql.includes("SET capture_status = 'PENDING'") && q.sql.includes("capture_status = 'PENDING'")));
   assert.equal(f.uploads.length, 1);
 });
 
