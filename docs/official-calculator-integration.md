@@ -68,7 +68,7 @@ O fluxo considera atividade/anexo, tipo de documento, cClassTrib, regime de apur
 
 ## Adaptadores HTTP implementados
 
-O Worker disponibiliza os seguintes caminhos, todos exigindo os cabeçalhos de integração `X-Correlation-Id`, `Idempotency-Key` e `X-Zynkronyx-Tenant`:
+O Worker disponibiliza os seguintes caminhos, todos exigindo autenticação Bearer e os cabeçalhos `X-Correlation-Id` e `X-Zynkronyx-Tenant`. `Idempotency-Key` não é requisito desses proxies de leitura/cálculo.
 
 | Endpoint do simulador | Método | Destino |
 |---|---|---|
