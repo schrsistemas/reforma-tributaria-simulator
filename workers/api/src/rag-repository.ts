@@ -7,6 +7,7 @@ import {
   topicsOf,
   publishedAtSourceOf,
   effectiveFromSourceOf,
+  effectiveToSourceOf,
   evidenceConfidence,
   type RagCandidate,
 } from '@rts/domain';
@@ -46,6 +47,7 @@ export async function searchRag(
       effectiveFrom: r.effective_from ? String(r.effective_from) : undefined,
       effectiveFromSource: effectiveFromSourceOf(r.metadata_json ? String(r.metadata_json) : undefined),
       effectiveTo: r.effective_to ? String(r.effective_to) : undefined,
+      effectiveToSource: effectiveToSourceOf(r.metadata_json ? String(r.metadata_json) : undefined),
       authority: r.authority ? String(r.authority) : undefined,
       sourceType: sourceTypeOf(r.metadata_json ? String(r.metadata_json) : undefined),
       jurisdiction: r.jurisdiction ? String(r.jurisdiction) : undefined,
@@ -71,8 +73,11 @@ export async function searchRag(
       authority: x.authority ?? 'UNKNOWN',
       url: x.sourceUrl,
       publishedAt: x.publishedAt,
+      publishedAtSource: x.publishedAtSource,
       effectiveFrom: x.effectiveFrom,
+      effectiveFromSource: x.effectiveFromSource,
       effectiveTo: x.effectiveTo,
+      effectiveToSource: x.effectiveToSource,
       version: String(sourceRow?.version ?? 'UNKNOWN'),
       contentHash: String(sourceRow?.content_hash ?? 'UNKNOWN'),
       evidenceLevel: 'PRIMARY',
@@ -109,7 +114,7 @@ export async function getRagDocument(
 ) {
   const row = await db
     .prepare(
-      'SELECT id,title,source_url,published_at,effective_from,effective_to,version,content_hash,source_id,jurisdiction FROM rag_documents WHERE id=?',
+      'SELECT id,title,source_url,published_at,effective_from,effective_to,version,content_hash,source_id,jurisdiction,published_at_source,effective_from_source,effective_to_source FROM rag_documents WHERE id=?',
     )
     .bind(documentId)
     .first<Record<string, unknown>>();
@@ -128,10 +133,13 @@ export async function getRagDocument(
     title: String(row.title),
     sourceUrl: String(row.source_url),
     publishedAt: String(row.published_at ?? ''),
+    publishedAtSource: String(row.published_at_source ?? 'LEGACY_UNKNOWN'),
     effectiveFrom: row.effective_from
       ? String(row.effective_from)
       : undefined,
+    effectiveFromSource: String(row.effective_from_source ?? 'LEGACY_UNKNOWN'),
     effectiveTo: row.effective_to ? String(row.effective_to) : undefined,
+    effectiveToSource: String(row.effective_to_source ?? 'LEGACY_UNKNOWN'),
     version: String(row.version),
     contentHash: String(row.content_hash),
     sourceId: String(row.source_id),
