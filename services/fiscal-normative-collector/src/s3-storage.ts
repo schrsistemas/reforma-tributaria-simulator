@@ -1,4 +1,4 @@
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { HeadObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import type { ArtifactStorage } from "./capture.js";
 
 export interface S3ArtifactStorageOptions {
@@ -41,6 +41,27 @@ export class S3ArtifactStorage implements ArtifactStorage {
       Metadata: input.metadata,
       ServerSideEncryption: "AES256"
     }));
+  }
+
+  /**
+   * Returns object metadata, null only when the key does not exist.
+   * Authorization, network and provider errors are propagated to the caller.
+   */
+  async headObject(key: string): Promise<Record<string, string> | null> {
+    try {
+      const result = await this.client.send(new HeadObjectCommand({
+        Bucket: this.bucket,
+        Key: key
+      }));
+      return result.Metadata ?? {};
+    } catch (error) {
+      const candidate = error as { name?: string; $metadata?: { httpStatusCode?: number } };
+      if (candidate.name === "NotFound" || candidate.name === "NoSuchKey" ||
+          candidate.$metadata?.httpStatusCode === 404) {
+        return null;
+      }
+      throw error;
+    }
   }
 
   async close(): Promise<void> {
