@@ -45,6 +45,17 @@ test("rejects javascript, data, HTTP, credentials, external hosts and nonstandar
   assert.deepEqual(discoverArtifactCandidates(html, "https://www.gov.br/", hosts), []);
 });
 
+test("ignores document-like markup embedded in comments and scripts", () => {
+  const html = `
+    <!-- <a href="/comment.pdf">Comment</a> -->
+    <script>const sample = '<a href="/script.pdf">Script</a>';</script>
+    <style>.x { content: '<a href="/style.pdf">Style</a>'; }</style>
+    <a href="/real.pdf">Real document</a>
+  `;
+  const found = discoverArtifactCandidates(html, "https://www.gov.br/", hosts);
+  assert.deepEqual(found.map(item => item.url), ["https://www.gov.br/real.pdf"]);
+});
+
 test("does not accept a source page outside the allowlist", () => {
   assert.deepEqual(
     discoverArtifactCandidates('<a href="/manual.pdf">Manual</a>', "https://attacker.example/", hosts),
