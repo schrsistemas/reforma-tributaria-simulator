@@ -140,7 +140,7 @@ export function chunkDocument(
   maxChars = 1800,
   overlap = 250,
 ): string[] {
-  const clean = normalizeDocumentText(htmlToStructuredText(text));
+  const clean = normalizeDocumentText(text);
   if (!clean) return [];
 
   const safeMaxChars = Number.isFinite(maxChars)
@@ -241,7 +241,7 @@ export function chunkLegalDocument(
   maxChars = 1800,
   overlap = 250,
 ): LegalChunk[] {
-  const clean = normalizeDocumentText(text);
+  const clean = normalizeDocumentText(htmlToStructuredText(text));
   if (!clean) return [];
 
   const safeMaxChars = Number.isFinite(maxChars)
