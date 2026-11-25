@@ -16,6 +16,8 @@ export interface SnapshotResult {
   etag: string | null;
   lastModified: string | null;
   contentSha256: string | null;
+  normalizedContentSha256: string | null;
+  fingerprintVersion: string;
   responseMs: number;
   errorCode: string | null;
 }
@@ -25,6 +27,36 @@ export interface CheckOptions {
   maxBytes?: number;
   timeoutMs?: number;
   fetcher?: typeof fetch;
+}
+
+const FINGERPRINT_VERSION = "html-content-v1";
+
+export function normalizeHtmlForFingerprint(html: string): string {
+  return html
+    .replace(/<!--[\s\S]*?-->/g, " ")
+    .replace(/<(script|style|noscript)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, " ")
+    .replace(/<!doctype[^>]*>/gi, " ")
+    .replace(/\s+(?:nonce|integrity|crossorigin|class|style|id|data-[\w:-]+|aria-busy)\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "")
+    .replace(/\s+/g, " ")
+    .replace(/>\s+</g, "><")
+    .trim()
+    .toLowerCase();
+}
+
+function fingerprint(body: Uint8Array, contentType: string): {
+  raw: string;
+  normalized: string;
+} {
+  const raw = createHash("sha256").update(body).digest("hex");
+  if (contentType !== "text/html" && contentType !== "application/xhtml+xml") {
+    return { raw, normalized: raw };
+  }
+  const html = new TextDecoder("utf-8", { fatal: false }).decode(body);
+  const normalized = normalizeHtmlForFingerprint(html);
+  return {
+    raw,
+    normalized: createHash("sha256").update(normalized, "utf8").digest("hex")
+  };
 }
 
 async function readBoundedBody(response: Response, maxBytes: number): Promise<Uint8Array> {
@@ -72,6 +104,8 @@ function result(
     etag: null,
     lastModified: null,
     contentSha256: null,
+    normalizedContentSha256: null,
+    fingerprintVersion: FINGERPRINT_VERSION,
     responseMs: Math.max(0, Math.round(performance.now() - startedAt)),
     errorCode: null,
     ...values
@@ -80,7 +114,7 @@ function result(
 
 export async function inspectSource(
   source: NormativeSource,
-  previousHash: string | null,
+  previousNormalizedHash: string | null,
   options: CheckOptions
 ): Promise<SnapshotResult> {
   const startedAt = performance.now();
@@ -105,7 +139,7 @@ export async function inspectSource(
       method: "GET",
       redirect: "manual",
       headers: {
-        "user-agent": "FiscalIntelligenceHub-SourceMonitor/0.1",
+        "user-agent": "FiscalIntelligenceHub-SourceMonitor/0.2",
         "accept": "text/html,application/xhtml+xml,application/xml,application/rss+xml,application/atom+xml,application/pdf;q=0.9,*/*;q=0.1"
       },
       signal: AbortSignal.timeout(timeoutMs)
@@ -132,9 +166,15 @@ export async function inspectSource(
       return result("REJECTED", startedAt, { ...metadata, errorCode: "UNSUPPORTED_CONTENT_TYPE" });
     }
     const body = await readBoundedBody(response, maxBytes);
-    const hash = createHash("sha256").update(body).digest("hex");
-    const status: CheckStatus = previousHash && previousHash !== hash ? "CHANGED" : "AVAILABLE";
-    return result(status, startedAt, { ...metadata, contentLength: body.byteLength, contentSha256: hash });
+    const hashes = fingerprint(body, contentType);
+    const status: CheckStatus = previousNormalizedHash && previousNormalizedHash !== hashes.normalized
+      ? "CHANGED" : "AVAILABLE";
+    return result(status, startedAt, {
+      ...metadata,
+      contentLength: body.byteLength,
+      contentSha256: hashes.raw,
+      normalizedContentSha256: hashes.normalized
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "UNKNOWN_ERROR";
     const code = message.includes("RESPONSE_TOO_LARGE") ? "RESPONSE_TOO_LARGE"
