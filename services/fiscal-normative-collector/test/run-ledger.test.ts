@@ -53,7 +53,7 @@ test("worker ledger preserves the original error if failure bookkeeping also fai
 
 test("worker ledger records partial execution errors as FAILED with counters", async () => {
   const client = ledgerClient();
-  await withWorkerRun(client, "ARTIFACT_DISCOVERY", async () => ({
+  await withWorkerRun(client as unknown as RunLedgerClient, "ARTIFACT_DISCOVERY", async () => ({
     checked: 10, discovered: 4, errors: 2
   }), result => result.errors > 0);
   assert.equal(client.calls[1]!.values?.[1], "FAILED");
