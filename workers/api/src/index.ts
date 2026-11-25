@@ -741,7 +741,7 @@ export default {
         const asOf = url.searchParams.get('asOf') ?? undefined;
         const sourceType = url.searchParams.get('sourceType') ?? undefined;
         const jurisdiction = url.searchParams.get('jurisdiction') ?? undefined;
-        return json({ ok: true, ...await searchRag(database!, query, topK, asOf, sourceType, jurisdiction), tenantId: headers.tenantId }, 200, request);
+        return json({ ok: true, ...await searchRag(env.DB, query, topK, asOf, sourceType, jurisdiction), tenantId: headers.tenantId }, 200, request);
       } catch (error) {
         const status = Number((error as { status?: number }).status) || 500;
         return json({ ok: false, error: error instanceof Error ? error.message : 'RAG_SEARCH_FAILED' }, status, request);
