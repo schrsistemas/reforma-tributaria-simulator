@@ -177,7 +177,10 @@ export function validateFiscalToolInput(
       return { ok: false, error: `MCP_TOOL_INPUT_FORMAT_INVALID:${key}` };
     }
     if (typeof item === 'string' && schema.minLength !== undefined && item.trim().length < schema.minLength) {
-      return { ok: false, error: `MCP_TOOL_INPUT_MIN_LENGTH_INVALID:${key}` };
+      const requiredAndBlank = definition.inputSchema.required.includes(key) && item.trim().length === 0;
+      return { ok: false, error: requiredAndBlank
+        ? `MCP_TOOL_INPUT_REQUIRED:${key}`
+        : `MCP_TOOL_INPUT_MIN_LENGTH_INVALID:${key}` };
     }
     if (typeof item === 'string' && schema.maxLength !== undefined && item.length > schema.maxLength) {
       return { ok: false, error: `MCP_TOOL_INPUT_MAX_LENGTH_INVALID:${key}` };
