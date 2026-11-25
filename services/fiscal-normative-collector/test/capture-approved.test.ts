@@ -32,7 +32,7 @@ function fixture(fetchStatus = 200) {
   return { db, storage, fetcher, calls };
 }
 
-test("captures only approved candidates and links the immutable capture id", async () => {
+test("captures only eligible approved candidates and clears retry metadata", async () => {
   const f = fixture();
   const summary = await captureApprovedArtifacts(f.db, {
     allowedHosts: new Set(["www.gov.br"]),
@@ -40,14 +40,17 @@ test("captures only approved candidates and links the immutable capture id", asy
     fetcher: f.fetcher
   });
   assert.deepEqual(summary, { selected: 1, captured: 1, duplicates: 0, failed: 0 });
+  const select = f.calls.find(call => call.sql.includes("SELECT id, source_id, artifact_url"));
+  assert.match(select?.sql ?? "", /next_capture_attempt_at IS NULL OR next_capture_attempt_at <= now\(\)/);
   const update = f.calls.find(call => call.sql.includes("review_status = 'CAPTURED'"));
   assert.equal(update?.values?.[0], candidateId);
   assert.equal(update?.values?.[1], captureId);
   assert.match(update?.sql ?? "", /capture_attempts = capture_attempts \+ 1/);
   assert.match(update?.sql ?? "", /last_capture_attempt_at = now\(\)/);
+  assert.match(update?.sql ?? "", /next_capture_attempt_at = NULL/);
 });
 
-test("keeps failed candidates approved and records retry metadata", async () => {
+test("keeps failed candidates approved and schedules exponential retry", async () => {
   const f = fixture(404);
   const summary = await captureApprovedArtifacts(f.db, {
     allowedHosts: new Set(["www.gov.br"]),
@@ -58,4 +61,20 @@ test("keeps failed candidates approved and records retry metadata", async () => 
   const update = f.calls.find(call => call.sql.includes("capture_attempts = capture_attempts + 1"));
   assert.equal(update?.values?.[0], candidateId);
   assert.equal(update?.values?.[1], "HTTP_404");
+  assert.match(update?.sql ?? "", /next_capture_attempt_at = now\(\) \+ make_interval/);
+  assert.match(update?.sql ?? "", /LEAST\(86400, \(60 \* power\(2, LEAST\(capture_attempts, 10\)\)\)::integer\)/);
+});
+
+test("rejects an invalid capture batch size before querying", async () => {
+  const f = fixture();
+  await assert.rejects(
+    captureApprovedArtifacts(f.db, {
+      allowedHosts: new Set(["www.gov.br"]),
+      storage: f.storage,
+      fetcher: f.fetcher,
+      batchSize: 201
+    }),
+    /INVALID_CAPTURE_BATCH_SIZE/
+  );
+  assert.equal(f.calls.length, 0);
 });

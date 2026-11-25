@@ -24,9 +24,9 @@ export interface ApprovedCaptureOptions {
 }
 
 /**
- * Captures only explicitly approved candidates. A failure leaves the candidate
- * APPROVED for retry and records attempt metadata; success links immutable
- * capture metadata and moves the candidate to CAPTURED.
+ * Captures only explicitly approved candidates whose retry deadline has passed.
+ * Failures remain APPROVED and receive exponential backoff (1 minute to 24 hours).
+ * Successful captures clear the retry deadline and become CAPTURED.
  */
 export async function captureApprovedArtifacts(
   db: ArtifactCaptureQuery,
@@ -40,8 +40,11 @@ export async function captureApprovedArtifacts(
   const pending = await db.query<ApprovedArtifactCandidate>(
     `SELECT id, source_id, artifact_url
        FROM fiscal.normative_artifact_candidates
-      WHERE review_status = 'APPROVED' AND capture_id IS NULL
-      ORDER BY reviewed_at ASC NULLS LAST, first_discovered_at ASC
+      WHERE review_status = 'APPROVED'
+        AND capture_id IS NULL
+        AND (next_capture_attempt_at IS NULL OR next_capture_attempt_at <= now())
+      ORDER BY next_capture_attempt_at ASC NULLS FIRST,
+               reviewed_at ASC NULLS LAST, first_discovered_at ASC
       LIMIT $1`,
     [batchSize]
   );
@@ -67,7 +70,8 @@ export async function captureApprovedArtifacts(
         `UPDATE fiscal.normative_artifact_candidates
             SET review_status = 'CAPTURED', capture_id = $2,
                 capture_attempts = capture_attempts + 1,
-                last_capture_attempt_at = now(), last_capture_error = NULL
+                last_capture_attempt_at = now(), last_capture_error = NULL,
+                next_capture_attempt_at = NULL
           WHERE id = $1 AND review_status = 'APPROVED' AND capture_id IS NULL`,
         [candidate.id, result.captureId]
       );
@@ -84,7 +88,10 @@ export async function captureApprovedArtifacts(
     await db.query(
       `UPDATE fiscal.normative_artifact_candidates
           SET capture_attempts = capture_attempts + 1,
-              last_capture_attempt_at = now(), last_capture_error = $2
+              last_capture_attempt_at = now(), last_capture_error = $2,
+              next_capture_attempt_at = now() + make_interval(
+                secs => LEAST(86400, (60 * power(2, LEAST(capture_attempts, 10)))::integer)
+              )
         WHERE id = $1 AND review_status = 'APPROVED' AND capture_id IS NULL`,
       [candidate.id, errorCode]
     );

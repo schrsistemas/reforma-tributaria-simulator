@@ -79,7 +79,7 @@ Run manually after provisioning the object store and applying migrations:
 
 `pnpm --filter @rts/fiscal-normative-collector capture:approved`
 
-The worker stores the artifact, records SHA-256 metadata, links the capture ID to the candidate and moves it to `CAPTURED`. Failures leave the candidate `APPROVED` for retry and increment `capture_attempts` with the last error code. Duplicate content reuses the existing capture record. A PostgreSQL advisory lock (key pair 20261125/3) prevents overlapping capture runs.
+The worker stores the artifact, records SHA-256 metadata, links the capture ID to the candidate and moves it to `CAPTURED`. Failures leave the candidate `APPROVED` for retry and increment `capture_attempts` with the last error code. Migration 0012 schedules the next eligible attempt with exponential backoff from 1 minute up to 24 hours; successful capture clears the retry deadline. Duplicate content reuses the existing capture record. A PostgreSQL advisory lock (key pair 20261125/3) prevents overlapping capture runs.
 
 
 Capture configuration is separate from discovery. The approved-candidate worker requires `S3_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY_ID` and `S3_SECRET_ACCESS_KEY`; `S3_ENDPOINT` and `S3_FORCE_PATH_STYLE` are optional. `FISCAL_CAPTURE_BATCH_SIZE` defaults to 25 and is capped at 200. The worker is not scheduled automatically and must not be run until PostgreSQL migrations and the S3-compatible bucket are provisioned.
