@@ -60,3 +60,4 @@ As tabelas operacionais multi-tenant aplicam Row Level Security. O usuário da a
 ## Validação
 
 Os testes unitários usam mocks e não substituem testes de integração PostgreSQL. A migration deve ser aplicada primeiro em banco descartável. Nenhum deploy ou teste destrutivo em produção é realizado por esta implementação.
+\n\n## Provisionamento inicial\n\nA API inclui o script services/fiscal-hub-api/scripts/provision-admin.ts. Ele exige variáveis BOOTSTRAP_* explícitas, cria tenant, usuário e membership OWNER/ADMIN em uma única transação e não imprime senha. Use conexão administrativa temporária e descarte as variáveis após a execução.\n

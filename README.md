@@ -322,3 +322,18 @@ Documentação:
 - [Operação de IA Fiscal](docs/AI-OPERATIONS.md)
 - [Política LLM Fiscal e Fine-Tuning](docs/LLM-FISCAL.md)
 - [Avaliação de IA Fiscal](docs/IA-EVALUATION.md)
+
+
+## Fiscal Intelligence Hub — núcleo SaaS
+
+O repositório agora inclui a primeira estrutura do Fiscal Intelligence Hub, preservando o simulador e o Fiscal Domain existentes:
+
+- `services/fiscal-hub-api` — API Node.js/TypeScript com Fastify, JWT, autenticação por tenant e PostgreSQL.
+- `services/fiscal-hub-api/migrations` — schema PostgreSQL versionado para tenants, empresas, fontes, documentos, versões de regras, evidências, impactos, ERPs, eventos e auditoria.
+- `services/fiscal-analysis-python` — serviço auxiliar Python para normalização e metadados de integridade; não realiza interpretação jurídica nem cálculo tributário.
+- `apps/fiscal-workbench-vue` — workbench Vue 3 para módulos especializados.
+- `connectors/delphi` — contrato inicial de integração Delphi/FireDAC com outbox/inbox.
+
+A API PostgreSQL é um núcleo separado do Worker/D1 existente. A migração dos dados e rotas atuais não está autorizada nem faz parte desta entrega. O serviço Python permanece auxiliar; regras e cálculos fiscais continuam sob o domínio determinístico e o fluxo de aprovação já existente.
+
+Consulte [Fiscal Hub — implementação](docs/FISCAL-HUB-IMPLEMENTATION.md) e [API Fiscal Hub](services/fiscal-hub-api/README.md).
