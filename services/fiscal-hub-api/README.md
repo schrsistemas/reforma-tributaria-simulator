@@ -23,6 +23,7 @@ Node.js 22.x, pnpm 10.34.9 through Corepack, TypeScript, Fastify and PostgreSQL.
 - POST /v1/erp-instances (OWNER or ADMIN)
 - GET /v1/normative/sources
 - GET /v1/normative/collector-runs (OWNER/ADMIN of NORMATIVE_REVIEW_TENANT_ID)
+- GET /v1/normative/diagnostics (OWNER/ADMIN of NORMATIVE_REVIEW_TENANT_ID)
 - GET /v1/normative/artifact-candidates
 - POST /v1/normative/artifact-candidates/:candidateId/review (OWNER or ADMIN of NORMATIVE_REVIEW_TENANT_ID)
 - GET /v1/normative/artifact-candidates/:candidateId/reviews (OWNER or ADMIN of NORMATIVE_REVIEW_TENANT_ID)
@@ -53,3 +54,14 @@ The migration should be applied by a dedicated migration owner. The runtime appl
 - pnpm --filter @rts/fiscal-hub-api test
 - pnpm --filter @rts/fiscal-hub-api typecheck
 - pnpm --filter @rts/fiscal-hub-api build
+
+ 
+## Normative collector diagnostics
+
+`GET /v1/normative/diagnostics` returns a consolidated operational view of the three workers, artifact candidate queue, capture lifecycle and PostgreSQL metadata relationships. Access is limited to OWNER/ADMIN members of `NORMATIVE_REVIEW_TENANT_ID`.
+
+Optional query parameters:
+- `staleRunMinutes`: 1–1440, default 30; RUNNING worker executions older than this threshold are counted as stale.
+- `staleCaptureMinutes`: 1–1440, default 15; PENDING capture metadata older than this threshold is counted as stale.
+
+The response is `DEGRADED` when a worker has failed or never run, there are consecutive failures, stale runs/captures, capture errors, or candidate/capture metadata inconsistencies. The endpoint explicitly reports `storageObjectVerification: NOT_CHECKED`: it checks PostgreSQL relationships only and does not claim that an S3/R2 object physically exists. Object verification remains the capture reconciliation worker's responsibility through `HeadObject`.
