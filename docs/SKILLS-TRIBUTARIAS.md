@@ -83,6 +83,34 @@ Transformar o projeto em um conjunto de competências tributárias componíveis,
 
 O exemplo é um contrato recomendado para integração futura; não significa que todos os módulos já exponham endpoints com esse formato.
 
+## Dispatcher determinístico implementado
+
+O Worker de API possui agora uma primeira camada executável de roteamento, baseada no manifesto versionado:
+
+- `GET /api/v1/skills` — lista o catálogo, os gatilhos, os caminhos e as dependências.
+- `POST /api/v1/skills/resolve` — recebe uma consulta e devolve as Skills selecionadas, dependências transitivas e ordem determinística de carregamento.
+- O endpoint de resolução exige autenticação de integração, tenant vinculado e os cabeçalhos de correlação já utilizados pela API.
+- O matching normaliza acentos e caixa, suporta gatilhos em português e inglês, permite seleção explícita de Skills e elimina dependências duplicadas.
+- O plano inclui a Skill orquestradora, marca cada módulo como correspondência ou dependência e sinaliza quando não existe correspondência especializada.
+- Ciclos, dependências ausentes, IDs desconhecidos e limites de composição são rejeitados.
+
+Exemplo de chamada:
+
+```http
+POST /api/v1/skills/resolve
+Authorization: Bearer <integration-token>
+X-Zynkronyx-Tenant: <tenant-bound-to-token>
+X-Correlation-Id: <correlation-id>
+Content-Type: application/json
+
+{
+  "query": "Preciso validar uma NF-e e analisar os efeitos de IBS e CBS",
+  "maxSkills": 12
+}
+```
+
+O dispatcher retorna os IDs e caminhos dos arquivos `SKILL.md`, a ordem de dependências e os módulos acionados. **Ele ainda não carrega os corpos dos arquivos de instrução, não invoca um LLM e não executa ferramentas MCP**. Essa etapa depende do host/runtime de agentes. O retorno informa explicitamente `HOST_RUNTIME_REQUIRED` e `NOT_EXECUTED`; portanto, não deve ser confundido com uma análise tributária concluída.
+
 ## Estado e limites reais
 
 - Os arquivos \`SKILL.md\` e o manifesto estão versionados no GitHub.
@@ -95,8 +123,8 @@ O exemplo é um contrato recomendado para integração futura; não significa qu
 ## Próximas fases técnicas
 
 1. Adicionar schemas JSON para entrada e retorno de cada Skill.
-2. Criar um dispatcher no backend/agent host que leia o manifesto e carregue módulos por demanda.
-3. Ligar cada módulo aos contratos MCP reais, com autenticação, autorização, timeout e auditoria.
+2. Conectar o dispatcher já criado ao host/runtime de agentes para carregar os corpos dos SKILL.md sob demanda.
+3. Ligar cada módulo aos contratos MCP reais, com autorização por ferramenta, timeout, idempotência e auditoria.
 4. Criar conjunto de avaliação por domínio, com casos positivos, negativos, conflito de fontes e vigência histórica.
 5. Expor no dashboard quais Skills foram acionadas, fontes utilizadas, versões e limites.
 6. Somente depois avaliar execução paralela de Skills e cache de resultados.
