@@ -40,6 +40,15 @@ async function runChecks(client: PoolClient): Promise<void> {
       ? previous.rows[0].normalized_content_sha256
       : null;
     const snapshot = await inspectSource(source, previousFingerprint, { allowedHosts });
+    for (const candidate of snapshot.artifactCandidates) {
+      await client.query(
+        `INSERT INTO fiscal.normative_artifact_candidates
+           (source_id, artifact_url, link_text, file_extension)
+         VALUES ($1,$2,$3,$4)
+         ON CONFLICT (source_id, artifact_url) DO NOTHING`,
+        [source.id, candidate.url, candidate.linkText, candidate.extension]
+      );
+    }
     await client.query(
       "INSERT INTO fiscal.normative_source_checks (source_id, check_status, http_status, content_type, content_length, etag, last_modified, content_sha256, normalized_content_sha256, fingerprint_version, response_ms, error_code) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)",
       [source.id, snapshot.status, snapshot.httpStatus, snapshot.contentType, snapshot.contentLength,
