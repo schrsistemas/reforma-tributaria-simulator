@@ -1,0 +1,187 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://reforma-tributaria-simulator.example/schemas/skill-result.schema.json",
+  "title": "Fiscal Skill Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "skill",
+    "status",
+    "findings",
+    "evidence",
+    "warnings",
+    "unsupported",
+    "requiresHumanReview"
+  ],
+  "properties": {
+    "skill": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "SUPPORTED",
+        "PARTIAL",
+        "INSUFFICIENT_EVIDENCE",
+        "NOT_SUPPORTED",
+        "CONFLICT",
+        "ERROR"
+      ]
+    },
+    "referenceDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "jurisdiction": {
+      "type": "string"
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "statement",
+          "kind"
+        ],
+        "properties": {
+          "statement": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "LEGAL_FACT",
+              "OFFICIAL_GUIDANCE",
+              "DETERMINISTIC_RESULT",
+              "INTERPRETATION",
+              "ASSUMPTION"
+            ]
+          },
+          "confidence": {
+            "type": "string",
+            "enum": [
+              "HIGH",
+              "MEDIUM",
+              "LOW",
+              "UNASSESSED"
+            ]
+          },
+          "ruleSetId": {
+            "type": "string"
+          },
+          "ruleSetVersion": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "sourceType"
+        ],
+        "properties": {
+          "documentId": {
+            "type": "string"
+          },
+          "authority": {
+            "type": "string"
+          },
+          "sourceType": {
+            "type": "string",
+            "enum": [
+              "PRIMARY_LEGISLATION",
+              "REGULATION",
+              "OFFICIAL_TECHNICAL",
+              "OFFICIAL_GUIDANCE",
+              "JUDICIAL_DECISION",
+              "SECONDARY"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "publicationDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "format": "date"
+          },
+          "effectiveTo": {
+            "type": "string",
+            "format": "date"
+          },
+          "effectiveDateProvenance": {
+            "type": "string"
+          },
+          "locator": {
+            "type": "string"
+          },
+          "contentHash": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "assumptions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "unsupported": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "calculation": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "engine": {
+          "type": "string"
+        },
+        "calculationVersion": {
+          "type": "string"
+        },
+        "ruleSetId": {
+          "type": "string"
+        },
+        "ruleSetVersion": {
+          "type": "string"
+        },
+        "inputSnapshotId": {
+          "type": "string"
+        },
+        "resultSnapshotId": {
+          "type": "string"
+        },
+        "values": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "requiresHumanReview": {
+      "type": "boolean"
+    }
+  }
+}
