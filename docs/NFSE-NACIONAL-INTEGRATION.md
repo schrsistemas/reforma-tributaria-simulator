@@ -12,6 +12,18 @@
 
 **Distinção obrigatória:** a página de homologação atualizada em 20/10/2026 publica a NT 009 v1.01 e o XSD PRODREST v1.01. Entretanto, o comunicado oficial de 29/10/2026 informa que o ambiente de produção restrita está atualmente com a NT 009 v1.0, release 1; os ajustes da v1.01 pertencem ao release 2, a ser disponibilizado primeiro em produção restrita. Portanto, o repositório registra separadamente o release comunicado como implantado e o schema mais novo publicado. Nenhum dos dois é considerado runtime verificado até a execução de probe/contrato no serviço.
 
+### Atualização do cronograma de obrigatoriedade — Ato Conjunto nº 7/2026
+
+O Ato Conjunto RFB/CGIBS nº 7, de 11/11/2026, publicado em 13/11/2026, alterou o cronograma de obrigatoriedade de emissão para IBS/CBS. Para a NFS-e, parte das hipóteses foi escalonada:
+
+- **01/01/2027:** serviços gerais residuais abrangidos pelo inciso III, fornecimentos de bens imateriais fora da lista da LC 116/2003, receitas condominiais e locações/cessões/arrendamentos indicados no ato.
+- **01/03/2027:** serviços de plataformas digitais, subitens 1.03, 1.05 e 1.09 da LC 116/2003 e subitem 16.01.
+- Permanecem os prazos já vigentes para as hipóteses não alcançadas pelo escalonamento, inclusive 01/10/2026 para serviços gerais sujeitos ao ISS fora das exceções e 03/08/2026 para a NFS-e Via.
+
+**Separação de cronogramas:** esse escalonamento trata da obrigatoriedade fiscal por natureza de operação. Ele não confirma, por si só, a implantação de um release técnico da NT 009. O registro de release/schema/runtime continua independente e deve seguir os comunicados de implantação do leiaute. Não aplicar uma única data de obrigatoriedade a todos os contribuintes ou serviços.
+
+Fonte: [Comunicado CGNFS-e de 13/11/2026 — Ato Conjunto RFB/CGIBS nº 7/2026](https://www.gov.br/nfse/pt-br/noticias/cgnfs-e-informa-ato-conjunto-rfb-cgibs-no-7-2026-atualiza-o-cronograma-de-obrigatoriedade-de-emissao-da-nfs-e-para-ibs-e-cbs/).
+
 ### IBS/CBS na produção
 
 O comunicado do CGNFS-e de 29/10/2026 informa que o grupo IBS/CBS está aberto no ADN: sua ausência não provoca rejeição técnica por esse motivo específico. Se o contribuinte optar por preencher o grupo, todos os códigos, classificações e dados correlatos exigidos pelo leiaute precisam estar completos, inclusive os dados do adquirente/tomador quando aplicáveis.
@@ -50,6 +62,8 @@ O perfil documental publicado para a NT 010 registra:
 - modalidade de pagamento `6 — Sem cobrança`;
 - disponibilidade anunciada em produção restrita desde 05/10/2026 e em produção desde 19/10/2026.
 
+O portal técnico atualmente lista o Manual para Emissão da NFS-e Via v1.02 e os seguintes anexos: Anexos I, II, III, V e VI v1.02; Anexo IV — Leiautes RN ADN v1.00.05. Esses documentos devem ser tratados como referências documentais atuais, sem presumir que seus contratos foram importados para o repositório.
+
 A manifestação do adquirente admite duas escolhas mutuamente exclusivas:
 1. **Aceite:** confirma que o serviço foi prestado.
 2. **Rejeição:** aponta divergência ou declara desconhecimento da nota.
@@ -59,6 +73,8 @@ O domínio `packages/domain/src/nfse-via.ts` registra essas versões e datas e v
 Referências:
 - [Ato Técnico Conjunto nº 7 — NT 009 v1.01 e NT 010](https://www.gov.br/nfse/pt-br/noticias/publicado-o-ato-tecnico-conjunto-rfb-cgibs-no-7-aprovando-a-versao-1-01-da-nota-tecnica-009-nfs-e-e-a-nota-tecnica-010-da-nfse-via/)
 - [Documentação técnica da NFS-e Via](https://www.gov.br/nfse/pt-br/nfs-e-via/documentacao-tecnica)
+- [Manuais e anexos NFS-e Via — Manual v1.02 e Anexos I, II, III, V e VI v1.02; Anexo IV v1.00.05](https://www.gov.br/nfse/pt-br/nfs-e-via/documentacao-tecnica/manuais-e-anexos)
+- [Links oficiais NFS-e Via — produção e produção restrita](https://www.gov.br/nfse/pt-br/nfs-e-via/links)
 - [RTC — documentação técnica e atualizações](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/rtc)
 
 ## 4. Portais e APIs oficiais
@@ -79,7 +95,7 @@ O portal oficial mantém APIs distintas. Não tratar a API de distribuição do 
 - [SEFIN Nacional — restrita](https://sefin.producaorestrita.nfse.gov.br/API/SefinNacional/docs/index)
 - [Parâmetros Municipais — restrita](https://adn.producaorestrita.nfse.gov.br/parametrizacao/docs/index.html)
 
-A matriz oficial de endpoints e ambientes está em [APIs — Produção Restrita e Produção](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/apis-prod-restrita-e-producao). O pacote de homologação publicado pode ser conferido em [Documentação Técnica (Homologação/testes)](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/producao-restrita). A documentação oficial de homologação/testes, atualizada em 20/10/2026, lista a NT 009 v1.01, anexos I/II PRODREST v1.01 e XSD PRODREST v1.01. O comunicado de 25/11/2026, contudo, identifica a v1.0 release 1 como o release atualmente implantado e a v1.01 como os ajustes do release 2. A publicação do schema não comprova que o endpoint já aceite o release 2. A produção restrita não gera documento fiscal com validade jurídica. Não compartilhar dados reais de clientes nos testes quando dados sintéticos forem suficientes.
+A matriz oficial de endpoints e ambientes está em [APIs — Produção Restrita e Produção](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/apis-prod-restrita-e-producao). O pacote de homologação publicado pode ser conferido em [Documentação Técnica (Homologação/testes)](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/producao-restrita). A documentação oficial de homologação/testes, atualizada em 20/10/2026, lista a NT 009 v1.01, anexos I/II PRODREST v1.01 e XSD PRODREST v1.01. O comunicado oficial de 29/10/2026, contudo, identifica a v1.0 release 1 como o release atualmente implantado e a v1.01 como os ajustes do release 2. A publicação do schema não comprova que o endpoint já aceite o release 2. A produção restrita não gera documento fiscal com validade jurídica. Não compartilhar dados reais de clientes nos testes quando dados sintéticos forem suficientes.
 
 ### Catálogo de APIs no código
 
