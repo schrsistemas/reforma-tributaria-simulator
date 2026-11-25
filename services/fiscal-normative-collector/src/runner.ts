@@ -1,6 +1,7 @@
 import { Pool, type PoolClient } from "pg";
 import { inspectSource, type NormativeSource } from "./checker.js";
 import { withNormativeMonitorLock } from "./monitor.js";
+import { withWorkerRun } from "./run-ledger.js";
 
 const databaseUrl = process.env.DATABASE_URL;
 const allowedHosts = new Set(
@@ -20,7 +21,7 @@ const pool = new Pool({
   application_name: "fiscal-normative-source-monitor"
 });
 
-async function runChecks(client: PoolClient): Promise<void> {
+async function runChecks(client: PoolClient): Promise<{ checked: number; changed: number; errors: number }> {
   const sources = await client.query<NormativeSource>(
     "SELECT id, name, official_url FROM fiscal.normative_sources WHERE active = true ORDER BY name"
   );
@@ -73,13 +74,17 @@ async function runChecks(client: PoolClient): Promise<void> {
       errorCode: snapshot.errorCode
     }) + "\n");
   }
-  process.stdout.write(JSON.stringify({ summary: { checked, changed, errors } }) + "\n");
+  const summary = { checked, changed, errors };
+  process.stdout.write(JSON.stringify({ summary }) + "\n");
+  return summary;
 }
 
 async function main(): Promise<void> {
   const client = await pool.connect();
   try {
-    const lock = await withNormativeMonitorLock(client, () => runChecks(client));
+    const lock = await withNormativeMonitorLock(client, () =>
+      withWorkerRun(client, "SOURCE_MONITOR", () => runChecks(client))
+    );
     if (!lock.acquired) {
       process.stdout.write(JSON.stringify({
         skipped: true,
