@@ -15,6 +15,7 @@ import { resolveSkillPlan, SKILL_REGISTRY, SkillDispatchError } from './skill-di
 import { prepareSkillRuntime, SkillRuntimeError } from './skill-runtime.js';
 import { FISCAL_MCP_TOOLS, getFiscalMcpToolCatalog, validateFiscalToolInput } from './fiscal-tool-catalog.js';
 import { executeFiscalTool } from './fiscal-tool-runner.js';
+import { fetchNfeAvailability } from './nfe-availability.js';
 
 export interface Env {
   VERSION: string;
@@ -239,7 +240,7 @@ export default {
       return json({
         service: 'reforma-tributaria-simulator',
         apiVersion: 'v1',
-        capabilities: ['simulation', 'tax-engine', 'split-payment', 'tef', 'pix', 'fiscal-knowledge', 'government-source-registry', 'official-consumption-calculator', 'credit-eligibility', 'tax-skill-dispatcher', 'tax-skill-runtime-preparation'],
+        capabilities: ['simulation', 'tax-engine', 'split-payment', 'tef', 'pix', 'fiscal-knowledge', 'government-source-registry', 'nfe-availability-monitor', 'official-consumption-calculator', 'credit-eligibility', 'tax-skill-dispatcher', 'tax-skill-runtime-preparation'],
         execution: { explicitScenario: true, durableWorkflow: Boolean(env.SIMULATION_WORKFLOW) },
         persistence: { database: Boolean(env.DB), evidenceArchive: Boolean(env.EVIDENCE_BUCKET) },
         authentication: { integrationTokenConfigured: Boolean(env.INTEGRATION_TOKEN), tenantBindingConfigured: Boolean(env.INTEGRATION_TENANT_ID?.trim()) },
@@ -542,6 +543,72 @@ export default {
       } catch (error) {
         const status = error instanceof Error && error.name === 'AbortError' ? 504 : (Number((error as { status?: number }).status) || 502);
         return json({ ok: false, error: error instanceof Error ? error.message : 'OFFICIAL_DANFSE_UNAVAILABLE' }, status, request);
+      }
+    }
+
+    if (request.method === 'GET' && url.pathname === '/api/v1/monitor/nfe') {
+      try {
+        const headers = integrationHeaders(request);
+        const snapshot = await fetchNfeAvailability();
+        let persistence: { saved: boolean; reason?: string } = { saved: false, reason: 'DATABASE_NOT_BOUND' };
+        if (env.DB) {
+          try {
+            await env.DB.prepare(
+              'INSERT INTO nfe_availability_checks (id,checked_at,source_url,source_last_checked_at,source_version,status_json,recognized_indicators,unknown_indicators,created_at) VALUES (?,?,?,?,?,?,?,?,?)',
+            ).bind(
+              crypto.randomUUID(), snapshot.checkedAt, snapshot.sourceUrl,
+              snapshot.sourceLastCheckedAt ?? null, snapshot.version ?? null,
+              JSON.stringify(snapshot), snapshot.parser.recognizedIndicators,
+              snapshot.parser.unknownIndicators, new Date().toISOString(),
+            ).run();
+            persistence = { saved: true };
+          } catch (error) {
+            persistence = {
+              saved: false,
+              reason: error instanceof Error ? error.message : 'NFE_HISTORY_PERSISTENCE_FAILED',
+            };
+          }
+        }
+        return json({
+          ok: true,
+          tenantId: headers.tenantId,
+          snapshot,
+          persistence,
+          interpretation: 'UNKNOWN means the official indicator could not be reliably decoded; it is not an availability assertion.',
+        }, 200, request);
+      } catch (error) {
+        const status = Number((error as { status?: number }).status) || 502;
+        return json({ ok: false, error: error instanceof Error ? error.message : 'NFE_AVAILABILITY_FETCH_FAILED' }, status, request);
+      }
+    }
+
+    if (request.method === 'GET' && url.pathname === '/api/v1/monitor/nfe/history') {
+      try {
+        integrationHeaders(request);
+        if (!env.DB) return json({ ok: false, error: 'DATABASE_NOT_BOUND' }, 503, request);
+        const limit = Math.max(1, Math.min(Number(url.searchParams.get('limit') ?? '30'), 100));
+        const rows = await env.DB.prepare(
+          'SELECT id,checked_at,source_last_checked_at,source_version,status_json,recognized_indicators,unknown_indicators FROM nfe_availability_checks ORDER BY checked_at DESC LIMIT ?',
+        ).bind(limit).all<{
+          id: string; checked_at: string; source_last_checked_at: string | null;
+          source_version: string | null; status_json: string;
+          recognized_indicators: number; unknown_indicators: number;
+        }>();
+        return json({
+          ok: true,
+          history: rows.results.map(row => ({
+            id: row.id,
+            checkedAt: row.checked_at,
+            sourceLastCheckedAt: row.source_last_checked_at,
+            version: row.source_version,
+            snapshot: JSON.parse(row.status_json),
+            recognizedIndicators: row.recognized_indicators,
+            unknownIndicators: row.unknown_indicators,
+          })),
+        }, 200, request);
+      } catch (error) {
+        const status = Number((error as { status?: number }).status) || 500;
+        return json({ ok: false, error: error instanceof Error ? error.message : 'NFE_AVAILABILITY_HISTORY_FAILED' }, status, request);
       }
     }
 
