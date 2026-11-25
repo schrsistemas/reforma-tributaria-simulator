@@ -1,5 +1,7 @@
 # Fiscal Normative Source Monitor
 
+Runtime: Node.js 22.x. Workspace package manager: pnpm 10.34.9 via Corepack; Vercel builds require `ENABLE_EXPERIMENTAL_COREPACK=1` to honor the root `packageManager` declaration.
+
 This service checks the availability and content hash of configured official source landing pages. The source-page checker does not crawl arbitrary URLs, archive legal documents, extract text, interpret legislation, or publish tax rules.
 
 ## Configuration
