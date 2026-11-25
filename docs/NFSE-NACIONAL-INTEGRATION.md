@@ -7,8 +7,7 @@
 | Ambiente | Leiaute comunicado | Regra operacional |
 |---|---|---|
 | Produção oficial | NT 004 acrescida do domínio `tpRetPisConfins` da NT 007 | Manter emissões no leiaute NT 004/007 até publicação formal de novo release em produção |
-| Produção restrita | NT 009 v1.00, release 1, conforme comunicado de 29/10/2026 | Testes sem efeito fiscal |
-| Próximo release restrito | NT 009 v1.01 e superiores, release 2 | Não presumir disponibilidade efetiva apenas porque há arquivos XSD publicados; confirmar o release ativo no portal |
+| Produção restrita | NT 009 v1.01; a página oficial de homologação foi atualizada em 20/10/2026 e publica os anexos DPS/NFS-e e XSD PRODREST v1.01 | Utilizar o schema publicado para validação; confirmar separadamente a versão efetivamente aceita pelo endpoint |
 | Evolução para produção | Releases 1 a 3 da NT 009 previstos para 01/12/2026 no comunicado | Tratar como cronograma publicado, não como confirmação de implantação concluída |
 
 ### IBS/CBS na produção
@@ -41,7 +40,7 @@ O portal oficial mantém APIs distintas. Não tratar a API de distribuição do 
 - [SEFIN Nacional — restrita](https://sefin.producaorestrita.nfse.gov.br/API/SefinNacional/docs/index)
 - [Parâmetros Municipais — restrita](https://adn.producaorestrita.nfse.gov.br/parametrizacao/docs/index.html)
 
-A matriz oficial de endpoints e ambientes está em [APIs — Produção Restrita e Produção](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/apis-prod-restrita-e-producao). A produção restrita não gera documento fiscal com validade jurídica. Não compartilhar dados reais de clientes nos testes quando dados sintéticos forem suficientes.
+A matriz oficial de endpoints e ambientes está em [APIs — Produção Restrita e Produção](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/apis-prod-restrita-e-producao). O pacote de homologação publicado pode ser conferido em [Documentação Técnica (Homologação/testes)](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/producao-restrita). A documentação oficial de homologação/testes, atualizada em 20/10/2026, lista a NT 009 v1.01, anexos I/II PRODREST v1.01 e XSD PRODREST v1.01. Isso comprova a publicação do pacote de leiaute para homologação, não a versão efetivamente ativa no runtime do serviço. A produção restrita não gera documento fiscal com validade jurídica. Não compartilhar dados reais de clientes nos testes quando dados sintéticos forem suficientes.
 
 ## 3. Operações previstas no manual de contribuintes
 
@@ -119,7 +118,7 @@ Toda requisição deve carregar, de forma explícita:
 - `correlationId`;
 - referência/hash dos XSD, anexos e parâmetros municipais utilizados.
 
-Não inferir produção pela ausência de parâmetro. Não permitir que uma operação de homologação seja reenviada automaticamente à produção.
+Não inferir produção pela ausência de parâmetro. Não permitir que uma operação de homologação seja reenviada automaticamente à produção. O perfil documental não declara o runtime como confirmado: a integração deve fazer verificação explícita do contrato/versão ativa antes de habilitar transmissão.
 
 ## 7. Estratégia de implementação
 
