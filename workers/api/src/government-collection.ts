@@ -17,6 +17,19 @@ function resolveCollector(source: GovernmentSource): GovernmentCollector {
 async function ingestGovernmentEvidence(env: Env, source: GovernmentSource, result: { text?: string; fetchedAt: string }) {
   if (!env.DB || !result.text) return { ingested: false, reason: 'NO_TEXT' };
   const contentHash = await hashDocument(result.text);
+  const authority = await env.DB.prepare(
+    'SELECT name,jurisdiction_level,state_code,municipality_code FROM government_authorities WHERE id=?',
+  ).bind(source.authorityId).first<{
+    name: string;
+    jurisdiction_level: string;
+    state_code: string | null;
+    municipality_code: string | null;
+  }>();
+  const jurisdiction = authority
+    ? [authority.jurisdiction_level, authority.state_code, authority.municipality_code]
+        .filter((part): part is string => Boolean(part))
+        .join(':')
+    : 'UNKNOWN';
   const existing = await env.DB.prepare('SELECT id,content_hash FROM rag_documents WHERE source_id=? ORDER BY published_at DESC LIMIT 1').bind(source.id).first<{id:string;content_hash:string}>();
   if (existing?.content_hash === contentHash) return { ingested: false, reason: 'UNCHANGED', documentId: existing.id };
   const previous = existing ? await env.DB.prepare('SELECT id FROM rag_documents WHERE id=?').bind(existing.id).first<{id:string}>() : null;
@@ -25,11 +38,11 @@ async function ingestGovernmentEvidence(env: Env, source: GovernmentSource, resu
   const documentId = crypto.randomUUID();
   const now = new Date().toISOString();
   await env.DB.prepare('INSERT INTO rag_documents (id,source_id,title,jurisdiction,published_at,source_url,content_hash,version,created_at) VALUES (?,?,?,?,?,?,?,?,?)')
-    .bind(documentId,source.id,source.name,source.name,result.fetchedAt,source.officialUrl,contentHash,'AUTO-'+contentHash.slice(0,12),now).run();
+    .bind(documentId,source.id,source.name,jurisdiction,result.fetchedAt,source.officialUrl,contentHash,'AUTO-'+contentHash.slice(0,12),now).run();
   const chunks = chunkDocument(result.text);
   for (let i=0;i<chunks.length;i++) {
     await env.DB.prepare('INSERT INTO rag_chunks (id,document_id,ordinal,text,token_count,metadata_json) VALUES (?,?,?,?,?,?)')
-      .bind(crypto.randomUUID(),documentId,i,chunks[i],chunks[i].split(/\s+/).length,JSON.stringify({sourceId:source.id,ordinal:i})).run();
+      .bind(crypto.randomUUID(),documentId,i,chunks[i],chunks[i].split(/\s+/).length,JSON.stringify({sourceId:source.id,sourceType:source.sourceType,authorityId:source.authorityId,authority:authority?.name,jurisdictionLevel:authority?.jurisdiction_level,stateCode:authority?.state_code,municipalityCode:authority?.municipality_code,documentTypes:source.documentTypes,ordinal:i})).run();
   }
   if (previous?.id) {
     const diff = diffLines(previousText, result.text);
