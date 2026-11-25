@@ -19,7 +19,7 @@ Schedule from an external cron or VPS scheduler after configuring the runtime co
 
 ## Registered source coverage
 
-The registry is seeded through migrations 0004–0008 and now includes:
+The registry is seeded through migrations 0004–0009 and now includes:
 
 - Federal legislation, Receita Federal, Ministério da Fazenda and CONFAZ.
 - NF-e and NFC-e national portal.
