@@ -215,6 +215,10 @@ A definição das Skills e o dispatcher determinístico de seleção/dependênci
 
 O Worker disponibiliza um dispatcher autenticado em `GET /api/v1/skills` e `POST /api/v1/skills/resolve`, além de `POST /api/v1/skills/prepare`, que carrega as instruções Markdown versionadas e prepara o contexto e os bindings de ferramentas para um host de agentes. A execução do LLM e das ferramentas continua sob responsabilidade desse host. Consulte [a documentação do runtime](docs/SKILLS-TRIBUTARIAS.md#runtime-de-preparação-de-skills-implementado).
 
+## Integração NFS-e Nacional
+
+O portal visual agora possui uma área de acesso ao Emissor Nacional, Swagger e documentação dos ambientes de produção e produção restrita. A matriz de leiautes, regras IBS/CBS, operações de API e arquitetura planejada estão em [docs/NFSE-NACIONAL-INTEGRATION.md](docs/NFSE-NACIONAL-INTEGRATION.md). A área é informativa: emissão autenticada, assinatura digital e transporte com certificado ainda não estão implementados.
+
 ## Monitor de disponibilidade NF-e
 
 O monitor consulta o painel oficial do Portal Nacional da NF-e, preserva estados desconhecidos quando o HTML não permite classificação confiável e oferece API autenticada e histórico D1. Consulte [a documentação do monitor](docs/NFE-AVAILABILITY-MONITOR.md) e aplique a migração `0023_nfe_availability_monitor.sql` para habilitar histórico persistido.
