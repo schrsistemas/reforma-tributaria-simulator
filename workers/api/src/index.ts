@@ -25,6 +25,8 @@ export interface Env {
   INTEGRATION_TENANT_ID?: string;
   EVIDENCE_BUCKET?: R2Bucket;
   /** Full HTTPS endpoint published for the Receita Federal Simples Nacional observability API. */
+  OFFICIAL_REGULAR_CALCULATOR_URL?: string;
+  OFFICIAL_REGULAR_OBSERVABILITY_URL?: string;
   OFFICIAL_SIMPLE_OBSERVABILITY_URL?: string;
   /** Full HTTPS endpoint published for the Receita Federal Simples Nacional activities catalog. */
   OFFICIAL_SIMPLE_ACTIVITIES_URL?: string;
@@ -372,39 +374,31 @@ export default {
     if (request.method === 'POST' && url.pathname === '/api/v1/official-calculator/regime-geral') {
       try {
         integrationHeaders(request);
+        const target = env.OFFICIAL_REGULAR_CALCULATOR_URL;
+        if (!target) return json({
+          ok: false,
+          error: 'OFFICIAL_REGULAR_CALCULATOR_ENDPOINT_NOT_CONFIGURED',
+          requiredConfiguration: 'OFFICIAL_REGULAR_CALCULATOR_URL',
+        }, 503, request);
         const body = await readJson(request);
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 15000);
-        try {
-          const response = await fetch('https://piloto-cbs.tributos.gov.br/servico/calculadora-consumo/api/calculadora/regime-geral', {
-            method: 'POST',
-            headers: { 'content-type': 'application/json', 'accept': 'application/json' },
-            body: JSON.stringify(body),
-            signal: controller.signal,
-          });
-          const text = await response.text();
-          const headers = new Headers({ 'content-type': response.headers.get('content-type') ?? 'application/json', 'cache-control': 'no-store' });
-          const correlationId = request.headers.get('X-Correlation-Id');
-          if (correlationId) headers.set('X-Correlation-Id', correlationId);
-          return new Response(text, { status: response.status, headers });
-        } finally {
-          clearTimeout(timeout);
-        }
+        return await proxyOfficialRequest(request, target, body);
       } catch (error) {
         const status = error instanceof Error && error.name === 'AbortError' ? 504 : (Number((error as { status?: number }).status) || 502);
-        return json({ ok: false, error: error instanceof Error ? error.message : 'OFFICIAL_CALCULATOR_UNAVAILABLE' }, status, request);
+        return json({ ok: false, error: error instanceof Error ? error.message : 'OFFICIAL_REGULAR_CALCULATOR_UNAVAILABLE' }, status, request);
       }
     }
 
     if (request.method === 'POST' && url.pathname === '/api/v1/official-calculator/regime-geral/observabilidade') {
       try {
         integrationHeaders(request);
+        const target = env.OFFICIAL_REGULAR_OBSERVABILITY_URL;
+        if (!target) return json({
+          ok: false,
+          error: 'OFFICIAL_REGULAR_CALCULATOR_ENDPOINT_NOT_CONFIGURED',
+          requiredConfiguration: 'OFFICIAL_REGULAR_OBSERVABILITY_URL',
+        }, 503, request);
         const body = await readJson(request);
-        return await proxyOfficialRequest(
-          request,
-          'https://piloto-cbs.tributos.gov.br/servico/calculadora-consumo/api/calculadora/observabilidade/regime-geral',
-          body,
-        );
+        return await proxyOfficialRequest(request, target, body);
       } catch (error) {
         const status = error instanceof Error && error.name === 'AbortError' ? 504 : (Number((error as { status?: number }).status) || 502);
         return json({ ok: false, error: error instanceof Error ? error.message : 'OFFICIAL_REGULAR_CALCULATOR_UNAVAILABLE' }, status, request);
