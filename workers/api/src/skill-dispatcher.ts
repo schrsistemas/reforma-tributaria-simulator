@@ -9,6 +9,7 @@ export interface SkillDefinition {
   triggers: string[];
   dependsOn?: string[];
   modules?: string[];
+  toolBindings?: string[];
 }
 
 export interface SkillRegistry {
@@ -40,6 +41,7 @@ export interface SkillPlan {
     id: string;
     path: string;
     role: SkillRole;
+    toolBindings: string[];
     loadedAs: 'ORCHESTRATOR' | 'DEPENDENCY' | 'MATCH';
   }>;
   unresolved: string[];
@@ -157,6 +159,7 @@ export function resolveSkillPlan(
         id: registry.orchestrator,
         path: byId.get(registry.orchestrator)!.path,
         role: 'orchestrator',
+        toolBindings: byId.get(registry.orchestrator)!.toolBindings ?? [],
         loadedAs: 'ORCHESTRATOR',
       }],
       unresolved: ['NO_SPECIALIST_SKILL_MATCHED'],
@@ -194,6 +197,7 @@ export function resolveSkillPlan(
       id: registry.orchestrator,
       path: byId.get(registry.orchestrator)!.path,
       role: 'orchestrator' as const,
+      toolBindings: byId.get(registry.orchestrator)!.toolBindings ?? [],
       loadedAs: 'ORCHESTRATOR' as const,
     },
     ...ordered
@@ -204,6 +208,7 @@ export function resolveSkillPlan(
           id,
           path: skill.path,
           role: skill.role,
+          toolBindings: skill.toolBindings ?? [],
           loadedAs: matchedIds.has(id) ? 'MATCH' as const : 'DEPENDENCY' as const,
         };
       }),
