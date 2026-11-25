@@ -35,7 +35,8 @@
         "multi-domain analysis",
         "tax workflow"
       ],
-      "modules": []
+      "modules": [],
+      "toolBindings": []
     },
     {
       "id": "ibs-cbs-transicao",
@@ -56,6 +57,13 @@
       "dependsOn": [
         "evidencia-legislacao-rag",
         "calculo-fiscal-deterministico"
+      ],
+      "toolBindings": [
+        "fiscal.search_evidence",
+        "fiscal.resolve_ruleset",
+        "fiscal.calculate",
+        "fiscal.compare_calculation",
+        "fiscal.evaluate_credit_eligibility"
       ]
     },
     {
@@ -73,6 +81,10 @@
       "dependsOn": [
         "evidencia-legislacao-rag",
         "calculo-fiscal-deterministico"
+      ],
+      "toolBindings": [
+        "fiscal.search_evidence",
+        "fiscal.resolve_ruleset"
       ]
     },
     {
@@ -95,6 +107,12 @@
         "evidencia-legislacao-rag",
         "calculo-fiscal-deterministico",
         "obrigacoes-compliance"
+      ],
+      "toolBindings": [
+        "fiscal.search_evidence",
+        "fiscal.resolve_ruleset",
+        "fiscal.calculate_official_simple_observable",
+        "fiscal.list_official_simple_activities"
       ]
     },
     {
@@ -117,6 +135,10 @@
       ],
       "dependsOn": [
         "evidencia-legislacao-rag"
+      ],
+      "toolBindings": [
+        "fiscal.search_evidence",
+        "fiscal.get_document"
       ]
     },
     {
@@ -138,6 +160,11 @@
         "documentos-fiscais",
         "evidencia-legislacao-rag",
         "calculo-fiscal-deterministico"
+      ],
+      "toolBindings": [
+        "fiscal.search_evidence",
+        "fiscal.get_split_payment_rules",
+        "fiscal.get_snapshot"
       ]
     },
     {
@@ -161,7 +188,12 @@
         "norma tributária",
         "evidência oficial"
       ],
-      "dependsOn": []
+      "dependsOn": [],
+      "toolBindings": [
+        "fiscal.search_evidence",
+        "fiscal.get_document",
+        "fiscal.resolve_ruleset"
+      ]
     },
     {
       "id": "calculo-fiscal-deterministico",
@@ -180,6 +212,11 @@
       ],
       "dependsOn": [
         "evidencia-legislacao-rag"
+      ],
+      "toolBindings": [
+        "fiscal.resolve_ruleset",
+        "fiscal.calculate",
+        "fiscal.compare_calculation"
       ]
     },
     {
@@ -202,6 +239,10 @@
       ],
       "dependsOn": [
         "evidencia-legislacao-rag"
+      ],
+      "toolBindings": [
+        "fiscal.search_evidence",
+        "fiscal.get_document"
       ]
     }
   ]
