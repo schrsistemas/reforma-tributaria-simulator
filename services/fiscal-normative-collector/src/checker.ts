@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { discoverArtifactCandidates, type ArtifactCandidate } from "./discovery.js";
 
 export type CheckStatus = "AVAILABLE" | "CHANGED" | "UNAVAILABLE" | "REJECTED" | "ERROR";
 
@@ -20,6 +21,7 @@ export interface SnapshotResult {
   fingerprintVersion: string;
   responseMs: number;
   errorCode: string | null;
+  artifactCandidates: ArtifactCandidate[];
 }
 
 export interface CheckOptions {
@@ -107,6 +109,7 @@ function result(
     fingerprintVersion: FINGERPRINT_VERSION,
     responseMs: Math.max(0, Math.round(performance.now() - startedAt)),
     errorCode: null,
+    artifactCandidates: [],
     ...values
   };
 }
@@ -166,13 +169,17 @@ export async function inspectSource(
     }
     const body = await readBoundedBody(response, maxBytes);
     const hashes = fingerprint(body, contentType);
+    const artifactCandidates = contentType === "text/html" || contentType === "application/xhtml+xml"
+      ? discoverArtifactCandidates(new TextDecoder("utf-8", { fatal: false }).decode(body), url.toString(), options.allowedHosts)
+      : [];
     const status: CheckStatus = previousNormalizedHash && previousNormalizedHash !== hashes.normalized
       ? "CHANGED" : "AVAILABLE";
     return result(status, startedAt, {
       ...metadata,
       contentLength: body.byteLength,
       contentSha256: hashes.raw,
-      normalizedContentSha256: hashes.normalized
+      normalizedContentSha256: hashes.normalized,
+      artifactCandidates
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "UNKNOWN_ERROR";
