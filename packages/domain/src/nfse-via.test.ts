@@ -10,6 +10,15 @@ test('perfil NFS-e Via registra versões e datas oficiais da NT 010', () => {
   assert.equal(NFSE_VIA_TECHNICAL_PROFILE.technicalNoteVersion, '1.00');
   assert.equal(NFSE_VIA_TECHNICAL_PROFILE.nfseViaLayoutVersion, '1.01');
   assert.equal(NFSE_VIA_TECHNICAL_PROFILE.buyerManifestationEventVersion, '1.00');
+  assert.equal(NFSE_VIA_TECHNICAL_PROFILE.manualVersion, '1.02');
+  assert.equal(NFSE_VIA_TECHNICAL_PROFILE.concessionairesParameterGuideVersion, '1.02');
+  assert.equal(NFSE_VIA_TECHNICAL_PROFILE.apiGuideVersion, '1.02');
+  assert.equal(NFSE_VIA_TECHNICAL_PROFILE.homologatorGuideVersion, '1.02');
+  assert.equal(NFSE_VIA_TECHNICAL_PROFILE.rnAdnLayoutVersion, '1.00.05');
+  assert.equal(NFSE_VIA_TECHNICAL_PROFILE.municipalityApiGuideVersion, '1.02');
+  assert.equal(NFSE_VIA_TECHNICAL_PROFILE.buyerManifestationGuideVersion, '1.02');
+  assert.equal(NFSE_VIA_TECHNICAL_PROFILE.manualsAndAnnexesUrl, 'https://www.gov.br/nfse/pt-br/nfs-e-via/documentacao-tecnica/manuais-e-anexos');
+  assert.equal(NFSE_VIA_TECHNICAL_PROFILE.officialEnvironmentLinksUrl, 'https://www.gov.br/nfse/pt-br/nfs-e-via/links');
   assert.equal(NFSE_VIA_TECHNICAL_PROFILE.noChargePaymentModalityCode, '6');
   assert.equal(NFSE_VIA_TECHNICAL_PROFILE.restrictedAvailableFrom, '2026-10-05');
   assert.equal(NFSE_VIA_TECHNICAL_PROFILE.productionAvailableFrom, '2026-10-19');
