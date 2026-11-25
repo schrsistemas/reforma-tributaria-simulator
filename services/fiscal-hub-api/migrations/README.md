@@ -9,6 +9,7 @@ Apply migrations in numeric order with a dedicated migration-owner account:
 5. 0005_normative_source_checks.sql
 6. 0006_normative_artifact_captures.sql
 7. 0007_nfse_specific_normative_sources.sql
+8. 0008_normative_source_fingerprints.sql
 8. 0008_transport_and_fiscal_document_sources.sql
 
 The runtime role must not own these objects and must remain NOSUPERUSER/NOBYPASSRLS. Set its password out-of-band after applying migration 0002.
