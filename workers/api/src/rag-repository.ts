@@ -5,6 +5,7 @@ import {
   temporalMatch,
   sourceTypeOf,
   topicsOf,
+  publishedAtSourceOf,
   evidenceConfidence,
   type RagCandidate,
 } from '@rts/domain';
@@ -40,6 +41,7 @@ export async function searchRag(
       sourceUrl: String(r.source_url),
       title: String(r.title),
       publishedAt: String(r.published_at ?? ''),
+      publishedAtSource: publishedAtSourceOf(r.metadata_json ? String(r.metadata_json) : undefined),
       effectiveFrom: r.effective_from ? String(r.effective_from) : undefined,
       effectiveTo: r.effective_to ? String(r.effective_to) : undefined,
       authority: r.authority ? String(r.authority) : undefined,
