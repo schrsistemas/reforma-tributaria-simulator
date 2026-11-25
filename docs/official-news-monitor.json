@@ -1,0 +1,165 @@
+{
+  "schemaVersion": "1.0.0",
+  "source": {
+    "id": "receita-federal-news",
+    "name": "Receita Federal — Notícias",
+    "url": "https://www.gov.br/receitafederal/pt-br/assuntos/noticias",
+    "canonicalSection": "https://www.gov.br/receitafederal/pt-br/assuntos/noticias/2026/novembro",
+    "authority": "Receita Federal do Brasil",
+    "use": "DISCOVERY_ONLY",
+    "categories": [
+      "Tributação",
+      "Serviços"
+    ],
+    "tags": [
+      "RTC",
+      "Reforma Tributária",
+      "CBS",
+      "IBS",
+      "Simples Nacional",
+      "documentos fiscais",
+      "API"
+    ],
+    "checkedAt": "2026-11-25"
+  },
+  "policy": {
+    "classification": "NEWS_LEAD",
+    "mayChangeTaxRulesDirectly": false,
+    "requiredFollowUp": [
+      "primary_legal_act",
+      "effective_date_by_article",
+      "official_technical_documentation",
+      "official_calculator_version",
+      "regression_tests"
+    ],
+    "rule": "Notícia orienta descoberta. Norma publicada, vigência e especificação técnica primária são necessárias antes de alterar cálculo, classificação ou obrigação."
+  },
+  "items": [
+    {
+      "id": "rfb-cgsn-196-2026",
+      "publishedAt": "2026-11-24",
+      "title": "Comitê Gestor do Simples Nacional publica novas regras para o Simples Nacional e para a transição da Reforma Tributária",
+      "url": "https://www.gov.br/receitafederal/pt-br/assuntos/noticias/2026/novembro/comite-gestor-do-simples-nacional-publica-novas-regras-para-o-simples-nacional-e-para-a-transicao-da-reforma-tributaria",
+      "citedAct": "Resolução CGSN nº 196, de 16 de novembro de 2026",
+      "primarySource": "https://www.in.gov.br/web/dou/-/resolucao-cgsn-n-196-de-16-de-novembro-de-2026-745832719",
+      "classification": "NEWS_LEAD",
+      "impactAreas": [
+        "Simples Nacional",
+        "regime de caixa",
+        "receita bruta",
+        "compras governamentais",
+        "créditos IBS/CBS",
+        "documentos fiscais",
+        "DEFIS",
+        "PGDAS-D"
+      ],
+      "reviewRequired": true,
+      "notes": [
+        "A notícia informa alterações de procedimentos de declaração, apuração de receitas e repartição de tributos.",
+        "O texto primário deve ser lido artigo por artigo: a Resolução possui efeitos escalonados, com parte imediata e parte a partir de 2027.",
+        "A notícia informa a entrega da DEFIS do ano-calendário 2026 até 31/03/2027.",
+        "Revisar o motor do Simples, os dados de receita, os créditos transferíveis e a segregação de receitas de contratos públicos."
+      ]
+    },
+    {
+      "id": "rfb-piloto-cbs-2026-11-20",
+      "publishedAt": "2026-11-20",
+      "title": "Receita Federal amplia acesso ao Ambiente de Produção Restrita do Piloto da CBS",
+      "url": "https://www.gov.br/receitafederal/pt-br/assuntos/noticias/2026/novembro/receita-federal-amplia-acesso-ao-ambiente-de-producao-restrita-do-piloto-da-cbs",
+      "classification": "NEWS_LEAD",
+      "impactAreas": [
+        "integração CBS",
+        "ambientes",
+        "credenciais API",
+        "homologação",
+        "documentos fiscais"
+      ],
+      "reviewRequired": true,
+      "notes": [
+        "O piloto é ambiente de produção restrita para testes e simulações.",
+        "O piloto utiliza autorizadores em homologação e não gera documentos fiscais com validade jurídica.",
+        "O ambiente Beta integra autorizadores de produção e documentos fiscais efetivamente emitidos.",
+        "Acesso requer procuração digital; credenciais de API e DeRE podem exigir poderes específicos.",
+        "Não reutilizar URL, token ou credencial de piloto como configuração de produção."
+      ]
+    },
+    {
+      "id": "rfb-cgibs-cfc-doc-fiscal-2026-11-19",
+      "publishedAt": "2026-11-19",
+      "title": "Receita Federal, CGIBS e CFC vão orientar mais de 25 mil profissionais da contabilidade sobre destaque de CBS/IBS em documentos fiscais",
+      "url": "https://www.gov.br/receitafederal/pt-br/assuntos/noticias/2026/novembro/receita-federal-cgibs-e-cfc-vao-orientar-mais-de-25-mil-profissionais-da-contabilidade-sobre-destaque-de-cbs-ibs-em-documentos-fiscais",
+      "citedAct": "Ato Conjunto RFB/CGIBS nº 4, de 30 de julho de 2026",
+      "classification": "NEWS_LEAD",
+      "impactAreas": [
+        "NF-e",
+        "NFC-e",
+        "NFS-e",
+        "destaque CBS/IBS",
+        "conformidade",
+        "validação documental"
+      ],
+      "reviewRequired": true,
+      "notes": [
+        "Os critérios da ação são orientativos e preventivos; ausência ou destaque parcial não constitui, por si só, prova de infração.",
+        "Revisar suporte aos campos de CBS/IBS nos DF-e e as datas de obrigatoriedade do Ato Conjunto.",
+        "Não transformar critérios de seleção da ação orientativa em regras automáticas de rejeição fiscal."
+      ]
+    },
+    {
+      "id": "rfb-option-statistics-2026-11-18",
+      "publishedAt": "2026-11-18",
+      "title": "Atualização das solicitações de opção pelo Simples Nacional e pelo regime regular do IBS e da CBS",
+      "url": "https://www.gov.br/receitafederal/pt-br/assuntos/noticias/2026/novembro/a-receita-federal-divulga-a-atualizacao-dos-numeros-referentes-as-solicitacoes-de-opcao-pelo-simples-nacional-e-pelo-regime-regular-do-ibs-e-da-cbs",
+      "classification": "NEWS_LEAD",
+      "impactAreas": [
+        "opção de regime",
+        "Simples Nacional",
+        "regime regular",
+        "cancelamento de opção"
+      ],
+      "reviewRequired": true,
+      "notes": [
+        "A notícia apresenta estatísticas e janela de cancelamento das opções em 2026.",
+        "Tratar os números como informação histórica, não como parâmetro de cálculo ou prova de situação cadastral individual."
+      ]
+    },
+    {
+      "id": "rfb-rad-api-2026-11-17",
+      "publishedAt": "2026-11-17",
+      "title": "Virando a Chave na Reforma Tributária: API do RAD — documentação técnica já está disponível",
+      "url": "https://www.gov.br/receitafederal/pt-br/assuntos/noticias/2026/novembro/virando-a-chave-para-a-reforma-tributaria-api-para-emissao-do-rad-ja-esta-disponivel",
+      "primaryTechnicalDocumentation": "https://docs.receitafederal.gov.br/apuracao-cbs/",
+      "classification": "NEWS_LEAD",
+      "impactAreas": [
+        "RAD",
+        "crédito CBS",
+        "consulta recolhimentos",
+        "DARF",
+        "API"
+      ],
+      "reviewRequired": true,
+      "notes": [
+        "Na data da notícia, a documentação estava disponível, mas a API ainda não estava liberada para consumo.",
+        "Analisar contratos, autenticação, versionamento, idempotência e ambiente antes de implementar o conector.",
+        "Não tratar documentação publicada como confirmação de endpoint de produção disponível."
+      ]
+    },
+    {
+      "id": "rfb-cgibs-coordination-2026-11-18",
+      "publishedAt": "2026-11-18",
+      "title": "RFB e CGIBS alinham próximos passos da implementação da Reforma e reforçam compromisso com a conformidade tributária",
+      "url": "https://www.gov.br/receitafederal/pt-br/assuntos/noticias/2026/novembro/rfb-e-cgibs-alinham-proximos-passos-da-implementacao-da-reforma-e-reforcam-compromisso-com-a-conformidade-tributaria",
+      "classification": "NEWS_LEAD",
+      "impactAreas": [
+        "governança IBS",
+        "conformidade",
+        "manuais",
+        "orientações oficiais"
+      ],
+      "reviewRequired": true,
+      "notes": [
+        "A notícia anuncia coordenação institucional e materiais orientativos; acompanhar publicações primárias subsequentes."
+      ]
+    }
+  ]
+}
