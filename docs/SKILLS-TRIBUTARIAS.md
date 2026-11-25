@@ -120,7 +120,7 @@ O Worker agora também empacota as instruções Markdown reais das Skills seleci
 - Runtime: `workers/api/src/skill-runtime.ts`.
 - Testes: `workers/api/src/skill-runtime.test.ts`.
 - Endpoint: `POST /api/v1/skills/prepare`, autenticado pelo mesmo token e tenant vinculados usados pelos demais endpoints de integração.
-- O pacote contém a consulta original, requestId, correlationId, contexto fiscal, plano ordenado, corpo integral das instruções, SHA do blob de cada arquivo e lista deduplicada de ferramentas autorizadas por binding.
+- O pacote contém a consulta original, requestId, correlationId, contexto fiscal, plano ordenado, corpo integral das instruções, SHA do blob de cada arquivo e lista deduplicada de `toolBindings`. Binding não concede permissão: o host deve consultar `GET /api/v1/mcp/tools` e aplicar sua política de autorização antes de executar qualquer ferramenta.
 - O contexto compartilhado aceita objeto JSON de até 64 KiB; a consulta tem limite de 4.000 caracteres.
 - Ausência de instrução no bundle ou divergência entre path do manifesto e path do arquivo gera erro; não há fallback silencioso.
 
@@ -143,7 +143,7 @@ Content-Type: application/json
 }
 ```
 
-O retorno é um pacote de preparação, não um resultado tributário. Ele informa `execution: NOT_EXECUTED` e `nextStep: HOST_AGENT_EXECUTION_REQUIRED`. O host externo ainda deve interpretar as instruções, decidir quando chamar cada ferramenta, executar as chamadas autorizadas e devolver resultados estruturados. A API não envia dados a um provedor LLM, não executa ferramentas por conta própria e não publica RuleSets.
+O retorno é um pacote de preparação, não um resultado tributário. Ele informa `execution: NOT_EXECUTED` e `nextStep: HOST_AGENT_EXECUTION_REQUIRED`. O host externo ainda deve interpretar as instruções, consultar a disponibilidade e as permissões de cada ferramenta, decidir quando chamar cada ferramenta e devolver resultados estruturados. A API não envia dados a um provedor LLM, não executa ferramentas por conta própria e não publica RuleSets.
 
 ## Estado e limites reais
 
