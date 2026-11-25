@@ -213,6 +213,8 @@ O projeto mantém uma suíte de Skills compatíveis com diretórios `SKILL.md`, 
 
 A definição das Skills está versionada. A descoberta/carregamento automático e a conexão com ferramentas dependem do host de agentes; não são ativadas apenas pela presença dos arquivos. O motor tributário atual também mantém as limitações documentadas em cada Skill.
 
+O Worker também disponibiliza um dispatcher determinístico autenticado em `GET /api/v1/skills` e `POST /api/v1/skills/resolve`, que seleciona módulos e resolve dependências a partir do manifesto. O dispatcher ainda não carrega os corpos dos `SKILL.md` nem executa LLM/MCP; essa integração pertence ao host/runtime de agentes. Consulte [a documentação do dispatcher](docs/SKILLS-TRIBUTARIAS.md#dispatcher-determinístico-implementado).
+
 ## Portal Nacional de Fontes Governamentais
 
 O simulador está evoluindo para um portal de ligação com fontes oficiais federais, estaduais e municipais. A arquitetura agora separa:
