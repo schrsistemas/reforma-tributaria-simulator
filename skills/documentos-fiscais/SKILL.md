@@ -27,6 +27,10 @@ Use \`ibs-cbs-transicao\`, \`imposto-seletivo\`, \`simples-nacional-regimes\` e 
 
 Para gerar a representação gráfica de NFS-e, use o serviço oficial DANFSe Go conforme a Skill `calculadora-oficial-receita`. A geração do PDF não emite nem autoriza a NFS-e. Transporte XML/PDF como conteúdo binário; não passe pelo proxy JSON de cálculos.
 
+## Componente oficial de DANFSe
+
+Para gerar a representação gráfica de NFS-e, use o serviço oficial DANFSe Go conforme a Skill \`calculadora-oficial-receita\`. A geração do PDF não emite nem autoriza a NFS-e. Transporte XML/PDF como conteúdo binário; não passe pelo proxy JSON de cálculos.
+
 ## Saída recomendada
 
 - documento/modelo/versão;
