@@ -35,6 +35,18 @@ A associação de instância ERP à empresa usa chave estrangeira composta pelo 
 - O armazenamento S3 precisa ser provisionado e configurado.
 - Nenhum deploy da API na VPS foi executado.
 
+## Deploy Vercel — 25/11/2026
+
+O projeto `fiscal-hub-api` possui deploy de produção na Vercel, conectado à branch `main`. O handler serverless padrão está no módulo `services/fiscal-hub-api/src/app.ts`; ele instancia o Fastify sob demanda, reutiliza a instância e o pool PostgreSQL em invocações aquecidas e não abre listener TCP.
+
+- Domínio de produção: https://fiscal-hub-api.vercel.app
+- Endpoint de liveness: `GET /health/live` — validado com HTTP 200.
+- Endpoint de readiness: `GET /health/ready` — validado com HTTP 503 enquanto a conexão PostgreSQL não está configurada.
+- O runtime da Vercel confirmou ausência de `DATABASE_URL` e `JWT_SECRET` no ambiente de produção. Até que essas variáveis sejam configuradas, as rotas funcionais respondem indisponibilidade de serviço; o endpoint de liveness permanece independente dessas dependências.
+- A implantação na Vercel não equivale a uma implantação na VPS. Nenhum deploy da API na VPS foi executado.
+
+Para ativar a API, configurar `DATABASE_URL` e `JWT_SECRET` no ambiente Production da Vercel. Configurar separadamente `MIGRATION_DATABASE_URL` para executar migrations com usuário proprietário de migração; não reutilizar o papel runtime `fiscal_hub_app` para DDL. Depois de aplicar e validar migrations 0001–0012 no PostgreSQL, repetir o health check de readiness e validar os endpoints autenticados.
+
 ## Banco
 
 Aplicar migrations em ordem numérica: 0001_fiscal_hub_core.sql até 0012_normative_artifact_capture_backoff.sql. Use um usuário de migração separado. A API deve conectar como fiscal_hub_app, sem ownership, superuser ou BYPASSRLS.
