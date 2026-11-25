@@ -24,12 +24,13 @@ test('prepares real IBS/CBS skill bundle with transitive dependencies', () => {
   assert.equal(result.status, 'PREPARED');
   assert.equal(result.execution, 'NOT_EXECUTED');
   assert.equal(result.nextStep, 'HOST_AGENT_EXECUTION_REQUIRED');
+  assert.equal(result.toolAvailability, 'CHECK_MCP_TOOL_CATALOG');
   assert.ok(result.instructions.some(item => item.id === 'tributario-orchestrator'));
   assert.ok(result.instructions.some(item => item.id === 'ibs-cbs-transicao'));
   assert.ok(result.instructions.some(item => item.id === 'evidencia-legislacao-rag'));
   assert.ok(result.instructions.every(item => item.content.length > 0 && item.blobSha.length > 0));
-  assert.ok(result.authorizedToolNames.includes('fiscal.search_evidence'));
-  assert.ok(result.authorizedToolNames.includes('fiscal.calculate'));
+  assert.ok(result.toolBindings.includes('fiscal.search_evidence'));
+  assert.ok(result.toolBindings.includes('fiscal.calculate'));
   assert.deepEqual(result.context, {
     operationDate: '2027-01-01',
     jurisdiction: 'BR',
@@ -44,7 +45,7 @@ test('loads exactly the orchestrator instruction for unmatched requests', () => 
 
   assert.equal(result.status, 'NO_MATCH');
   assert.deepEqual(result.instructions.map(item => item.id), ['tributario-orchestrator']);
-  assert.deepEqual(result.authorizedToolNames, []);
+  assert.deepEqual(result.toolBindings, []);
 });
 
 test('loads multiple domain instructions without duplicate dependencies', () => {
@@ -57,7 +58,7 @@ test('loads multiple domain instructions without duplicate dependencies', () => 
   assert.ok(ids.includes('ibs-cbs-transicao'));
   assert.ok(ids.includes('split-payment'));
   assert.equal(ids.filter(id => id === 'evidencia-legislacao-rag').length, 1);
-  assert.equal(new Set(result.authorizedToolNames).size, result.authorizedToolNames.length);
+  assert.equal(new Set(result.toolBindings).size, result.toolBindings.length);
 });
 
 test('rejects non-object fiscal context', () => {
