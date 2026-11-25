@@ -76,6 +76,7 @@ async function runChecks(client: PoolClient): Promise<{ checked: number; changed
   }
   const summary = { checked, changed, errors };
   process.stdout.write(JSON.stringify({ summary }) + "\n");
+  if (errors > 0) process.exitCode = 1;
   return summary;
 }
 
@@ -83,7 +84,7 @@ async function main(): Promise<void> {
   const client = await pool.connect();
   try {
     const lock = await withNormativeMonitorLock(client, () =>
-      withWorkerRun(client, "SOURCE_MONITOR", () => runChecks(client))
+      withWorkerRun(client, "SOURCE_MONITOR", () => runChecks(client), result => result.errors > 0)
     );
     if (!lock.acquired) {
       process.stdout.write(JSON.stringify({
