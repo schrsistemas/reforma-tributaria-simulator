@@ -13,11 +13,20 @@ export interface NfseViaTechnicalProfile {
   readonly technicalNoteVersion: '1.00';
   readonly nfseViaLayoutVersion: '1.01';
   readonly buyerManifestationEventVersion: '1.00';
+  readonly manualVersion: '1.02';
+  readonly concessionairesParameterGuideVersion: '1.02';
+  readonly apiGuideVersion: '1.02';
+  readonly homologatorGuideVersion: '1.02';
+  readonly rnAdnLayoutVersion: '1.00.05';
+  readonly municipalityApiGuideVersion: '1.02';
+  readonly buyerManifestationGuideVersion: '1.02';
   readonly noChargePaymentModalityCode: '6';
   readonly restrictedAvailableFrom: '2026-10-05';
   readonly productionAvailableFrom: '2026-10-19';
   readonly runtimeVerification: 'NOT_PROBED';
   readonly documentationUrl: string;
+  readonly manualsAndAnnexesUrl: string;
+  readonly officialEnvironmentLinksUrl: string;
 }
 
 export const NFSE_VIA_TECHNICAL_PROFILE: NfseViaTechnicalProfile = {
@@ -25,11 +34,20 @@ export const NFSE_VIA_TECHNICAL_PROFILE: NfseViaTechnicalProfile = {
   technicalNoteVersion: '1.00',
   nfseViaLayoutVersion: '1.01',
   buyerManifestationEventVersion: '1.00',
+  manualVersion: '1.02',
+  concessionairesParameterGuideVersion: '1.02',
+  apiGuideVersion: '1.02',
+  homologatorGuideVersion: '1.02',
+  rnAdnLayoutVersion: '1.00.05',
+  municipalityApiGuideVersion: '1.02',
+  buyerManifestationGuideVersion: '1.02',
   noChargePaymentModalityCode: '6',
   restrictedAvailableFrom: '2026-10-05',
   productionAvailableFrom: '2026-10-19',
   runtimeVerification: 'NOT_PROBED',
   documentationUrl: 'https://www.gov.br/nfse/pt-br/nfs-e-via/documentacao-tecnica',
+  manualsAndAnnexesUrl: 'https://www.gov.br/nfse/pt-br/nfs-e-via/documentacao-tecnica/manuais-e-anexos',
+  officialEnvironmentLinksUrl: 'https://www.gov.br/nfse/pt-br/nfs-e-via/links',
 } as const;
 
 export type NfseViaManifestationKind = 'ACCEPT' | 'REJECT';
