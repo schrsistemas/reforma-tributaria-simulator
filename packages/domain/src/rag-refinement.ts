@@ -111,6 +111,15 @@ export function temporalMatch(c: RagCandidate, asOf?: string) {
   return Number.isFinite(from) && requestedDate >= from && requestedDate <= to;
 }
 
+export function effectiveToSourceOf(metadataJson?: string) {
+  try {
+    const x = JSON.parse(metadataJson ?? '{}') as Record<string, unknown>;
+    return typeof x.effectiveToSource === 'string' ? x.effectiveToSource : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export function effectiveFromSourceOf(metadataJson?: string) {
   try {
     const x = JSON.parse(metadataJson ?? '{}') as Record<string, unknown>;
