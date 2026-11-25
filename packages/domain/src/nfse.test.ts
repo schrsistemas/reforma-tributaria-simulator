@@ -13,20 +13,26 @@ test('produção seleciona NT 004 acrescida do domínio NT 007', () => {
   assert.equal(profile.ibsCbsPolicy, 'OPTIONAL_OPEN_GROUP');
 });
 
-test('produção restrita seleciona somente NT 009 v1.01 publicado para produção restrita', () => {
+test('produção restrita seleciona NT 009 v1.0 release 1 comunicado como implantado', () => {
   const profile = resolveNfseLayout('RESTRICTED');
-  assert.equal(profile.id, 'SNNFSE_RESTRICTED_NT009_1_01');
+  assert.equal(profile.id, 'SNNFSE_RESTRICTED_NT009_1_00_RELEASE_1');
   assert.equal(profile.fiscalEffect, 'NO_FISCAL_EFFECT');
   assert.equal(profile.runtimeVerification, 'NOT_PROBED');
-  assert.match(profile.technicalRelease, /v1\.01/);
+  assert.match(profile.technicalRelease, /v1\.0.*release 1/);
 });
 
-test('a matriz não presume que a publicação do XSD prove implantação do runtime', () => {
+test('XSD PRODREST v1.01 publicado não é confundido com release 2 implantado', () => {
+  const profile = resolveNfseLayout('RESTRICTED');
+  assert.match(profile.publishedSchema ?? '', /v1\.01/);
+  assert.match(profile.publishedSchema ?? '', /release 2 ainda não comunicado como implantado/);
+  assert.match(profile.technicalRelease, /v1\.0 — release 1/);
+  assert.equal(profile.runtimeVerification, 'NOT_PROBED');
+});
+
+test('a matriz mantém perfis distintos por ambiente', () => {
   assert.equal(Object.keys(NFSE_LAYOUT_PROFILES).length, 2);
-  assert.equal(
-    NFSE_LAYOUT_PROFILES.RESTRICTED.technicalRelease,
-    'NT 009 v1.01 — XSD PRODREST publicado em 20/10/2026',
-  );
+  assert.equal(NFSE_LAYOUT_PROFILES.RESTRICTED.environment, 'RESTRICTED');
+  assert.equal(NFSE_LAYOUT_PROFILES.PRODUCTION.environment, 'PRODUCTION');
 });
 
 test('grupo IBS/CBS omitido não é interpretado como isenção ou alíquota zero', () => {
