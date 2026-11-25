@@ -29,15 +29,16 @@ async function runChecks(client: PoolClient): Promise<void> {
   let errors = 0;
 
   for (const source of sources.rows) {
-    const previous = await client.query<{ content_sha256: string | null }>(
-      "SELECT content_sha256 FROM fiscal.normative_source_checks WHERE source_id = $1 AND content_sha256 IS NOT NULL ORDER BY checked_at DESC LIMIT 1",
+    const previous = await client.query<{ normalized_content_sha256: string | null }>(
+      "SELECT normalized_content_sha256 FROM fiscal.normative_source_checks WHERE source_id = $1 AND normalized_content_sha256 IS NOT NULL ORDER BY checked_at DESC LIMIT 1",
       [source.id]
     );
-    const snapshot = await inspectSource(source, previous.rows[0]?.content_sha256 ?? null, { allowedHosts });
+    const snapshot = await inspectSource(source, previous.rows[0]?.normalized_content_sha256 ?? null, { allowedHosts });
     await client.query(
-      "INSERT INTO fiscal.normative_source_checks (source_id, check_status, http_status, content_type, content_length, etag, last_modified, content_sha256, response_ms, error_code) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)",
+      "INSERT INTO fiscal.normative_source_checks (source_id, check_status, http_status, content_type, content_length, etag, last_modified, content_sha256, normalized_content_sha256, fingerprint_version, response_ms, error_code) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)",
       [source.id, snapshot.status, snapshot.httpStatus, snapshot.contentType, snapshot.contentLength,
-       snapshot.etag, snapshot.lastModified, snapshot.contentSha256, snapshot.responseMs, snapshot.errorCode]
+       snapshot.etag, snapshot.lastModified, snapshot.contentSha256, snapshot.normalizedContentSha256,
+       snapshot.fingerprintVersion, snapshot.responseMs, snapshot.errorCode]
     );
     checked += 1;
     if (snapshot.status === "CHANGED") changed += 1;
@@ -49,6 +50,8 @@ async function runChecks(client: PoolClient): Promise<void> {
       httpStatus: snapshot.httpStatus,
       responseMs: snapshot.responseMs,
       contentSha256: snapshot.contentSha256,
+      normalizedContentSha256: snapshot.normalizedContentSha256,
+      fingerprintVersion: snapshot.fingerprintVersion,
       errorCode: snapshot.errorCode
     }) + "\n");
   }
