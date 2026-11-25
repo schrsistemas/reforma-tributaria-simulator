@@ -24,6 +24,8 @@ O Ato Conjunto RFB/CGIBS nº 7, de 11/11/2026, publicado em 13/11/2026, alterou 
 
 Fonte: [Comunicado CGNFS-e de 13/11/2026 — Ato Conjunto RFB/CGIBS nº 7/2026](https://www.gov.br/nfse/pt-br/noticias/cgnfs-e-informa-ato-conjunto-rfb-cgibs-no-7-2026-atualiza-o-cronograma-de-obrigatoriedade-de-emissao-da-nfs-e-para-ibs-e-cbs/).
 
+O domínio `packages/domain/src/nfse-obligation-calendar.ts` registra as datas por categoria e regime tributário. A função de consulta exige categoria e regime explícitos; ela não classifica automaticamente uma operação, não substitui análise jurídica e não calcula IBS/CBS. Isso evita que o sistema aplique a data geral de 01/10/2026 a optantes do Simples Nacional ou às categorias que receberam escalonamento.
+
 ### IBS/CBS na produção
 
 O comunicado do CGNFS-e de 29/10/2026 informa que o grupo IBS/CBS está aberto no ADN: sua ausência não provoca rejeição técnica por esse motivo específico. Se o contribuinte optar por preencher o grupo, todos os códigos, classificações e dados correlatos exigidos pelo leiaute precisam estar completos, inclusive os dados do adquirente/tomador quando aplicáveis.
