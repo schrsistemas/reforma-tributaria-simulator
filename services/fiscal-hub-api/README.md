@@ -22,6 +22,7 @@ Node.js 22+, TypeScript, Fastify and PostgreSQL.
 - GET /v1/erp-instances
 - POST /v1/erp-instances (OWNER or ADMIN)
 - GET /v1/normative/sources
+- GET /v1/normative/sources/:sourceId/checks
 - GET /v1/normative/documents
 - GET /v1/normative/documents/:documentId/versions
 

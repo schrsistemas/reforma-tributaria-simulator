@@ -280,6 +280,30 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     }
   });
 
+
+  app.get("/v1/normative/sources/:sourceId/checks", async (request, reply) => {
+    const claims = await authenticate(request, reply);
+    if (!claims) return;
+    const params = z.object({ sourceId: z.string().uuid() }).safeParse(request.params);
+    if (!params.success) return reply.code(400).send({ error: "INVALID_SOURCE_ID" });
+    try {
+      const result = await options.pool.query(
+        `SELECT c.id, c.source_id, c.check_status, c.http_status, c.content_type,
+                c.content_length, c.etag, c.last_modified, c.content_sha256,
+                c.response_ms, c.error_code, c.checked_at
+           FROM fiscal.normative_source_checks c
+          WHERE c.source_id = $1
+          ORDER BY c.checked_at DESC
+          LIMIT 50`,
+        [params.data.sourceId]
+      );
+      return reply.send({ items: result.rows });
+    } catch (error) {
+      request.log.error({ err: error }, "normative source check history failed");
+      return reply.code(500).send({ error: "NORMATIVE_SOURCE_CHECKS_LIST_FAILED" });
+    }
+  });
+
   app.get("/v1/normative/documents/:documentId/versions", async (request, reply) => {
     const claims = await authenticate(request, reply);
     if (!claims) return;
