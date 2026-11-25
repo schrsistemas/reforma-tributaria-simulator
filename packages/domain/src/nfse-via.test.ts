@@ -20,7 +20,9 @@ test('perfil NFS-e Via registra versões e datas oficiais da NT 010', () => {
   assert.equal(NFSE_VIA_TECHNICAL_PROFILE.buyerManifestationGuideVersion, '1.02');
   assert.equal(NFSE_VIA_TECHNICAL_PROFILE.manualsAndAnnexesUrl, 'https://www.gov.br/nfse/pt-br/nfs-e-via/documentacao-tecnica/manuais-e-anexos');
   assert.equal(NFSE_VIA_TECHNICAL_PROFILE.officialEnvironmentLinksUrl, 'https://www.gov.br/nfse/pt-br/nfs-e-via/links');
-  assert.equal(NFSE_VIA_TECHNICAL_PROFILE.transportProtocol, 'HTTPS_TLS_1_2_OR_HIGHER_MUTUAL_TLS');
+  assert.equal(NFSE_VIA_TECHNICAL_PROFILE.transportProtocol, 'HTTPS_MUTUAL_TLS');
+  assert.equal(NFSE_VIA_TECHNICAL_PROFILE.tlsVersionPolicy, 'MANUAL_CONFLICT_TLS_1_2_PLUS_VS_TLS_1_0_TO_1_2');
+  assert.equal(NFSE_VIA_TECHNICAL_PROFILE.runtimeTlsMinimum, 'NOT_VERIFIED');
   assert.equal(NFSE_VIA_TECHNICAL_PROFILE.apiMessageFormat, 'JSON');
   assert.equal(NFSE_VIA_TECHNICAL_PROFILE.documentFormat, 'XML_1_0_UTF8');
   assert.equal(NFSE_VIA_TECHNICAL_PROFILE.documentSignature, 'XMLDSIG_ENVELOPED');
