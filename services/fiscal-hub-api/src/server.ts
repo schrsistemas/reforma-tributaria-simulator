@@ -4,7 +4,7 @@ import { buildApp } from "./app.js";
 
 const config = loadConfig();
 const pool = createPool(config.DATABASE_URL);
-const app = await buildApp({ pool, jwtSecret: config.JWT_SECRET, corsOrigin: config.CORS_ORIGIN, logger: config.NODE_ENV !== "test" });
+const app = await buildApp({ pool, jwtSecret: config.JWT_SECRET, corsOrigin: config.CORS_ORIGIN, logger: config.NODE_ENV !== "test", normativeReviewTenantId: config.NORMATIVE_REVIEW_TENANT_ID });
 app.addHook("onClose", async () => { await pool.end(); });
 
 try {
