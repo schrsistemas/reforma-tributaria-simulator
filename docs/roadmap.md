@@ -68,3 +68,17 @@
 - [ ] contract tests
 - [ ] load tests
 - [ ] security scanning
+
+
+## Componentes oficiais da Receita Federal
+
+- [x] Registrar repositórios oficiais e licença MIT.
+- [x] Registrar SHA-512 dos ZIPs iniciais e SHA-1 dos commits iniciais da Portaria Cotec nº 342/2026.
+- [x] Fixar commits/versões observados em 25/11/2026.
+- [x] Criar Skill especializada para regime regular, Simples Nacional e DANFSe.
+- [x] Remover fallback hardcoded para host piloto nos proxies do regime regular.
+- [ ] Configurar e validar endpoints HTTPS de produção/homologação em ambiente Cloudflare.
+- [ ] Implementar testes de contrato com fixtures oficiais versionadas.
+- [ ] Expor ferramentas MCP oficiais após definição dos schemas completos e autorização.
+- [ ] Implantar DANFSe Go como serviço separado e implementar proxy XML/PDF binário.
+- [ ] Criar suíte de regressão diferencial por regime e versão da base oficial.
