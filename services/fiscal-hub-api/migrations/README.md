@@ -27,12 +27,12 @@ Migration 0007 adds specific NFS-e Via documentation, XSD, API-directory and off
 
 Migration 0008 adds versioned content fingerprints to source checks while retaining the raw response SHA-256 as immutable evidence.
 
-Migration 0010 stores allowlisted document-link candidates discovered from official HTML pages. Candidates are pending review; the migration grants only SELECT/INSERT to the runtime role and does not enable automatic capture.
+Migration 0010 stores allowlisted document-link candidates discovered from official HTML pages. Candidates are `PENDING` until human review. The runtime role receives SELECT/INSERT plus column-scoped UPDATE privileges for discovery metadata, review decisions and capture-attempt metadata; DELETE is not granted.
 
 Migration 0009 expands the registry to the SPED official index and the CT-e/CT-e OS, MDF-e, NF-e/NFC-e, GNRE and ANTT CIOT portals. CIOT is registered as an ANTT transport-regulatory source, not as a fiscal document. GNRE is registered as a tax-collection portal. The SPED index also covers related DF-e families such as BP-e, BP-e TM, NFCom, NF3e, DC-e, GTV-e, NFAg, NFGas and DeRE. The migration is idempotent by official URL and updates the existing NF-e portal entry to include NFC-e.
 
-Always validate migrations against a disposable PostgreSQL database before production. There is no automatic migration execution at API startup.
+Always validate migrations against a disposable PostgreSQL database before production. Run `pnpm --filter @rts/fiscal-hub-api migrate` with `MIGRATION_DATABASE_URL` set to the migration-owner connection. The runner applies each file transactionally, serializes concurrent runs with a PostgreSQL advisory lock and records a SHA-256 checksum in `fiscal_meta.schema_migrations`. A changed checksum for an applied migration stops execution. Migrations are never run automatically at API startup.
 
-Migration 0010 creates the source-linked artifact discovery queue. Candidates are deduplicated by source and canonical URL, remain pending human review, and can be approved/rejected through the API with audit events. It does not trigger artifact capture or RuleSet publication.
+Migration 0010 creates the source-linked artifact discovery queue. Candidates are deduplicated by source and canonical artifact URL, retain their original extension and discovery timestamps, and remain `PENDING` until human review. OWNER/ADMIN decisions are audited. Rediscovery never resets `APPROVED`, `REJECTED` or `CAPTURED` states. It does not trigger artifact capture or RuleSet publication.
 
 The capture worker selects only `APPROVED` candidates. It records each attempt, leaves failures retryable, links the immutable artifact capture ID and changes status to `CAPTURED` only after the storage and metadata steps succeed. The S3-compatible object store must be provisioned before running it.
