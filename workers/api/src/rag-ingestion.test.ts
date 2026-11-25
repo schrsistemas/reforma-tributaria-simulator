@@ -15,7 +15,7 @@ test('returns no chunks for empty normalized input', () => {
 
 test('splits content with bounded overlap and preserves every character', () => {
   const chunks = chunkDocument('0123456789', 4, 2);
-  assert.deepEqual(chunks, ['0123', '23', '4567', '67', '89']);
+  assert.deepEqual(chunks, ['0123', '2345', '4567', '6789']);
   assert.ok(chunks.every((chunk) => chunk.length <= 4));
 });
 
@@ -24,13 +24,13 @@ test('normalizes invalid chunk limits and prevents excessive overlap', () => {
   assert.ok(chunks.length <= 10);
   assert.ok(chunks.every((chunk) => chunk.length <= 4));
   assert.equal(chunks[0], 'abcd');
-  assert.equal(chunks.at(-1), 'st');
+  assert.equal(chunks.at(-1), 'qrst');
 });
 
 test('falls back to defaults for non-finite chunk limits', () => {
   const chunks = chunkDocument('a'.repeat(2000), Number.NaN, Number.POSITIVE_INFINITY);
   assert.equal(chunks[0].length, 1800);
-  assert.equal(chunks.at(-1)?.length, 200);
+  assert.equal(chunks.at(-1)?.length, 450);
 });
 
 test('hash is stable for equivalent normalized text', async () => {
