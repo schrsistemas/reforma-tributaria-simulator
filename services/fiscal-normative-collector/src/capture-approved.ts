@@ -66,6 +66,7 @@ export async function captureApprovedArtifacts(
       const updated = await db.query(
         `UPDATE fiscal.normative_artifact_candidates
             SET review_status = 'CAPTURED', capture_id = $2,
+                capture_attempts = capture_attempts + 1,
                 last_capture_attempt_at = now(), last_capture_error = NULL
           WHERE id = $1 AND review_status = 'APPROVED' AND capture_id IS NULL`,
         [candidate.id, result.captureId]
