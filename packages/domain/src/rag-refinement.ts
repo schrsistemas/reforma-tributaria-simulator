@@ -6,6 +6,7 @@ export interface RagCandidate {
   sourceUrl: string;
   title: string;
   publishedAt?: string;
+  publishedAtSource?: string;
   effectiveFrom?: string;
   effectiveTo?: string;
   authority?: string;
@@ -93,11 +94,31 @@ export function rerank(query: string, candidates: RagCandidate[]) {
 export function temporalMatch(c: RagCandidate, asOf?: string) {
   if (!asOf) return true;
 
-  const d = Date.parse(asOf);
-  const from = c.effectiveFrom ? Date.parse(c.effectiveFrom) : Number.NEGATIVE_INFINITY;
-  const to = c.effectiveTo ? Date.parse(c.effectiveTo) : Number.POSITIVE_INFINITY;
+  const requestedDate = Date.parse(asOf);
+  if (!Number.isFinite(requestedDate)) return false;
 
-  return Number.isFinite(d) && d >= from && d <= to;
+  // Prefer the explicit legal commencement date. If it is unavailable, use
+  // publication date only when its provenance confirms an official date.
+  // Retrieval timestamps and legacy records are not proof of legal effect.
+  const authoritativePublication = ['JSON_LD', 'HTML_META', 'EXPLICIT_TEXT'].includes(
+    c.publishedAtSource ?? '',
+  );
+  const fromValue = c.effectiveFrom ??
+    (authoritativePublication ? c.publishedAt : undefined);
+  if (!fromValue) return false;
+
+  const from = Date.parse(fromValue);
+  const to = c.effectiveTo ? Date.parse(c.effectiveTo) : Number.POSITIVE_INFINITY;
+  return Number.isFinite(from) && requestedDate >= from && requestedDate <= to;
+}
+
+export function publishedAtSourceOf(metadataJson?: string) {
+  try {
+    const x = JSON.parse(metadataJson ?? '{}') as Record<string, unknown>;
+    return typeof x.publishedAtSource === 'string' ? x.publishedAtSource : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export function sourceTypeOf(metadataJson?: string) {
