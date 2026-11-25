@@ -70,6 +70,16 @@ export function extractOfficialDates(htmlOrText: string): OfficialDates {
     .replace(/&amp;/gi, '&')
     .replace(/\s+/g, ' ');
 
+  const documentIdentifiers = plain.match(/(?:lei\\s+complementar|lei|decreto|portaria|instru[cç][aã]o\\s+normativa|resolu[cç][aã]o)\\s+(?:n[ºo.]?\\s*)?\\d+(?:[./-]\\d+)*(?:\\/\\d{4})?/gi) ?? [];
+  const uniqueDocumentIdentifiers = new Set(documentIdentifiers.map((value) => value.toLowerCase().replace(/\\s+/g, ' ').trim()));
+  if (uniqueDocumentIdentifiers.size !== 1) {
+    return {
+      publishedAtSource: 'RETRIEVAL_FALLBACK',
+      effectiveFromSource: 'UNKNOWN',
+      effectiveToSource: 'UNKNOWN',
+    };
+  }
+
   const explicitPublication = plain.match(/(?:publicad[oa]\s+em|data\s+de\s+publica[cç][aã]o\s*[:：]?|publica[cç][aã]o\s*[:：])\s*(\d{1,2}[\/.]\d{1,2}[\/.]\d{4}|\d{4}-\d{2}-\d{2})/i)?.[1];
   const publishedAt = parseOfficialDate(metadata.JSON_LD) ??
     parseOfficialDate(metadata.HTML_META) ??
@@ -82,12 +92,12 @@ export function extractOfficialDates(htmlOrText: string): OfficialDates {
 
   const explicitEffective = plain.match(/(?:entra\s+em\s+vigor|produz\s+efeitos|vig[eê]ncia\s+(?:inicia|in[ií]cio)\s+em)\s*(?:a\s+partir\s+de\s*)?(?:no\s+dia\s*)?(\d{1,2}[\/.]\d{1,2}[\/.]\d{4}|\d{4}-\d{2}-\d{2})/i)?.[1];
   const effectiveFrom = parseOfficialDate(explicitEffective);
-  const explicitEnd = plain.match(/(?:vig[eê]ncia\\s+(?:at[eé]|vai\\s+at[eé])|vigora\\s+at[eé]|produz\\s+efeitos\\s+at[eé])\\s*(\\d{1,2}[\\/.]\\d{1,2}[\\/.]\\d{4}|\\d{4}-\\d{2}-\\d{2})/i)?.[1];
+  const explicitEnd = plain.match(/(?:vig[eê]ncia\s+(?:at[eé]|vai\s+at[eé])|vigora\s+at[eé]|produz\s+efeitos\s+at[eé])\s*(\d{1,2}[\/.]\d{1,2}[\/.]\d{4}|\d{4}-\d{2}-\d{2})/i)?.[1];
   const effectiveTo = parseOfficialDate(explicitEnd);
   const effectiveToSource = effectiveTo ? 'EXPLICIT_TEXT' : 'UNKNOWN';
   if (effectiveFrom) return { publishedAt, publishedAtSource, effectiveFrom, effectiveFromSource: 'EXPLICIT_TEXT', effectiveTo, effectiveToSource };
 
-  if (publishedAt && /entra\\s+em\\s+vigor\\s+na\\s+data\\s+de\\s+sua\\s+publica[cç][aã]o/i.test(plain)) {
+  if (publishedAt && /entra\s+em\s+vigor\s+na\s+data\s+de\s+sua\s+publica[cç][aã]o/i.test(plain)) {
     return { publishedAt, publishedAtSource, effectiveFrom: publishedAt, effectiveFromSource: 'PUBLICATION_DATE_CLAUSE', effectiveTo, effectiveToSource };
   }
   return { publishedAt, publishedAtSource, effectiveFromSource: 'UNKNOWN', effectiveTo, effectiveToSource };
