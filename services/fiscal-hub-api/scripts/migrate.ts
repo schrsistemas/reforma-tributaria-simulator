@@ -4,8 +4,8 @@ import { fileURLToPath } from "node:url";
 import { Pool } from "pg";
 import { applyMigrations, sortMigrationFiles, type SqlMigration } from "../src/migrations.js";
 
-const connectionString = process.env.MIGRATION_DATABASE_URL ?? process.env.DATABASE_URL;
-if (!connectionString) throw new Error("MIGRATION_DATABASE_URL or DATABASE_URL is required");
+const connectionString = process.env.MIGRATION_DATABASE_URL;
+if (!connectionString) throw new Error("MIGRATION_DATABASE_URL is required; the runtime DATABASE_URL is not accepted for migrations");
 
 const migrationsDirectory = fileURLToPath(new URL("../migrations/", import.meta.url));
 const names = sortMigrationFiles(await readdir(migrationsDirectory));
