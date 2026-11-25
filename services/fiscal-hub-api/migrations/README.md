@@ -17,7 +17,6 @@ Apply migrations in numeric order with a dedicated migration-owner account:
 13. 0013_normative_artifact_candidate_reviews.sql
 14. 0014_normative_artifact_capture_lifecycle.sql
 15. 0015_normative_artifact_capture_reconciliation.sql
-14. 0014_normative_artifact_capture_lifecycle.sql
 
 The runtime role must not own these objects and must remain NOSUPERUSER/NOBYPASSRLS. Set its password out-of-band after applying migration 0002.
 
