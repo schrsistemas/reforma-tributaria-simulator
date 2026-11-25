@@ -30,7 +30,7 @@ A associação de instância ERP à empresa usa chave estrangeira composta pelo 
 - O CRUD de usuários, convites, recuperação de senha e gestão de sessão ainda não está implementado.
 - Existe monitor de disponibilidade/hash, descoberta de links de artefatos, fila de candidatos, revisão humana e worker de captura de candidatos aprovados. OCR, extração semântica, diff jurídico, análise de impacto e publicação automatizada de RuleSets ainda não estão implementados.
 - Fontes e documentos normativos são somente leitura pela API.
-- As migrations 0001–0015 ainda precisam ser aplicadas e validadas em PostgreSQL real.
+- As migrations 0001–0016 ainda precisam ser aplicadas e validadas em PostgreSQL real.
 - Testes de API atuais usam mocks; não substituem testes reais de PostgreSQL/RLS.
 - O armazenamento S3 precisa ser provisionado e configurado.
 - Nenhum deploy da API na VPS foi executado.
@@ -45,11 +45,11 @@ O projeto `fiscal-hub-api` possui deploy de produção na Vercel, conectado à b
 - O runtime da Vercel confirmou ausência de `DATABASE_URL` e `JWT_SECRET` no ambiente de produção. Até que essas variáveis sejam configuradas, as rotas funcionais respondem indisponibilidade de serviço; o endpoint de liveness permanece independente dessas dependências.
 - A implantação na Vercel não equivale a uma implantação na VPS. Nenhum deploy da API na VPS foi executado.
 
-Para ativar a API, configurar `DATABASE_URL` e `JWT_SECRET` no ambiente Production da Vercel. Configurar separadamente `MIGRATION_DATABASE_URL` para executar migrations com usuário proprietário de migração; não reutilizar o papel runtime `fiscal_hub_app` para DDL. Depois de aplicar e validar migrations 0001–0015 no PostgreSQL, repetir o health check de readiness e validar os endpoints autenticados.
+Para ativar a API, configurar `DATABASE_URL` e `JWT_SECRET` no ambiente Production da Vercel. Configurar separadamente `MIGRATION_DATABASE_URL` para executar migrations com usuário proprietário de migração; não reutilizar o papel runtime `fiscal_hub_app` para DDL. Depois de aplicar e validar migrations 0001–0016 no PostgreSQL, repetir o health check de readiness e validar os endpoints autenticados.
 
 ## Banco
 
-Aplicar migrations em ordem numérica: 0001_fiscal_hub_core.sql até 0015_normative_artifact_capture_reconciliation.sql. Use um usuário de migração separado. A API deve conectar como fiscal_hub_app, sem ownership, superuser ou BYPASSRLS.
+Aplicar migrations em ordem numérica: 0001_fiscal_hub_core.sql até 0016_normative_collector_run_ledger.sql. Use um usuário de migração separado. A API deve conectar como fiscal_hub_app, sem ownership, superuser ou BYPASSRLS.
 
 ## Execução local
 
@@ -73,3 +73,5 @@ O serviço `services/fiscal-normative-collector` verifica URLs cadastradas, rest
 ## Recuperação de capturas interrompidas
 
 A migration 0015 adiciona `capture_started_at` para identificar uploads `PENDING` abandonados. Antes de capturar novos candidatos, o worker consulta o objeto determinístico com S3 `HeadObject` e confere os metadados SHA-256 e sourceId. Se o objeto existir e os metadados coincidirem, a captura e o candidato aprovado são finalizados na mesma transação PostgreSQL. Se não existir, a captura passa para `ERROR` e o candidato recebe novo prazo de retry com backoff. Erros do provedor e divergências de metadados não alteram o registro. A reconciliação não exclui objetos nem varre o bucket.
+
+A migration 0016 cria o ledger global de execução dos três workers do collector (`SOURCE_MONITOR`, `ARTIFACT_DISCOVERY`, `ARTIFACT_CAPTURE`). Cada execução registra `RUNNING` e termina como `SUCCEEDED` ou `FAILED`, com timestamps, duração, contadores JSON e código de falha sanitizado. O runtime recebe SELECT/INSERT e UPDATE apenas dos campos de ciclo de vida; DELETE é revogado. A consulta da API é restrita ao tenant revisor configurado.
