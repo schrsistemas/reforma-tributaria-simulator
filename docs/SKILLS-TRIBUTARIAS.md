@@ -166,3 +166,38 @@ O retorno é um pacote de preparação, não um resultado tributário. Ele infor
 ## Critério de pronto
 
 Uma Skill só é considerada operacional quando tiver instruções, contrato de entrada/saída, ferramentas autorizadas, evidências, testes de avaliação e telemetria. A presença do \`SKILL.md\` comprova apenas a definição documental.
+
+
+## Agent Host e execução de ferramentas fiscais
+
+A execução agora possui três componentes internos:
+
+- `workers/api/src/agent-host.ts`: ciclo limitado de modelo/ferramentas, com autorização por interseção de allowlists, timeout, limite de iterações e trilha de eventos.
+- `workers/api/src/fiscal-tool-runner.ts`: executor interno das ferramentas MCP implementadas, sem chamadas HTTP recursivas.
+- `workers/api/src/fiscal-agent-service.ts`: composição de preparação de Skills, instruções do bundle, bindings executáveis, autorização do host e Agent Host.
+
+O catálogo `GET /api/v1/mcp/tools` descreve somente ferramentas que o endpoint `POST /api/v1/mcp/call` realmente executa. Cada ferramenta apresenta schema de entrada; campos extras, tipos incorretos e valores fora dos limites são rejeitados. Ferramentas dependentes de D1 informam `DATABASE_REQUIRED` quando a conexão não está disponível.
+
+Ferramentas MCP conectadas ao runner:
+
+- `fiscal.search_evidence`
+- `fiscal.get_document`
+- `fiscal.get_split_payment_rules`
+- `fiscal.get_credit_eligibility_rules`
+- `fiscal.evaluate_credit_eligibility`
+- `fiscal.resolve_ruleset`
+
+As declarações de ferramentas nas Skills que não constam desse catálogo — por exemplo, `fiscal.calculate` e `fiscal.compare_calculation` — não são automaticamente executáveis pelo Agent Host. Elas continuam associadas a outras rotas/capacidades e serão integradas ao runner somente após contrato, schema e testes próprios.
+
+A função `runPreparedFiscalAgent` filtra os bindings pelo catálogo MCP real e cruza o resultado com `authorizedTools`, fornecido pela política do host. Se não houver Skill especializada, retorna `NO_MATCH` sem chamar o modelo.
+
+**Limite atual:** a composição é uma biblioteca interna testada, não um endpoint público de execução. Não há adapter LLM registrado nem credenciais/configuração de provedor no Worker. O projeto ainda não executa agentes autônomos em produção. A preparação de Skills e a execução determinística das ferramentas conectadas já estão implementadas; a geração de linguagem por modelo permanece pendente.
+
+### Próximas fases
+
+1. Selecionar e configurar um provider LLM por meio de binding/secret no ambiente de execução.
+2. Implementar o adapter do provider com suporte a tool calls estruturadas e validação de resposta.
+3. Definir política de autorização de ferramentas por tenant no host, sem derivá-la do manifesto de Skills.
+4. Expor endpoint autenticado somente depois da configuração do provider e da política.
+5. Integrar gradualmente as demais capacidades HTTP (simulação, comparação oficial e pagamentos) com schemas e testes específicos.
+6. Adicionar testes de integração em ambiente D1 isolado e avaliações tributárias com evidência oficial.
