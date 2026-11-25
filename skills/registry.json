@@ -41,7 +41,12 @@
         "CBS",
         "transition",
         "tax credit",
-        "destination"
+        "destination",
+        "reforma tributária",
+        "imposto sobre bens e serviços",
+        "contribuição sobre bens e serviços",
+        "crédito tributário",
+        "destino"
       ],
       "dependsOn": [
         "evidencia-legislacao-rag",
@@ -55,7 +60,10 @@
       "triggers": [
         "Imposto Seletivo",
         "IS",
-        "selective tax"
+        "selective tax",
+        "imposto seletivo",
+        "tributação seletiva",
+        "incidência do imposto seletivo"
       ],
       "dependsOn": [
         "evidencia-legislacao-rag",
@@ -70,7 +78,12 @@
         "Simples Nacional",
         "MEI",
         "tax regime",
-        "regime comparison"
+        "regime comparison",
+        "regime tributário",
+        "comparação de regimes",
+        "anexo do simples",
+        "fator r",
+        "enquadramento no simples"
       ],
       "dependsOn": [
         "ibs-cbs-transicao",
@@ -90,7 +103,12 @@
         "NFS-e",
         "XML",
         "XSD",
-        "tax document"
+        "tax document",
+        "documento fiscal",
+        "nota fiscal",
+        "leiaute fiscal",
+        "evento fiscal",
+        "validação de xml"
       ],
       "dependsOn": [
         "evidencia-legislacao-rag"
@@ -104,7 +122,11 @@
         "Split Payment",
         "payment segregation",
         "settlement",
-        "reconciliation"
+        "reconciliation",
+        "segregação de pagamento",
+        "liquidação tributária",
+        "conciliação de pagamento",
+        "estorno tributário"
       ],
       "dependsOn": [
         "ibs-cbs-transicao",
@@ -123,7 +145,16 @@
         "normative act",
         "effective date",
         "official evidence",
-        "legal research"
+        "legal research",
+        "legislação",
+        "lei",
+        "decreto",
+        "ato normativo",
+        "vigência",
+        "fonte oficial",
+        "pesquisa normativa",
+        "norma tributária",
+        "evidência oficial"
       ],
       "dependsOn": []
     },
@@ -135,7 +166,12 @@
         "tax calculation",
         "tax simulation",
         "RuleSet",
-        "calculation comparison"
+        "calculation comparison",
+        "cálculo fiscal",
+        "simulação tributária",
+        "comparação de cálculo",
+        "apuração de tributo",
+        "apurar tributos"
       ],
       "dependsOn": [
         "evidencia-legislacao-rag"
@@ -150,7 +186,14 @@
         "accessory obligation",
         "filing",
         "deadline",
-        "compliance"
+        "compliance",
+        "obrigação tributária",
+        "obrigação acessória",
+        "declaração fiscal",
+        "prazo fiscal",
+        "compliance fiscal",
+        "entrega de declaração",
+        "escrituração fiscal"
       ],
       "dependsOn": [
         "evidencia-legislacao-rag"
