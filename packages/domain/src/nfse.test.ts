@@ -4,7 +4,7 @@ import {
   NFSE_LAYOUT_PROFILES,
   resolveNfseLayout,
   assessProductionIbsCbsGroup,
-} from './nfse.js';
+} from './nfse.ts';
 
 test('produção seleciona NT 004 acrescida do domínio NT 007', () => {
   const profile = resolveNfseLayout('PRODUCTION');
