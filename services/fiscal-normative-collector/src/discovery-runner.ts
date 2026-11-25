@@ -38,7 +38,7 @@ async function main(): Promise<void> {
   const client = await pool.connect();
   try {
     const lock = await withArtifactDiscoveryLock(client, () =>
-      withWorkerRun(client, "ARTIFACT_DISCOVERY", () => runDiscovery(client))
+      withWorkerRun(client, "ARTIFACT_DISCOVERY", () => runDiscovery(client), result => result.errors > 0)
     );
     if (!lock.acquired) {
       process.stdout.write(JSON.stringify({ skipped: true, reason: "DISCOVERY_ALREADY_RUNNING" }) + "\n");
