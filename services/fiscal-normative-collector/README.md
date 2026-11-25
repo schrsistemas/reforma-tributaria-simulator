@@ -11,9 +11,9 @@ Only HTTPS URLs whose hostname exactly matches the allowlist are requested. Redi
 
 ## Run
 
-pnpm --filter @rts/fiscal-normative-collector check:sources
+\`pnpm --filter @rts/fiscal-normative-collector check:sources\`
 
-Schedule from an external cron or VPS scheduler only after configuring the runtime connection and allowlist. Do not run multiple concurrent checks against the same source.
+Schedule from an external cron or VPS scheduler after configuring the runtime connection and allowlist. PostgreSQL session advisory lock (key pair 20261125/1) prevents overlapping runs across processes. The lock is held on the same checked-out database connection used for the full run and is released in a finally block.
 
 ## Source monitor status
 
@@ -25,8 +25,20 @@ Schedule from an external cron or VPS scheduler only after configuring the runti
 
 A CHANGED status indicates that the portal response changed; it does not prove that a new normative act was published. Every alert requires human review and document-level verification.
 
+## Registered NFS-e Via source classes
+
+Migration \`0007_nfse_specific_normative_sources.sql\` registers independent URLs for the NFS-e Via manuals/annexes, XSD index, official API links, the official notice about Ato Conjunto RFB/CGIBS nº 7/2026, and FAQ v1.5.
+
+The source classes are deliberately descriptive:
+
+- \`TECHNICAL_DOCUMENTATION\`, \`SCHEMA_REPOSITORY\` and \`API_DIRECTORY\` identify technical material.
+- \`NORMATIVE_COMMUNICATION\` identifies an official notice about a normative act; the underlying act remains the legal authority.
+- \`FAQ_REFERENCE\` is explanatory guidance, not a normative act.
+
+The collector does not resolve conflicts or select a tax rule based on source type. In particular, an FAQ change must never overwrite a legal deadline or technical layout without review against the underlying act and the applicable official technical documentation.
+
 ## Artifact capture library
 
-`src/capture.ts` captures an explicitly supplied official artifact URL. It enforces the exact-host HTTPS allowlist, blocks redirects, limits response size and time, accepts only PDF/HTML/XML/JSON content types, verifies the PDF signature, calculates SHA-256 and writes bytes to an S3-compatible object store. `src/s3-storage.ts` provides the S3-compatible storage adapter. `src/capture-service.ts` records immutable metadata in `fiscal.normative_artifact_captures` and treats an existing source/hash pair as a duplicate.
+\`src/capture.ts\` captures an explicitly supplied official artifact URL. It enforces the exact-host HTTPS allowlist, blocks redirects, limits response size and time, accepts only PDF/HTML/XML/JSON content types, verifies the PDF signature, calculates SHA-256 and writes bytes to an S3-compatible object store. \`src/s3-storage.ts\` provides the S3-compatible storage adapter. \`src/capture-service.ts\` records immutable metadata in \`fiscal.normative_artifact_captures\` and treats an existing source/hash pair as a duplicate.
 
 The capture library is not called automatically by the source-page checker and does not yet discover or queue candidate document links. Discovery policy, object-store provisioning and human approval of candidate documents must be configured before scheduled ingestion. The service does not execute or interpret downloaded content.
