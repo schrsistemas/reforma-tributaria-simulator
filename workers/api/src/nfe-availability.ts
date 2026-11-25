@@ -86,7 +86,7 @@ export function parseNfeAvailabilityHtml(html: string, checkedAt = new Date().to
   const scRow = authorities.find(item => item.authority === 'SVRS');
   const relevantScServices = (scRow?.services ?? []).filter(item => item.service !== 'averageTime');
   const recognizedIndicators = authorities.reduce((total, item) => total + item.services.filter(service => service.status !== 'UNKNOWN').length, 0);
-  const unknownIndicators = authorities.reduce((total, item) => total + item.services.filter(service => service.status === 'UNKNOWN').length, 0);
+  const unknownIndicators = authorities.reduce((total, item) => total + item.services.filter(service => service.service !== 'averageTime' && service.status === 'UNKNOWN').length, 0);
   return {
     checkedAt,
     sourceUrl: NFE_AVAILABILITY_URL,
