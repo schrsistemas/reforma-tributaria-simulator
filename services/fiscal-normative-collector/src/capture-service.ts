@@ -64,7 +64,7 @@ export async function captureAndRecordArtifact(
 
     const resumed = await db.query<CaptureRecord>(
       `UPDATE fiscal.normative_artifact_captures
-          SET capture_status = 'PENDING', captured_at = NULL, capture_error_code = NULL
+          SET capture_status = 'PENDING', captured_at = NULL, capture_error_code = NULL, capture_started_at = now()
         WHERE id = $1 AND capture_status IN ('PENDING','ERROR')
         RETURNING id, capture_status, storage_key`,
       [record.id]
