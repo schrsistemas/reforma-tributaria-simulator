@@ -14,6 +14,7 @@ Apply migrations in numeric order with a dedicated migration-owner account:
 10. 0010_normative_artifact_candidates.sql
 11. 0011_normative_artifact_candidate_privileges.sql
 12. 0012_normative_artifact_capture_backoff.sql
+13. 0013_normative_artifact_candidate_reviews.sql
 
 The runtime role must not own these objects and must remain NOSUPERUSER/NOBYPASSRLS. Set its password out-of-band after applying migration 0002.
 
@@ -38,3 +39,6 @@ Always validate migrations against a disposable PostgreSQL database before produ
 Migration 0010 creates the source-linked artifact discovery queue. Migration 0011 hardens the runtime role's candidate-table privileges. Candidates are deduplicated by source and canonical artifact URL, retain their original extension and discovery timestamps, and remain `PENDING` until human review. OWNER/ADMIN decisions are audited. Rediscovery never resets `APPROVED`, `REJECTED` or `CAPTURED` states. It does not trigger artifact capture or RuleSet publication.
 
 The capture worker selects only `APPROVED` candidates whose retry deadline has passed. Migration 0012 enables exponential retry backoff from 1 minute up to 24 hours. It records each attempt, leaves failures retryable, links the immutable artifact capture ID and changes status to `CAPTURED` only after the storage and metadata steps succeed. The S3-compatible object store must be provisioned before running it.
+
+
+Migration 0013 creates an append-only decision history for normative artifact candidates. Each APPROVED/REJECTED decision stores the designated reviewer tenant, actor, previous state, decision, optional note and timestamp in the same transaction as the candidate update and audit event. Row-level security scopes history to the configured reviewer tenant. The runtime role receives SELECT/INSERT only; UPDATE and DELETE are revoked.

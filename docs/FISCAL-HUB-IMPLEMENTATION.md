@@ -21,7 +21,7 @@ As categorias são separadas por natureza: documentos fiscais eletrônicos (DF-e
 
 O catálogo registra URLs oficiais e permite monitorar disponibilidade/hash. O coletor descobre links diretos `.pdf`, `.xsd`, `.xml` e `.json` nas páginas HTML oficiais, valida hosts pela allowlist exata e grava candidatos deduplicados em `fiscal.normative_artifact_candidates`. A descoberta não acessa os documentos encontrados.
 
-Candidatos começam em `PENDING`. OWNER/ADMIN pode aprovar ou rejeitar pela API. O worker `capture:approved` captura somente candidatos `APPROVED`, grava o objeto no storage S3-compatible, registra SHA-256 e metadados imutáveis e só então move o candidato para `CAPTURED`. Falhas permanecem aprovadas para nova tentativa, com contador, último erro e backoff exponencial entre 1 minuto e 24 horas. O worker não interpreta conteúdo nem publica regras tributárias.
+Candidatos começam em `PENDING`. OWNER/ADMIN do tenant revisor pode aprovar ou rejeitar pela API. Cada decisão grava histórico imutável com estado anterior, decisão, usuário, observação e data, na mesma transação da atualização do candidato e do evento de auditoria. O histórico só pode ser consultado pelo tenant revisor. O worker `capture:approved` captura somente candidatos `APPROVED`, grava o objeto no storage S3-compatible, registra SHA-256 e metadados imutáveis e só então move o candidato para `CAPTURED`. Falhas permanecem aprovadas para nova tentativa, com contador, último erro e backoff exponencial entre 1 minuto e 24 horas. O worker não interpreta conteúdo nem publica regras tributárias.
 
 A associação de instância ERP à empresa usa chave estrangeira composta pelo tenant, impedindo associação cruzada. A migration 0003 também reforça a integridade do vínculo entre eventos de integração e instâncias ERP, valida formato de CNPJ e SHA-256, adiciona índices e restringe alterações/exclusões de auditoria para o usuário runtime.
 
@@ -30,7 +30,7 @@ A associação de instância ERP à empresa usa chave estrangeira composta pelo 
 - O CRUD de usuários, convites, recuperação de senha e gestão de sessão ainda não está implementado.
 - Existe monitor de disponibilidade/hash, descoberta de links de artefatos, fila de candidatos, revisão humana e worker de captura de candidatos aprovados. OCR, extração semântica, diff jurídico, análise de impacto e publicação automatizada de RuleSets ainda não estão implementados.
 - Fontes e documentos normativos são somente leitura pela API.
-- As migrations 0001–0012 ainda precisam ser aplicadas e validadas em PostgreSQL real.
+- As migrations 0001–0013 ainda precisam ser aplicadas e validadas em PostgreSQL real.
 - Testes de API atuais usam mocks; não substituem testes reais de PostgreSQL/RLS.
 - O armazenamento S3 precisa ser provisionado e configurado.
 - Nenhum deploy da API na VPS foi executado.
@@ -49,7 +49,7 @@ Para ativar a API, configurar `DATABASE_URL` e `JWT_SECRET` no ambiente Producti
 
 ## Banco
 
-Aplicar migrations em ordem numérica: 0001_fiscal_hub_core.sql até 0012_normative_artifact_capture_backoff.sql. Use um usuário de migração separado. A API deve conectar como fiscal_hub_app, sem ownership, superuser ou BYPASSRLS.
+Aplicar migrations em ordem numérica: 0001_fiscal_hub_core.sql até 0013_normative_artifact_candidate_reviews.sql. Use um usuário de migração separado. A API deve conectar como fiscal_hub_app, sem ownership, superuser ou BYPASSRLS.
 
 ## Execução local
 

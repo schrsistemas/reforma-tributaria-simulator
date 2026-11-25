@@ -380,3 +380,107 @@ test("Vercel readiness returns 503 while PostgreSQL configuration is absent", as
     else process.env.JWT_SECRET = originalJwtSecret;
   }
 });
+
+
+function reviewHistoryPool(): Pool {
+  const historyRow = {
+    id: "55555555-5555-4555-8555-555555555555",
+    candidate_id: "44444444-4444-4444-8444-444444444444",
+    actor_user_id: USER_ID,
+    previous_status: "PENDING",
+    decision: "APPROVED",
+    note: "Documento oficial conferido.",
+    decided_at: "2026-11-25T14:00:00.000Z"
+  };
+  const client = {
+    query: async (sql: string) => {
+      if (sql.includes("FROM fiscal.normative_artifact_candidate_reviews")) {
+        return { rows: [historyRow], rowCount: 1 };
+      }
+      if (sql.includes("UPDATE fiscal.normative_artifact_candidates")) {
+        return { rows: [{
+          id: historyRow.candidate_id,
+          source_id: "11111111-1111-4111-8111-111111111111",
+          artifact_url: "https://www.gov.br/ato.pdf",
+          link_text: "Ato normativo",
+          file_extension: "pdf",
+          review_status: "APPROVED",
+          reviewed_by: USER_ID
+        }], rowCount: 1 };
+      }
+      return { rows: [], rowCount: 0 };
+    },
+    release: () => undefined
+  };
+  return {
+    query: async () => ({ rows: [], rowCount: 0 }),
+    connect: async () => client,
+    end: async () => undefined
+  } as unknown as Pool;
+}
+
+test("artifact candidate review history requires authentication", async () => {
+  const app = await buildApp({
+    pool: reviewHistoryPool(),
+    jwtSecret: JWT_SECRET,
+    normativeReviewTenantId: TENANT_ID
+  });
+  const response = await app.inject({
+    method: "GET",
+    url: "/v1/normative/artifact-candidates/44444444-4444-4444-8444-444444444444/reviews"
+  });
+  assert.equal(response.statusCode, 401);
+  await app.close();
+});
+
+test("artifact candidate review history is restricted to the designated reviewer tenant", async () => {
+  const app = await buildApp({
+    pool: reviewHistoryPool(),
+    jwtSecret: JWT_SECRET,
+    normativeReviewTenantId: TENANT_ID
+  });
+  const token = await tokenFor(app, ["ADMIN"], OTHER_TENANT_ID);
+  const response = await app.inject({
+    method: "GET",
+    url: "/v1/normative/artifact-candidates/44444444-4444-4444-8444-444444444444/reviews",
+    headers: { authorization: "Bearer " + token }
+  });
+  assert.equal(response.statusCode, 403);
+  await app.close();
+});
+
+test("artifact candidate review history returns immutable decision records", async () => {
+  const app = await buildApp({
+    pool: reviewHistoryPool(),
+    jwtSecret: JWT_SECRET,
+    normativeReviewTenantId: TENANT_ID
+  });
+  const token = await tokenFor(app, ["ADMIN"]);
+  const response = await app.inject({
+    method: "GET",
+    url: "/v1/normative/artifact-candidates/44444444-4444-4444-8444-444444444444/reviews",
+    headers: { authorization: "Bearer " + token }
+  });
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.json().items.length, 1);
+  assert.equal(response.json().items[0].decision, "APPROVED");
+  assert.equal(response.json().items[0].previous_status, "PENDING");
+  await app.close();
+});
+
+test("artifact candidate review history validates candidate UUID", async () => {
+  const app = await buildApp({
+    pool: reviewHistoryPool(),
+    jwtSecret: JWT_SECRET,
+    normativeReviewTenantId: TENANT_ID
+  });
+  const token = await tokenFor(app, ["ADMIN"]);
+  const response = await app.inject({
+    method: "GET",
+    url: "/v1/normative/artifact-candidates/not-a-uuid/reviews",
+    headers: { authorization: "Bearer " + token }
+  });
+  assert.equal(response.statusCode, 400);
+  assert.equal(response.json().error, "INVALID_CANDIDATE_ID");
+  await app.close();
+});

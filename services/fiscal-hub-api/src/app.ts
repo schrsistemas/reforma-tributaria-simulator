@@ -344,6 +344,12 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
         );
         if (result.rows[0]) {
           await client.query(
+            `INSERT INTO fiscal.normative_artifact_candidate_reviews
+               (tenant_id, candidate_id, actor_user_id, previous_status, decision, note)
+             VALUES ($1, $2, $3, 'PENDING', $4, $5)`,
+            [claims.tenantId, params.data.candidateId, claims.sub, decision, parsed.data.note ?? null]
+          );
+          await client.query(
             `INSERT INTO fiscal.audit_events
                (tenant_id, actor_user_id, event_type, entity_type, entity_id, metadata)
              VALUES ($1,$2,'NORMATIVE_ARTIFACT_CANDIDATE_REVIEWED',
@@ -369,6 +375,34 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     }
   });
 
+
+  app.get("/v1/normative/artifact-candidates/:candidateId/reviews", async (request, reply) => {
+    const claims = await authenticate(request, reply);
+    if (!claims) return;
+    if (!canManageTenant(claims) || !options.normativeReviewTenantId ||
+        claims.tenantId !== options.normativeReviewTenantId) {
+      return reply.code(403).send({ error: "FORBIDDEN" });
+    }
+    const params = z.object({ candidateId: z.string().uuid() }).safeParse(request.params);
+    if (!params.success) return reply.code(400).send({ error: "INVALID_CANDIDATE_ID" });
+    try {
+      const rows = await withTenant(options.pool, claims.tenantId, async client => {
+        const result = await client.query(
+          `SELECT id, candidate_id, actor_user_id, previous_status, decision, note, decided_at
+             FROM fiscal.normative_artifact_candidate_reviews
+            WHERE candidate_id = $1
+            ORDER BY decided_at DESC
+            LIMIT 50`,
+          [params.data.candidateId]
+        );
+        return result.rows;
+      });
+      return reply.send({ items: rows });
+    } catch (error) {
+      request.log.error({ err: error }, "normative artifact candidate review history failed");
+      return reply.code(500).send({ error: "NORMATIVE_ARTIFACT_CANDIDATE_REVIEW_HISTORY_FAILED" });
+    }
+  });
 
   app.get("/v1/normative/sources/:sourceId/candidates", async (request, reply) => {
     const claims = await authenticate(request, reply);
