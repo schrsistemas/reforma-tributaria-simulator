@@ -30,6 +30,7 @@ export interface Env {
   OFFICIAL_SIMPLE_OBSERVABILITY_URL?: string;
   /** Full HTTPS endpoint published for the Receita Federal Simples Nacional activities catalog. */
   OFFICIAL_SIMPLE_ACTIVITIES_URL?: string;
+  OFFICIAL_DANFSE_ENDPOINT_URL?: string;
 }
 interface WorkflowBinding {
   create(options: { id?: string; params: unknown }): Promise<{ id: string; status: string }>;
@@ -113,6 +114,38 @@ function authenticate(request: Request, env: Env) {
   if (requestedTenantId !== boundTenantId) {
     throw Object.assign(new Error('TENANT_FORBIDDEN'), { status: 403 });
   }
+}
+
+async function readBytesWithLimit(request: Request, maxBytes: number): Promise<Uint8Array> {
+  const declaredLength = Number(request.headers.get('content-length') ?? '0');
+  if (Number.isFinite(declaredLength) && declaredLength > maxBytes) {
+    throw Object.assign(new Error('Payload too large'), { status: 413 });
+  }
+  if (!request.body) return new Uint8Array();
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > maxBytes) {
+        await reader.cancel();
+        throw Object.assign(new Error('Payload too large'), { status: 413 });
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const body = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return body;
 }
 
 async function readJson(request: Request) {
@@ -445,6 +478,70 @@ export default {
       } catch (error) {
         const status = error instanceof Error && error.name === 'AbortError' ? 504 : (Number((error as { status?: number }).status) || 502);
         return json({ ok: false, error: error instanceof Error ? error.message : 'OFFICIAL_SIMPLE_ACTIVITIES_UNAVAILABLE' }, status, request);
+      }
+    }
+
+    if (request.method === 'POST' && url.pathname === '/api/v1/official-calculator/danfse') {
+      try {
+        integrationHeaders(request);
+        const endpoint = env.OFFICIAL_DANFSE_ENDPOINT_URL;
+        if (!endpoint) return json({
+          ok: false,
+          error: 'OFFICIAL_DANFSE_ENDPOINT_NOT_CONFIGURED',
+          requiredConfiguration: 'OFFICIAL_DANFSE_ENDPOINT_URL',
+        }, 503, request);
+
+        const contentType = request.headers.get('content-type')?.split(';', 1)[0].trim().toLowerCase();
+        if (contentType !== 'application/xml') {
+          return json({ ok: false, error: 'DANFSE_XML_CONTENT_TYPE_REQUIRED' }, 415, request);
+        }
+
+        const target = new URL(endpoint);
+        if (target.protocol !== 'https:') {
+          return json({ ok: false, error: 'OFFICIAL_ENDPOINT_MUST_USE_HTTPS' }, 500, request);
+        }
+        const stc = url.searchParams.get('stc');
+        if (stc !== null && !['0', '1', '2'].includes(stc)) {
+          return json({ ok: false, error: 'DANFSE_STATUS_INVALID', allowed: ['0', '1', '2'] }, 400, request);
+        }
+        const canhoto = url.searchParams.get('canhoto');
+        if (canhoto !== null && !['true', 'false'].includes(canhoto)) {
+          return json({ ok: false, error: 'DANFSE_CANHOTO_INVALID' }, 400, request);
+        }
+        if (stc !== null) target.searchParams.set('stc', stc);
+        if (canhoto !== null) target.searchParams.set('canhoto', canhoto);
+
+        const xml = await readBytesWithLimit(request, 5 * 1024 * 1024);
+        if (xml.byteLength === 0) return json({ ok: false, error: 'DANFSE_XML_REQUIRED' }, 400, request);
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 20000);
+        try {
+          const upstream = await fetch(target.toString(), {
+            method: 'POST',
+            headers: { 'content-type': 'application/xml', accept: 'application/pdf, application/json' },
+            body: xml,
+            signal: controller.signal,
+          });
+          const upstreamType = upstream.headers.get('content-type') ?? 'application/octet-stream';
+          if (upstream.ok && !upstreamType.toLowerCase().includes('application/pdf')) {
+            return json({ ok: false, error: 'OFFICIAL_DANFSE_RESPONSE_CONTENT_TYPE_INVALID' }, 502, request);
+          }
+          const headers = new Headers({
+            'content-type': upstreamType,
+            'cache-control': 'no-store',
+          });
+          const correlationId = request.headers.get('X-Correlation-Id');
+          if (correlationId) headers.set('X-Correlation-Id', correlationId);
+          const disposition = upstream.headers.get('content-disposition');
+          if (disposition) headers.set('content-disposition', disposition);
+          return new Response(upstream.body, { status: upstream.status, headers });
+        } finally {
+          clearTimeout(timeout);
+        }
+      } catch (error) {
+        const status = error instanceof Error && error.name === 'AbortError' ? 504 : (Number((error as { status?: number }).status) || 502);
+        return json({ ok: false, error: error instanceof Error ? error.message : 'OFFICIAL_DANFSE_UNAVAILABLE' }, status, request);
       }
     }
 
