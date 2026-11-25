@@ -82,6 +82,7 @@ async function ingestGovernmentEvidence(env: Env, source: GovernmentSource, resu
     : 'UNKNOWN';
   const existing = await env.DB.prepare('SELECT id,content_hash FROM rag_documents WHERE source_id=? ORDER BY published_at DESC LIMIT 1').bind(source.id).first<{id:string;content_hash:string}>();
   const chunks = chunkLegalDocument(result.text);
+  if (chunks.length === 0) return { ingested: false, reason: 'NO_EXTRACTABLE_TEXT' };
   if (existing?.content_hash === contentHash) {
     const firstChunk = await env.DB.prepare(
       'SELECT metadata_json FROM rag_chunks WHERE document_id=? ORDER BY ordinal LIMIT 1',
