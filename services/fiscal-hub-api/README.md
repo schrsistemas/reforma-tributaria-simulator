@@ -22,7 +22,7 @@ Node.js 22.x, pnpm 10.34.9 through Corepack, TypeScript, Fastify and PostgreSQL.
 - GET /v1/erp-instances
 - POST /v1/erp-instances (OWNER or ADMIN)
 - GET /v1/normative/sources
-- GET /v1/normative/artifact-candidates
+- GET /v1/normative/collector-runs (OWNER/ADMIN of NORMATIVE_REVIEW_TENANT_ID)\n- GET /v1/normative/artifact-candidates
 - POST /v1/normative/artifact-candidates/:candidateId/review (OWNER or ADMIN of NORMATIVE_REVIEW_TENANT_ID)
 - GET /v1/normative/artifact-candidates/:candidateId/reviews (OWNER or ADMIN of NORMATIVE_REVIEW_TENANT_ID)
 - GET /v1/normative/sources/:sourceId/candidates
@@ -33,7 +33,7 @@ Node.js 22.x, pnpm 10.34.9 through Corepack, TypeScript, Fastify and PostgreSQL.
 
 Company creation validates CNPJ check digits and records an audit event. ERP instance creation validates the database engine, scopes the record to the authenticated tenant, and records an audit event. Foreign-key violations prevent associating a company from another tenant.
 
-The normative source registry is global and read-only through this API version. Migrations 0004–0009 maintain the official source registry. Migration 0010 creates the artifact candidate review queue. Migration 0013 adds an immutable, tenant-scoped decision history; each decision is persisted in the same transaction as the candidate status change and audit event. Migration 0014 adds the durable PENDING/CAPTURED/ERROR lifecycle for artifact storage and restricts runtime updates to lifecycle columns. Migration 0015 timestamps pending attempts for recovery of interrupted uploads. The migration runner stores immutable version/checksum records in the separate `fiscal_meta` schema; checksum drift aborts rather than silently reapplying modified SQL. Document versions expose only identifiers, version numbers, content hashes and capture timestamps; internal storage keys are not returned by the public API.
+The normative source registry is global and read-only through this API version. Migrations 0004–0009 maintain the official source registry. Migration 0010 creates the artifact candidate review queue. Migration 0013 adds an immutable, tenant-scoped decision history; each decision is persisted in the same transaction as the candidate status change and audit event. Migration 0014 adds the durable PENDING/CAPTURED/ERROR lifecycle for artifact storage and restricts runtime updates to lifecycle columns. Migration 0015 timestamps pending attempts for recovery of interrupted uploads. Migration 0016 adds the global worker execution ledger (status, timestamps, duration and JSON counters); its history endpoint is restricted to the designated normative-review tenant. The migration runner stores immutable version/checksum records in the separate `fiscal_meta` schema; checksum drift aborts rather than silently reapplying modified SQL. Document versions expose only identifiers, version numbers, content hashes and capture timestamps; internal storage keys are not returned by the public API.
 
 ## Initial administrator
 
@@ -41,7 +41,7 @@ Use the provision:admin script only with a migration-owner connection in a contr
 
 ## Runtime database role
 
-Apply migrations 0001–0014 with `MIGRATION_DATABASE_URL` as the migration owner. Never run the migration command using the restricted runtime role. Set the fiscal_hub_app password out-of-band with psql \\password fiscal_hub_app, then use that non-owner, NOSUPERUSER, NOBYPASSRLS role in the API DATABASE_URL. See migrations/README.md.
+Apply migrations 0001–0016 with `MIGRATION_DATABASE_URL` as the migration owner. Never run the migration command using the restricted runtime role. Set the fiscal_hub_app password out-of-band with psql \\password fiscal_hub_app, then use that non-owner, NOSUPERUSER, NOBYPASSRLS role in the API DATABASE_URL. See migrations/README.md.
 
 ## Database roles
 
