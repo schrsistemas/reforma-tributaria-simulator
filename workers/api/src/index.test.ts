@@ -106,3 +106,33 @@ test('DANFSe proxy enforces the 5 MiB XML ingress limit', async () => {
     globalThis.fetch = originalFetch;
   }
 });
+
+test('NF-e availability endpoint reads official indicators without inventing unknown states', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(`
+    <div>Última Verificação: 25/11/2026 03:02:22</div>
+    <div>WebServices Versão 4.00</div>
+    <table><tr><th>Autorizador</th><th>Autorização4</th><th>Retorno4</th><th>Inutilização4</th><th>Consulta</th><th>Status</th><th>Tempo</th><th>Cadastro</th><th>Evento</th></tr>
+    <tr><td>SVRS</td><td><img alt="verde" src="green.gif"></td><td><img alt="amarelo" src="yellow.gif"></td><td><img src="unknown.gif"></td><td><img alt="vermelho" src="red.gif"></td><td><img alt="verde" src="green.gif"></td><td>-</td><td><img alt="verde" src="green.gif"></td><td><img alt="verde" src="green.gif"></td></tr>
+    <tr><td>SVC-AN</td><td><img alt="verde" src="green.gif"></td></tr></table>`, {
+      status: 200,
+      headers: { 'content-type': 'text/html; charset=utf-8' },
+    });
+  try {
+    const response = await call('/api/v1/monitor/nfe', { method: 'GET' });
+    assert.equal(response.status, 200);
+    const body = await response.json() as {
+      ok: boolean;
+      snapshot: { santaCatarina: { normalAuthorizer: string; services: Array<{ status: string }> }; parser: { unknownIndicators: number } };
+      persistence: { saved: boolean };
+    };
+    assert.equal(body.ok, true);
+    assert.equal(body.snapshot.santaCatarina.normalAuthorizer, 'SVRS');
+    assert.equal(body.snapshot.santaCatarina.services[0].status, 'GREEN');
+    assert.equal(body.snapshot.santaCatarina.services[1].status, 'YELLOW');
+    assert.equal(body.snapshot.parser.unknownIndicators, 2);
+    assert.equal(body.persistence.saved, false);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
