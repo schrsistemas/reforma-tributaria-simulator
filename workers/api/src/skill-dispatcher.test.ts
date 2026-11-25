@@ -118,4 +118,9 @@ test('routes real registry Portuguese multi-domain request with all required dep
   assert.ok(ordered.includes('calculo-fiscal-deterministico'));
   assert.ok(ordered.indexOf('evidencia-legislacao-rag') < ordered.indexOf('ibs-cbs-transicao'));
   assert.ok(ordered.indexOf('calculo-fiscal-deterministico') < ordered.indexOf('split-payment'));
+  const ibs = plan.orderedSkills.find(skill => skill.id === 'ibs-cbs-transicao');
+  const documents = plan.orderedSkills.find(skill => skill.id === 'documentos-fiscais');
+  assert.ok(ibs?.toolBindings.includes('fiscal.search_evidence'));
+  assert.ok(ibs?.toolBindings.includes('fiscal.calculate'));
+  assert.ok(documents?.toolBindings.includes('fiscal.get_document'));
 });
