@@ -74,3 +74,30 @@ test('lê metadados RAG inválidos sem interromper a consulta', () => {
   assert.equal(topicsOf('{invalid'), undefined);
   assert.deepEqual(topicsOf('{"topics":["IBS",3,"CBS"]}'), ['IBS', 'CBS']);
 });
+
+test('não usa horário de captura como início de vigência em consultas históricas', () => {
+  const fallback = candidate({
+    publishedAt: '2026-06-01T12:00:00.000Z',
+    publishedAtSource: 'RETRIEVAL_FALLBACK',
+    effectiveFrom: undefined,
+    effectiveTo: undefined,
+  });
+  assert.equal(temporalMatch(fallback, '2026-07-01'), false);
+});
+
+test('usa publicação oficial como limite inferior apenas quando a origem é comprovada', () => {
+  const officialPublication = candidate({
+    publishedAt: '2026-06-01',
+    publishedAtSource: 'HTML_META',
+    effectiveFrom: undefined,
+    effectiveTo: undefined,
+  });
+  assert.equal(temporalMatch(officialPublication, '2026-05-31'), false);
+  assert.equal(temporalMatch(officialPublication, '2026-06-01'), true);
+  assert.equal(temporalMatch(officialPublication, '2026-07-01'), true);
+});
+
+test('não aceita datas históricas inválidas ou fim de vigência inválido', () => {
+  const item = candidate({ effectiveFrom: 'invalid', effectiveTo: undefined });
+  assert.equal(temporalMatch(item, '2026-06-01'), false);
+});
