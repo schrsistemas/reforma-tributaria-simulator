@@ -15,9 +15,9 @@ test("extracts approved document links, resolves relative URLs and rejects unapp
   assert.equal(links[2]!.resourceKind, "JSON");
 });
 test("deduplicates links and decodes HTML URL entities", () => {
-  const links = extractOfficialArtifactLinks('<a href="/download?a=1&amp;b=2">Manual</a><a href="/download?a=1&amp;b=2#top">Manual repetido</a>', sourceUrl, allowedHosts);
+  const links = extractOfficialArtifactLinks('<a href="/download.pdf?a=1&amp;b=2">Manual</a><a href="/download.pdf?a=1&amp;b=2#top">Manual repetido</a>', sourceUrl, allowedHosts);
   assert.equal(links.length, 1);
-  assert.equal(links[0]!.url, "https://www.gov.br/download?a=1&b=2");
+  assert.equal(links[0]!.url, "https://www.gov.br/download.pdf?a=1&b=2");
 });
 test("allows GNRE HTTPS port 444 only on its exact hostname", () => {
   const links = extractOfficialArtifactLinks('<a href="https://gnre.pe.gov.br:444/gnre/manual.pdf">Manual GNRE</a>', sourceUrl, allowedHosts);
