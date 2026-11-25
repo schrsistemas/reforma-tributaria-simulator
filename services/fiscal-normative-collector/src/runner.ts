@@ -1,5 +1,6 @@
-import { Pool } from "pg";
+import { Pool, type PoolClient } from "pg";
 import { inspectSource, type NormativeSource } from "./checker.js";
+import { withNormativeMonitorLock } from "./monitor.js";
 
 const databaseUrl = process.env.DATABASE_URL;
 const allowedHosts = new Set(
@@ -19,8 +20,8 @@ const pool = new Pool({
   application_name: "fiscal-normative-source-monitor"
 });
 
-async function main(): Promise<void> {
-  const sources = await pool.query<NormativeSource>(
+async function runChecks(client: PoolClient): Promise<void> {
+  const sources = await client.query<NormativeSource>(
     "SELECT id, name, official_url FROM fiscal.normative_sources WHERE active = true ORDER BY name"
   );
   let checked = 0;
@@ -28,18 +29,13 @@ async function main(): Promise<void> {
   let errors = 0;
 
   for (const source of sources.rows) {
-    const previous = await pool.query<{ content_sha256: string | null }>(
-      `SELECT content_sha256 FROM fiscal.normative_source_checks
-        WHERE source_id = $1 AND content_sha256 IS NOT NULL
-        ORDER BY checked_at DESC LIMIT 1`,
+    const previous = await client.query<{ content_sha256: string | null }>(
+      "SELECT content_sha256 FROM fiscal.normative_source_checks WHERE source_id = $1 AND content_sha256 IS NOT NULL ORDER BY checked_at DESC LIMIT 1",
       [source.id]
     );
     const snapshot = await inspectSource(source, previous.rows[0]?.content_sha256 ?? null, { allowedHosts });
-    await pool.query(
-      `INSERT INTO fiscal.normative_source_checks
-         (source_id, check_status, http_status, content_type, content_length,
-          etag, last_modified, content_sha256, response_ms, error_code)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+    await client.query(
+      "INSERT INTO fiscal.normative_source_checks (source_id, check_status, http_status, content_type, content_length, etag, last_modified, content_sha256, response_ms, error_code) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)",
       [source.id, snapshot.status, snapshot.httpStatus, snapshot.contentType, snapshot.contentLength,
        snapshot.etag, snapshot.lastModified, snapshot.contentSha256, snapshot.responseMs, snapshot.errorCode]
     );
@@ -59,8 +55,23 @@ async function main(): Promise<void> {
   process.stdout.write(JSON.stringify({ summary: { checked, changed, errors } }) + "\n");
 }
 
-try {
-  await main();
-} finally {
-  await pool.end();
+async function main(): Promise<void> {
+  const client = await pool.connect();
+  try {
+    const lock = await withNormativeMonitorLock(client, () => runChecks(client));
+    if (!lock.acquired) {
+      process.stdout.write(JSON.stringify({
+        skipped: true,
+        reason: "MONITOR_ALREADY_RUNNING"
+      }) + "\n");
+    }
+  } finally {
+    client.release();
+    await pool.end();
+  }
 }
+
+main().catch(error => {
+  process.stderr.write((error instanceof Error ? error.stack : String(error)) + "\n");
+  process.exitCode = 1;
+});
