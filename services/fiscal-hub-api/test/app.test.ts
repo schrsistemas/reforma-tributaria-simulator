@@ -554,3 +554,97 @@ test("collector run history validates filters and returns operational records", 
   assert.deepEqual(calls[0]!.values, ["SOURCE_MONITOR", "SUCCEEDED", 10]);
   await app.close();
 });
+
+
+test("collector diagnostics requires the designated reviewer tenant", async () => {
+  const app = await buildApp({
+    pool: fakePool(),
+    jwtSecret: JWT_SECRET,
+    normativeReviewTenantId: TENANT_ID
+  });
+  const token = await tokenFor(app, ["ADMIN"], OTHER_TENANT_ID);
+  const response = await app.inject({
+    method: "GET",
+    url: "/v1/normative/diagnostics",
+    headers: { authorization: "Bearer " + token }
+  });
+  assert.equal(response.statusCode, 403);
+  await app.close();
+});
+
+test("collector diagnostics aggregates worker, queue and capture health", async () => {
+  const diagnosticRow = {
+    workers: [
+      {
+        worker: "SOURCE_MONITOR",
+        latestStatus: "SUCCEEDED",
+        latestCounters: { checked: 8, changed: 1, errors: 0 },
+        consecutiveFailures: 0
+      },
+      {
+        worker: "ARTIFACT_DISCOVERY",
+        latestStatus: "FAILED",
+        latestCounters: { checked: 6, discovered: 2, errors: 1 },
+        consecutiveFailures: 2
+      },
+      {
+        worker: "ARTIFACT_CAPTURE",
+        latestStatus: "NEVER_RUN",
+        latestCounters: {},
+        consecutiveFailures: 0
+      }
+    ],
+    candidates: { pending: 4, approved: 2, rejected: 1, captured: 3 },
+    captures: { pending: 1, captured: 3, errors: 1, stalePending: 1 },
+    integrity: {
+      candidatesWithoutCapturedMetadata: 1,
+      capturedMetadataWithoutCandidate: 0
+    },
+    stale_runs: 1
+  };
+  const pool = {
+    query: async (sql: string) => sql.includes("WITH worker_names")
+      ? { rows: [diagnosticRow], rowCount: 1 }
+      : { rows: [], rowCount: 0 },
+    connect: async () => ({
+      query: async () => ({ rows: [], rowCount: 0 }),
+      release: () => undefined
+    }),
+    end: async () => undefined
+  } as unknown as Pool;
+  const app = await buildApp({
+    pool,
+    jwtSecret: JWT_SECRET,
+    normativeReviewTenantId: TENANT_ID
+  });
+  const token = await tokenFor(app, ["OWNER"]);
+  const response = await app.inject({
+    method: "GET",
+    url: "/v1/normative/diagnostics?staleRunMinutes=45&staleCaptureMinutes=20",
+    headers: { authorization: "Bearer " + token }
+  });
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.json().status, "DEGRADED");
+  assert.equal(response.json().staleRuns, 1);
+  assert.equal(response.json().workers.length, 3);
+  assert.equal(response.json().captures.stalePending, 1);
+  assert.equal(response.json().integrity.candidatesWithoutCapturedMetadata, 1);
+  assert.equal(response.json().storageObjectVerification, "NOT_CHECKED");
+  await app.close();
+});
+
+test("collector diagnostics validates threshold bounds", async () => {
+  const app = await buildApp({
+    pool: fakePool(),
+    jwtSecret: JWT_SECRET,
+    normativeReviewTenantId: TENANT_ID
+  });
+  const token = await tokenFor(app, ["ADMIN"]);
+  const response = await app.inject({
+    method: "GET",
+    url: "/v1/normative/diagnostics?staleRunMinutes=0",
+    headers: { authorization: "Bearer " + token }
+  });
+  assert.equal(response.statusCode, 400);
+  await app.close();
+});
