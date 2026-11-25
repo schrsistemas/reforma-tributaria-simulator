@@ -58,8 +58,8 @@ async function run(client: PoolClient): Promise<void> {
     storage,
     batchSize
   });
-  process.stdout.write(JSON.stringify({ summary }) + "\n");
-  if (summary.failed > 0) process.exitCode = 1;
+  process.stdout.write(JSON.stringify({ reconciliation, summary }) + "\n");
+  if (summary.failed > 0 || reconciliation.failed > 0) process.exitCode = 1;
 }
 
 async function main(): Promise<void> {
