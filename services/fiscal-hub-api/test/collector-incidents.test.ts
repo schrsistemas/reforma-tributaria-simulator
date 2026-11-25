@@ -5,7 +5,8 @@ import { evaluateCollectorIncidents } from "../src/collector-incidents.js";
 
 const INCIDENT_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 
-function incidentPool(conditionRows: Array<Record<string, unknown>>) {
+function incidentPool(initialConditions: Array<Record<string, unknown>>) {
+  let conditionRows = initialConditions;
   let state: "OPEN" | "RESOLVED" | null = null;
   let id: string | null = null;
   const events: string[] = [];
@@ -15,7 +16,9 @@ function incidentPool(conditionRows: Array<Record<string, unknown>>) {
       statements.push(sql);
       if (sql === "BEGIN" || sql === "COMMIT" || sql === "ROLLBACK" ||
           sql.includes("pg_advisory_xact_lock")) return { rows: [], rowCount: 0 };
-      if (sql.includes("WITH worker_names")) return { rows: conditionRows, rowCount: conditionRows.length };
+      if (sql.includes("WITH worker_names")) {
+        return { rows: conditionRows, rowCount: conditionRows.length };
+      }
       if (sql.includes("SELECT id, status FROM fiscal.normative_collector_incidents")) {
         return { rows: state && id ? [{ id, status: state }] : [], rowCount: state ? 1 : 0 };
       }
@@ -41,7 +44,15 @@ function incidentPool(conditionRows: Array<Record<string, unknown>>) {
     release() {}
   };
   const pool = { connect: async () => client } as unknown as Pool;
-  return { pool, events, statements, getState: () => state };
+  return {
+    pool,
+    events,
+    statements,
+    setConditions(rows: Array<Record<string, unknown>>) {
+      conditionRows = rows;
+    },
+    getState: () => state
+  };
 }
 
 const failedWorker = {
@@ -66,8 +77,21 @@ test("collector incident evaluation opens and deduplicates an active incident", 
 test("collector incident evaluation resolves an incident after its condition clears", async () => {
   const fake = incidentPool([failedWorker]);
   await evaluateCollectorIncidents(fake.pool);
+  fake.setConditions([]);
   const resolved = await evaluateCollectorIncidents(fake.pool, 30, 15);
-  assert.equal(resolved.resolved, 1);
+  assert.deepEqual(resolved, { opened: 0, updated: 0, reopened: 0, resolved: 1, active: 0 });
   assert.deepEqual(fake.events, ["OPENED", "RESOLVED"]);
   assert.equal(fake.getState(), "RESOLVED");
+});
+
+test("collector incident evaluation reopens a previously resolved incident", async () => {
+  const fake = incidentPool([failedWorker]);
+  await evaluateCollectorIncidents(fake.pool);
+  fake.setConditions([]);
+  await evaluateCollectorIncidents(fake.pool);
+  fake.setConditions([failedWorker]);
+  const reopened = await evaluateCollectorIncidents(fake.pool);
+  assert.deepEqual(reopened, { opened: 0, updated: 0, reopened: 1, resolved: 0, active: 1 });
+  assert.deepEqual(fake.events, ["OPENED", "RESOLVED", "REOPENED"]);
+  assert.equal(fake.getState(), "OPEN");
 });
