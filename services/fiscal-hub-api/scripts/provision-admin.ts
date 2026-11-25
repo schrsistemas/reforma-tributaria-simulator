@@ -2,7 +2,7 @@ import { createPool } from "../src/db.js";
 import { hashPassword } from "../src/auth.js";
 
 const required = [
-  "DATABASE_URL",
+  "MIGRATION_DATABASE_URL",
   "BOOTSTRAP_TENANT_NAME",
   "BOOTSTRAP_TENANT_SLUG",
   "BOOTSTRAP_ADMIN_EMAIL",
@@ -19,7 +19,7 @@ const tenantSlug = process.env.BOOTSTRAP_TENANT_SLUG!;
 const email = process.env.BOOTSTRAP_ADMIN_EMAIL!.trim().toLowerCase();
 const displayName = process.env.BOOTSTRAP_ADMIN_NAME!;
 const passwordHash = await hashPassword(process.env.BOOTSTRAP_ADMIN_PASSWORD!);
-const pool = createPool(process.env.DATABASE_URL!);
+const pool = createPool(process.env.MIGRATION_DATABASE_URL!);
 const client = await pool.connect();
 
 try {
