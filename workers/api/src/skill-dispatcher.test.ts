@@ -108,7 +108,7 @@ test('routes real registry Portuguese multi-domain request with all required dep
     query: 'Preciso validar uma NF-e e analisar IBS CBS e Split Payment',
   });
 
-  assert.equal(SKILL_REGISTRY.skills.length, 9);
+  assert.equal(SKILL_REGISTRY.skills.length, 10);
   assert.equal(plan.status, 'READY');
   const matched = plan.matchedSkills.map(skill => skill.id);
   const ordered = plan.orderedSkills.map(skill => skill.id);
@@ -125,4 +125,17 @@ test('routes real registry Portuguese multi-domain request with all required dep
   assert.ok(ibs?.toolBindings.includes('fiscal.search_evidence'));
   assert.ok(ibs?.toolBindings.includes('fiscal.calculate'));
   assert.ok(documents?.toolBindings.includes('fiscal.get_document'));
+});
+
+
+test('routes official Receita calculator requests to the official integration skill', () => {
+  const plan = resolveSkillPlan({
+    query: 'Quero integrar a calculadora oficial da Receita e gerar DANFSe',
+  });
+  const matched = plan.matchedSkills.map(skill => skill.id);
+  const ordered = plan.orderedSkills.map(skill => skill.id);
+  assert.ok(matched.includes('calculadora-oficial-receita'));
+  assert.ok(ordered.includes('evidencia-legislacao-rag'));
+  assert.ok(ordered.includes('calculo-fiscal-deterministico'));
+  assert.equal(plan.execution, 'NOT_EXECUTED');
 });
