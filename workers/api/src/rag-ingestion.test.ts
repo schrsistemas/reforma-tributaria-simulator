@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { chunkDocument, hashDocument, normalizeDocumentText, extractOfficialDates } from './rag-ingestion.js';
+import { chunkDocument, chunkLegalDocument, hashDocument, normalizeDocumentText, extractOfficialDates } from './rag-ingestion.js';
 
 test('normalizes line endings, whitespace and excessive blank lines', () => {
   assert.equal(
@@ -103,4 +103,66 @@ test('does not assign dates from a page listing multiple legal instruments', () 
     effectiveFromSource: 'UNKNOWN',
     effectiveToSource: 'UNKNOWN',
   });
+});
+
+
+test('keeps articles and their caput in separate semantic chunks', () => {
+  const chunks = chunkLegalDocument([
+    'Art. 1º Esta Lei institui o sistema.',
+    'Art. 2º Esta Lei define as competências.',
+  ].join('\n'));
+  assert.equal(chunks.length, 2);
+  assert.equal(chunks[0].units[0].article, 'Art. 1º');
+  assert.equal(chunks[1].units[0].article, 'Art. 2º');
+  assert.ok(chunks.every((chunk) => chunk.structure === 'LEGAL'));
+});
+
+test('separates paragraphs, roman items and lettered subitems', () => {
+  const chunks = chunkLegalDocument([
+    'Art. 1º Texto do caput.',
+    '§ 1º Texto do parágrafo.',
+    'I - Texto do inciso.',
+    'a) Texto da alínea.',
+  ].join('\n'));
+  assert.deepEqual(chunks.map((chunk) => chunk.units[0].type), [
+    'ARTICLE_CAPUT', 'PARAGRAPH', 'ITEM', 'ALINEA',
+  ]);
+  assert.ok(chunks.every((chunk) => chunk.units[0].article === 'Art. 1º'));
+  assert.equal(chunks[1].units[0].paragraph, '§ 1º');
+  assert.equal(chunks[2].units[0].item, 'I');
+  assert.equal(chunks[3].units[0].alinea, 'a');
+});
+
+test('keeps annex tables grouped and separate from legal prose', () => {
+  const chunks = chunkLegalDocument([
+    'ANEXO I',
+    'Código | Descrição',
+    '001 | Serviço A',
+    '002 | Serviço B',
+    'Art. 1º Regra posterior.',
+  ].join('\n'));
+  assert.equal(chunks[0].units[0].type, 'ANNEX');
+  assert.equal(chunks[1].units[0].type, 'TABLE');
+  assert.equal(chunks[1].text.split('\n').length, 3);
+  assert.equal(chunks[2].units[0].type, 'ARTICLE_CAPUT');
+});
+
+test('uses character fallback for documents without legal structure', () => {
+  const chunks = chunkLegalDocument('Manual operacional\nProcedimento de consulta\nEtapa final', 12, 2);
+  assert.ok(chunks.length > 1);
+  assert.ok(chunks.every((chunk) => chunk.structure === 'FALLBACK'));
+  assert.ok(chunks.every((chunk) => chunk.units[0].type === 'FALLBACK'));
+});
+
+test('splits oversized legal devices without crossing their article boundary', () => {
+  const chunks = chunkLegalDocument(
+    'Art. 7º ' + 'texto normativo '.repeat(12) + '\nArt. 8º Texto independente.',
+    50,
+    10,
+  );
+  const articleSeven = chunks.filter((chunk) => chunk.units[0].article === 'Art. 7º');
+  const articleEight = chunks.filter((chunk) => chunk.units[0].article === 'Art. 8º');
+  assert.ok(articleSeven.length > 1);
+  assert.equal(articleEight.length, 1);
+  assert.ok(chunks.every((chunk) => chunk.text.length <= 50));
 });
