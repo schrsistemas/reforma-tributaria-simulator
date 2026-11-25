@@ -1,0 +1,159 @@
+# Integração NFS-e Nacional
+
+**Estado desta especificação: 25/11/2026.** Este documento separa o que está confirmado na documentação oficial do que ainda depende de implementação e credenciamento. Não representa autorização para emitir documentos em nome de contribuintes.
+
+## 1. Ambientes e leiautes
+
+| Ambiente | Leiaute comunicado | Regra operacional |
+|---|---|---|
+| Produção oficial | NT 004 acrescida do domínio `tpRetPisConfins` da NT 007 | Manter emissões no leiaute NT 004/007 até publicação formal de novo release em produção |
+| Produção restrita | NT 009 v1.00, release 1, conforme comunicado de 29/10/2026 | Testes sem efeito fiscal |
+| Próximo release restrito | NT 009 v1.01 e superiores, release 2 | Não presumir disponibilidade efetiva apenas porque há arquivos XSD publicados; confirmar o release ativo no portal |
+| Evolução para produção | Releases 1 a 3 da NT 009 previstos para 01/12/2026 no comunicado | Tratar como cronograma publicado, não como confirmação de implantação concluída |
+
+### IBS/CBS na produção
+
+O comunicado do CGNFS-e de 29/10/2026 informa que o grupo IBS/CBS está aberto no ADN: sua ausência não provoca rejeição técnica por esse motivo específico. Se o contribuinte optar por preencher o grupo, todos os códigos, classificações e dados correlatos exigidos pelo leiaute precisam estar completos, inclusive os dados do adquirente/tomador quando aplicáveis.
+
+**Regra do simulador:** omitir IBS/CBS não equivale a calcular tributos iguais a zero nem elimina obrigações legais. O motor deve manter separadas a obrigatoriedade jurídica do contribuinte, a possibilidade técnica de recepção e a decisão de informar voluntariamente os campos.
+
+### Fontes da matriz
+
+- [Comunicado CGNFS-e de 29/10/2026 — leiaute de produção, IBS/CBS e NT 009](https://www.gov.br/nfse/pt-br/noticias/nfs-e-nacional-confira-oas-rientacoes-sobre-leiaute-em-producao-regras-de-preenchimento-de-ibs-cbs-e-status-da-nota-tecnica-009/)
+- [Documentação atual de produção](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/documentacao-atual)
+- [Documentação técnica de produção restrita](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/producao-restrita)
+
+## 2. Portais oficiais
+
+### Produção
+
+- [Emissor Nacional Web](https://www.nfse.gov.br/EmissorNacional/)
+- [Swagger API Contribuintes](https://www.nfse.gov.br/swagger/contribuintesissqn/)
+
+### Produção restrita
+
+- [Emissor Nacional Web — restrita](https://www.producaorestrita.nfse.gov.br/EmissorNacional/)
+- [Swagger API Contribuintes — restrita](https://www.producaorestrita.nfse.gov.br/swagger/contribuintesissqn/)
+
+A produção restrita não gera documento fiscal com validade jurídica. Não compartilhar dados reais de clientes nos testes quando dados sintéticos forem suficientes.
+
+## 3. Operações previstas no manual de contribuintes
+
+O manual oficial descreve o fluxo de parâmetros municipais, recepção da DPS, consulta de NFS-e, consulta de DPS e registro/consulta de eventos.
+
+| Operação | Método e rota | Finalidade |
+|---|---|---|
+| Convênio municipal | `GET /parametros_municipais/{codigoMunicipio}/convenio` | Verificar parâmetros de convênio |
+| Parâmetros de serviço | `GET /parametros_municipais/{codigoMunicipio}/{codigoServico}` | Consultar alíquotas, regimes especiais e deduções/reduções |
+| Parâmetros do contribuinte | `GET /parametros_municipais/{codigoMunicipio}/{CPF_CNPJ}` | Consultar retenções e benefícios conforme os serviços publicados |
+| Emissão | `POST /nfse` | Enviar XML da DPS; processamento síncrono com NFS-e ou rejeição |
+| Consulta NFS-e | `GET /nfse/{chaveAcesso}` | Recuperar documento pela chave |
+| Consulta DPS | `GET /dps/{id}` | Recuperar a chave associada à DPS |
+| Verificação DPS | `HEAD /dps/{id}` | Verificar se a NFS-e foi gerada |
+| Registrar evento | `POST /nfse/{chaveAcesso}/eventos` | Enviar pedido de registro de evento |
+| Consultar eventos | `GET /nfse/{chaveAcesso}/eventos` | Listar eventos vinculados à nota |
+
+A descrição exata de parâmetros, cabeçalhos, payloads, códigos de retorno e limites deve ser obtida do Swagger correspondente ao ambiente ativo. Não fixar exemplos de payload como contrato definitivo sem validar o OpenAPI atual.
+
+Fonte: [Manual dos Contribuintes — Emissor Público API](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/documentacao-atual/manual-contribuintes-emissor-publico-api-sistema-nacional-nfse.pdf).
+
+## 4. Autenticação, assinatura e fronteira de confiança
+
+O manual exige certificado digital válido em operações de consulta de DPS e descreve assinatura digital para pedidos de eventos. A identificação do certificado também é usada para validar a relação entre o solicitante e os atores da DPS.
+
+A integração deve, portanto, possuir um adaptador de credenciais/certificados que:
+- mantenha a chave privada fora do navegador e fora do código-fonte;
+- faça a assinatura XML conforme os XSD e regras vigentes;
+- implemente o canal TLS/certificado exigido pelo Swagger de cada ambiente;
+- valide cadeia, validade e titularidade do certificado;
+- registre apenas metadados e identificadores de auditoria, nunca o material privado;
+- permita rotação e revogação sem alterar o motor tributário.
+
+**Limite atual:** a API do simulador ainda não implementa transporte autenticado, assinatura XML nem emissão real de NFS-e. O link para o Emissor Web é apenas acesso externo. Não simular sucesso de autorização.
+
+## 5. Arquitetura proposta no monorepo
+
+Separar os componentes:
+
+1. **NFS-e Domain** — contratos da DPS, NFS-e, eventos, identificadores, ambiente e perfil de leiaute.
+2. **Layout Registry** — perfis versionados por ambiente, release e vigência; XSD e anexos associados por hash.
+3. **Municipal Parameters Adapter** — consulta e cache com validade explícita dos parâmetros municipais.
+4. **DPS Builder/Validator** — composição XML, validação XSD e regras locais; não substitui validação da SEFIN.
+5. **Digital Signature Provider** — assinatura e acesso ao certificado em ambiente isolado.
+6. **SEFIN Transport Adapter** — cliente HTTP para os endpoints oficiais, com timeout, correlation ID e classificação de erros.
+7. **NFS-e Repository** — snapshots imutáveis de requisição/retorno, chave de acesso, protocolo e eventos, com proteção de dados.
+8. **Fiscal Domain** — calcula e explica IBS/CBS; não deve ser acoplado à camada de transporte.
+
+### Fluxo de emissão
+
+```text
+Operação de serviço
+  -> Fiscal Domain resolve regras e tributos
+  -> Layout Registry escolhe ambiente/release
+  -> consulta parâmetros municipais
+  -> DPS Builder compõe XML
+  -> XSD + regras locais validam
+  -> assinatura digital
+  -> SEFIN Transport envia POST /nfse
+  -> retorno: NFS-e ou rejeição
+  -> persistência auditável
+  -> consulta/eventos quando solicitados
+```
+
+## 6. Contrato de ambiente obrigatório
+
+Toda requisição deve carregar, de forma explícita:
+
+- `environment`: `PRODUCTION` ou `RESTRICTED`;
+- `layoutId`: identificador imutável do perfil selecionado;
+- `layoutVersion` e `release`;
+- `municipalityCode`: código IBGE de sete dígitos;
+- `issuerTaxId`;
+- `dpsId`;
+- `correlationId`;
+- referência/hash dos XSD, anexos e parâmetros municipais utilizados.
+
+Não inferir produção pela ausência de parâmetro. Não permitir que uma operação de homologação seja reenviada automaticamente à produção.
+
+## 7. Estratégia de implementação
+
+### Fase 1 — concluída nesta etapa
+
+- Entrada NFS-e Nacional no portal visual.
+- Links para emissor, Swagger e documentação dos dois ambientes.
+- Documentação de arquitetura, diferenças de leiaute e limites da integração.
+
+### Fase 2 — próxima
+
+- Importar OpenAPI e XSD de produção e produção restrita.
+- Gerar contratos tipados e validadores.
+- Criar testes de regressão de DPS com dados sintéticos.
+- Implementar o Layout Registry e a matriz de versões.
+- Criar consulta/cache de parâmetros municipais, sem credenciais de emissão.
+
+### Fase 3 — integração autenticada
+
+- Definir provedor de certificado e assinatura compatível com a infraestrutura.
+- Implementar transporte autenticado e testes somente em produção restrita.
+- Persistir request/response e eventos com trilha de auditoria.
+- Exigir aprovação explícita antes de habilitar emissão em produção.
+
+## 8. Critérios de aceite
+
+- Nenhuma chamada de emissão é possível sem ambiente explícito.
+- O XML gerado é validado pelo XSD do release selecionado.
+- IBS/CBS não é marcado como zero quando omitido.
+- Campo IBS/CBS preenchido parcialmente é rejeitado localmente quando o leiaute exigir completude.
+- Produção e produção restrita possuem fixtures e testes separados.
+- Erros HTTP, rejeições fiscais e falhas de transporte são estados distintos.
+- Chaves privadas e certificados não aparecem em logs, respostas ou frontend.
+- Nenhuma nota é apresentada como autorizada sem retorno positivo da SEFIN.
+
+## 9. Referências oficiais
+
+- [Emissor Nacional Web — Produção](https://www.nfse.gov.br/EmissorNacional/Login?ReturnUrl=%2femissornacional)
+- [Swagger Contribuintes — Produção](https://www.nfse.gov.br/swagger/contribuintesissqn/)
+- [Swagger Contribuintes — Produção Restrita](https://www.producaorestrita.nfse.gov.br/swagger/contribuintesissqn/)
+- [Documentação atual de produção](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/documentacao-atual)
+- [Documentação técnica de produção restrita](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/producao-restrita)
+- [Comunicado de 29/10/2026 sobre IBS/CBS e NT 009](https://www.gov.br/nfse/pt-br/noticias/nfs-e-nacional-confira-oas-rientacoes-sobre-leiaute-em-producao-regras-de-preenchimento-de-ibs-cbs-e-status-da-nota-tecnica-009/)
