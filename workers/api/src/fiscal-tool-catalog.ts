@@ -9,7 +9,7 @@ export interface FiscalToolDefinition {
   inputSchema: {
     type: 'object';
     properties: Record<string, {
-      type: 'string' | 'integer';
+      type: 'string' | 'integer' | 'boolean';
       description?: string;
       enum?: string[];
       pattern?: string;
@@ -94,9 +94,9 @@ export const FISCAL_MCP_TOOLS: FiscalToolDefinition[] = [
           type: 'string',
           enum: ['GOODS','RAW_MATERIALS','MACHINERY','SOFTWARE_TECHNOLOGY','ENERGY','FREIGHT_LOGISTICS','CONTRACTED_SERVICES','COMMERCIAL_RENTAL','VEHICLE','FUEL','FOOD','TRAVEL_HOSPITALITY','TELECOM','GIFT','JEWELRY','ART_ANTIQUES','ALCOHOL','TOBACCO','WEAPONS_AMMUNITION','RECREATIONAL_SPORTS_AESTHETIC','OTHER'],
         },
-        regularTaxpayer: { type: 'string', enum: ['true', 'false'] },
-        electronicFiscalDocument: { type: 'string', enum: ['true', 'false'] },
-        taxDebtExtinguished: { type: 'string', enum: ['true', 'false'] },
+        regularTaxpayer: { type: 'boolean' },
+        electronicFiscalDocument: { type: 'boolean' },
+        taxDebtExtinguished: { type: 'boolean' },
         operationalPurpose: { type: 'string', enum: ['BUSINESS','PERSONAL','MIXED','UNKNOWN'] },
         documentType: { type: 'string', enum: ['NFE','NFSE','CTE','CTE_OS','NFC_E','OTHER_ELECTRONIC'] },
         operationTaxTreatment: { type: 'string', enum: ['NORMAL','IMMUNE','EXEMPT','ZERO_RATE','DEFERRAL','SUSPENSION','OTHER'] },
@@ -154,7 +154,7 @@ export function validateFiscalToolInput(
     if (schema.type === 'integer' && (!Number.isInteger(item) || typeof item !== 'number')) {
       return { ok: false, error: `MCP_TOOL_INPUT_TYPE_INVALID:${key}` };
     }
-    if (schema.enum && (typeof item !== 'string' || !schema.enum.includes(item))) {
+    if (schema.type === 'boolean' && typeof item !== 'boolean') {\n      return { ok: false, error: `MCP_TOOL_INPUT_TYPE_INVALID:${key}` };\n    }\n    if (schema.enum && (typeof item !== 'string' || !schema.enum.includes(item))) {
       return { ok: false, error: `MCP_TOOL_INPUT_ENUM_INVALID:${key}` };
     }
     if (schema.pattern && typeof item === 'string' && !new RegExp(schema.pattern).test(item)) {
