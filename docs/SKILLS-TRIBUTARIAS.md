@@ -112,11 +112,44 @@ Content-Type: application/json
 
 O dispatcher retorna os IDs e caminhos dos arquivos `SKILL.md`, a ordem de dependências, os módulos acionados e os `toolBindings` associados. **Ele ainda não carrega os corpos dos arquivos de instrução, não invoca um LLM e não executa ferramentas MCP**. Essa etapa depende do host/runtime de agentes. O retorno informa explicitamente `HOST_RUNTIME_REQUIRED` e `NOT_EXECUTED`; portanto, não deve ser confundido com uma análise tributária concluída.
 
+## Runtime de preparação de Skills implementado
+
+O Worker agora também empacota as instruções Markdown reais das Skills selecionadas e prepara um envelope consumível por um host de agentes.
+
+- Fonte versionada: `skills/instructions.json`, sincronizada com os nove arquivos `SKILL.md`.
+- Runtime: `workers/api/src/skill-runtime.ts`.
+- Testes: `workers/api/src/skill-runtime.test.ts`.
+- Endpoint: `POST /api/v1/skills/prepare`, autenticado pelo mesmo token e tenant vinculados usados pelos demais endpoints de integração.
+- O pacote contém a consulta original, requestId, correlationId, contexto fiscal, plano ordenado, corpo integral das instruções, SHA do blob de cada arquivo e lista deduplicada de ferramentas autorizadas por binding.
+- O contexto compartilhado aceita objeto JSON de até 64 KiB; a consulta tem limite de 4.000 caracteres.
+- Ausência de instrução no bundle ou divergência entre path do manifesto e path do arquivo gera erro; não há fallback silencioso.
+
+Exemplo:
+
+```http
+POST /api/v1/skills/prepare
+Authorization: Bearer <integration-token>
+X-Zynkronyx-Tenant: <tenant-bound-to-token>
+X-Correlation-Id: <correlation-id>
+Content-Type: application/json
+
+{
+  "query": "Validar uma NF-e e analisar IBS, CBS e Split Payment",
+  "context": {
+    "operationDate": "2027-01-01",
+    "jurisdiction": "BR",
+    "taxpayer": { "regime": "REGULAR" }
+  }
+}
+```
+
+O retorno é um pacote de preparação, não um resultado tributário. Ele informa `execution: NOT_EXECUTED` e `nextStep: HOST_AGENT_EXECUTION_REQUIRED`. O host externo ainda deve interpretar as instruções, decidir quando chamar cada ferramenta, executar as chamadas autorizadas e devolver resultados estruturados. A API não envia dados a um provedor LLM, não executa ferramentas por conta própria e não publica RuleSets.
+
 ## Estado e limites reais
 
 - Os arquivos \`SKILL.md\` e o manifesto estão versionados no GitHub.
 - A convenção é compatível com runtimes que carregam Skills a partir de diretórios.
-- O Worker já descobre o manifesto, seleciona Skills e resolve dependências. O host/agente ainda precisa carregar o conteúdo dos diretórios `SKILL.md` e executar as ferramentas autorizadas; o repositório não instala Skills em agentes externos por conta própria.
+- O Worker descobre o manifesto, seleciona Skills, resolve dependências e carrega os corpos `SKILL.md` do bundle versionado. O host/agente ainda precisa interpretar as instruções e executar ferramentas autorizadas; o repositório não instala Skills em agentes externos por conta própria.
 - As ferramentas MCP são contratos/capacidades documentadas; disponibilidade operacional depende do servidor e das permissões do runtime.
 - O motor atual \`@rts/tax-engine\` é um calculador genérico de IBS/CBS e declara limitações para CST/cClassTrib, NCM/NBS, alíquotas por localização, reduções, créditos, IS, Simples Nacional e bases específicas. As Skills não ampliam magicamente essa cobertura.
 - Não há publicação automática de RuleSet por Skill.
