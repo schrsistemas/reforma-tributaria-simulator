@@ -45,7 +45,7 @@ O projeto `fiscal-hub-api` possui deploy de produção na Vercel, conectado à b
 - O runtime da Vercel confirmou ausência de `DATABASE_URL` e `JWT_SECRET` no ambiente de produção. Até que essas variáveis sejam configuradas, as rotas funcionais respondem indisponibilidade de serviço; o endpoint de liveness permanece independente dessas dependências.
 - A implantação na Vercel não equivale a uma implantação na VPS. Nenhum deploy da API na VPS foi executado.
 
-Para ativar a API, configurar `DATABASE_URL` e `JWT_SECRET` no ambiente Production da Vercel. Configurar separadamente `MIGRATION_DATABASE_URL` para executar migrations com usuário proprietário de migração; não reutilizar o papel runtime `fiscal_hub_app` para DDL. Depois de aplicar e validar migrations 0001–0012 no PostgreSQL, repetir o health check de readiness e validar os endpoints autenticados.
+Para ativar a API, configurar `DATABASE_URL` e `JWT_SECRET` no ambiente Production da Vercel. Configurar separadamente `MIGRATION_DATABASE_URL` para executar migrations com usuário proprietário de migração; não reutilizar o papel runtime `fiscal_hub_app` para DDL. Depois de aplicar e validar migrations 0001–0015 no PostgreSQL, repetir o health check de readiness e validar os endpoints autenticados.
 
 ## Banco
 
