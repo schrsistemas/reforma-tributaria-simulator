@@ -64,12 +64,10 @@ export async function captureAndRecordArtifact(
 
     const resumed = await db.query<CaptureRecord>(
       `UPDATE fiscal.normative_artifact_captures
-          SET source_url = $2, content_type = $3, byte_length = $4,
-              storage_key = $5, capture_status = 'PENDING',
-              captured_at = NULL, capture_error_code = NULL
+          SET capture_status = 'PENDING', captured_at = NULL, capture_error_code = NULL
         WHERE id = $1 AND capture_status IN ('PENDING','ERROR')
         RETURNING id, capture_status, storage_key`,
-      [record.id, sourceUrl, captured.contentType, captured.byteLength, captured.objectKey]
+      [record.id]
     );
     if (!resumed.rows[0]) {
       const latest = await db.query<CaptureRecord>(
