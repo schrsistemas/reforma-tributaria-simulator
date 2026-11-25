@@ -1,0 +1,187 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://reforma-tributaria-simulator.example/schemas/skill-context.schema.json",
+  "title": "Fiscal Skill Shared Context",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "requestId",
+    "asOf",
+    "intent"
+  ],
+  "properties": {
+    "requestId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "correlationId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "tenantId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "intent": {
+      "type": "string",
+      "enum": [
+        "EXPLAIN",
+        "RESEARCH",
+        "CLASSIFY",
+        "CALCULATE",
+        "VALIDATE_DOCUMENT",
+        "COMPLIANCE",
+        "INTEGRATION",
+        "COMPARE"
+      ]
+    },
+    "asOf": {
+      "type": "string",
+      "format": "date"
+    },
+    "operationDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "jurisdiction": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "level": {
+          "type": "string",
+          "enum": [
+            "FEDERAL",
+            "STATE",
+            "MUNICIPAL"
+          ]
+        },
+        "country": {
+          "type": "string",
+          "default": "BR"
+        },
+        "stateCode": {
+          "type": "string",
+          "pattern": "^[A-Z]{2}$"
+        },
+        "municipalityCode": {
+          "type": "string"
+        },
+        "destinationStateCode": {
+          "type": "string",
+          "pattern": "^[A-Z]{2}$"
+        },
+        "destinationMunicipalityCode": {
+          "type": "string"
+        }
+      }
+    },
+    "taxpayer": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "taxIdReference": {
+          "type": "string",
+          "description": "Reference/token only; do not place full personal identifiers in model context."
+        },
+        "profile": {
+          "type": "string"
+        },
+        "taxRegime": {
+          "type": "string"
+        },
+        "activities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "stateRegistrationStatus": {
+          "type": "string"
+        }
+      }
+    },
+    "operation": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "operationId": {
+          "type": "string"
+        },
+        "nature": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "destinationType": {
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "grossAmount": {
+          "type": "string",
+          "pattern": "^-?[0-9]+([.][0-9]+)?$"
+        },
+        "currency": {
+          "type": "string",
+          "default": "BRL"
+        },
+        "fiscalDocumentModel": {
+          "type": "string"
+        },
+        "classifications": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "requestedTax": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "IBS",
+          "CBS",
+          "IS",
+          "ICMS",
+          "ISS",
+          "IPI",
+          "PIS",
+          "COFINS",
+          "IRPJ",
+          "CSLL",
+          "INSS",
+          "OTHER"
+        ]
+      }
+    },
+    "ruleSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      }
+    },
+    "evidenceRefs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "constraints": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}
