@@ -18,6 +18,7 @@ Apply migrations in numeric order with a dedicated migration-owner account:
 14. 0014_normative_artifact_capture_lifecycle.sql
 15. 0015_normative_artifact_capture_reconciliation.sql
 16. 0016_normative_collector_run_ledger.sql
+17. 0017_normative_collector_incidents.sql
 
 The runtime role must not own these objects and must remain NOSUPERUSER/NOBYPASSRLS. Set its password out-of-band after applying migration 0002.
 
@@ -35,3 +36,9 @@ Always validate migrations against a disposable PostgreSQL database before produ
 Migration 0015 adds capture_started_at to identify abandoned PENDING uploads. The capture worker checks stale rows with S3 HeadObject before processing new approvals. Matching objects are finalized and linked to their candidate transactionally; missing objects are marked ERROR and the candidate receives exponential retry scheduling. Storage inspection errors and metadata mismatches are left untouched for investigation. No object deletion is performed by reconciliation.
 
 Migration 0016 adds a global execution ledger for the three collector workers. Each run is inserted as RUNNING and finalized as SUCCEEDED or FAILED with timestamps, generated duration, JSON counters and a sanitized failure code. Runtime access is SELECT/INSERT plus UPDATE on lifecycle fields only; DELETE is revoked. This table is operational metadata, not tenant business data.
+
+
+Migration 0017 adds deduplicated current collector incidents and append-only lifecycle events.
+The evaluator serializes concurrent snapshots with a transaction-scoped advisory lock, updates
+active incidents by deterministic key, resolves incidents whose conditions cleared, and records
+OPENED/UPDATED/REOPENED/RESOLVED events. It does not dispatch external notifications.
