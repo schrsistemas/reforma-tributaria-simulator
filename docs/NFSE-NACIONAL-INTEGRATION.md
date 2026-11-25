@@ -42,6 +42,13 @@ O portal oficial mantém APIs distintas. Não tratar a API de distribuição do 
 
 A matriz oficial de endpoints e ambientes está em [APIs — Produção Restrita e Produção](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/apis-prod-restrita-e-producao). O pacote de homologação publicado pode ser conferido em [Documentação Técnica (Homologação/testes)](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/producao-restrita). A documentação oficial de homologação/testes, atualizada em 20/10/2026, lista a NT 009 v1.01, anexos I/II PRODREST v1.01 e XSD PRODREST v1.01. Isso comprova a publicação do pacote de leiaute para homologação, não a versão efetivamente ativa no runtime do serviço. A produção restrita não gera documento fiscal com validade jurídica. Não compartilhar dados reais de clientes nos testes quando dados sintéticos forem suficientes.
 
+
+### Catálogo de APIs no código
+
+O pacote `@rts/domain` mantém o catálogo em `packages/domain/src/nfse-api-catalog.ts`, com perfis separados para `ADN_CONTRIBUTORS`, `SEFIN_NATIONAL` e `MUNICIPAL_PARAMETERS`, em produção e produção restrita. O catálogo guarda hosts e URLs oficiais de documentação; ele não inventa paths de operação nem substitui a importação dos OpenAPI.
+
+O registro de leiautes em `packages/domain/src/nfse.ts` diferencia o pacote XSD publicado da confirmação do runtime. No estado atual, `runtimeVerification` permanece `NOT_PROBED` até que a integração consiga consultar e validar o contrato ativo de cada serviço.
+
 ## 3. Operações previstas no manual de contribuintes
 
 O manual oficial descreve o fluxo de parâmetros municipais, recepção da DPS, consulta de NFS-e, consulta de DPS e registro/consulta de eventos.
