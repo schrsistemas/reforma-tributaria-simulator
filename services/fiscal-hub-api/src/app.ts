@@ -118,6 +118,45 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     }
   });
 
+
+  app.get("/v1/normative/sources", async (request, reply) => {
+    const claims = await authenticate(request, reply);
+    if (!claims) return;
+    try {
+      const result = await options.pool.query(
+        `SELECT id, name, authority, source_type, jurisdiction, uf, official_url, active, created_at
+           FROM fiscal.normative_sources
+          WHERE active = true
+          ORDER BY authority, name LIMIT 200`
+      );
+      return reply.send({ items: result.rows });
+    } catch (error) {
+      request.log.error({ err: error }, "normative source listing failed");
+      return reply.code(500).send({ error: "NORMATIVE_SOURCE_LIST_FAILED" });
+    }
+  });
+
+  app.get("/v1/normative/documents/:documentId/versions", async (request, reply) => {
+    const claims = await authenticate(request, reply);
+    if (!claims) return;
+    const params = z.object({ documentId: z.string().uuid() }).safeParse(request.params);
+    if (!params.success) return reply.code(400).send({ error: "INVALID_DOCUMENT_ID" });
+    try {
+      const result = await options.pool.query(
+        `SELECT v.id, v.document_id, v.version_number, v.content_hash,
+                v.storage_key, v.extracted_text_key, v.captured_at
+           FROM fiscal.normative_document_versions v
+          WHERE v.document_id = $1
+          ORDER BY v.version_number DESC`,
+        [params.data.documentId]
+      );
+      return reply.send({ items: result.rows });
+    } catch (error) {
+      request.log.error({ err: error }, "normative version listing failed");
+      return reply.code(500).send({ error: "NORMATIVE_VERSION_LIST_FAILED" });
+    }
+  });
+
   app.get("/v1/normative/documents", async (request, reply) => {
     try {
       await request.jwtVerify();
