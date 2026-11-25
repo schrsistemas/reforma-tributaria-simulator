@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   resolveSkillPlan,
+  SKILL_REGISTRY,
   SkillDispatchError,
   type SkillRegistry,
 } from './skill-dispatcher.js';
@@ -98,4 +99,23 @@ test('rejects empty query and invalid plan limits', () => {
   assert.throws(() => resolveSkillPlan({ query: '  ' }, registry), /SKILL_QUERY_REQUIRED/);
   assert.throws(() => resolveSkillPlan({ query: 'tema', maxSkills: 0 }, registry), /SKILL_MAXIMUM_INVALID/);
   assert.throws(() => resolveSkillPlan({ query: 'tema', maxSkills: 1 }, registry), /SKILL_PLAN_LIMIT_EXCEEDED/);
+});
+
+test('routes real registry Portuguese multi-domain request with all required dependencies', () => {
+  const plan = resolveSkillPlan({
+    query: 'Preciso validar uma NF-e e analisar IBS CBS e Split Payment',
+  });
+
+  assert.equal(SKILL_REGISTRY.skills.length, 9);
+  assert.equal(plan.status, 'READY');
+  const matched = plan.matchedSkills.map(skill => skill.id);
+  const ordered = plan.orderedSkills.map(skill => skill.id);
+
+  assert.ok(matched.includes('ibs-cbs-transicao'));
+  assert.ok(matched.includes('documentos-fiscais'));
+  assert.ok(matched.includes('split-payment'));
+  assert.ok(ordered.includes('evidencia-legislacao-rag'));
+  assert.ok(ordered.includes('calculo-fiscal-deterministico'));
+  assert.ok(ordered.indexOf('evidencia-legislacao-rag') < ordered.indexOf('ibs-cbs-transicao'));
+  assert.ok(ordered.indexOf('calculo-fiscal-deterministico') < ordered.indexOf('split-payment'));
 });
