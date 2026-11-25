@@ -22,3 +22,4 @@ export * from './ai-contracts.js';
 export * from './nfse.js';
 export * from './nfse-api-catalog.js';
 export * from './nfse-via.js';
+export * from './nfse-via-api-catalog.js';
