@@ -1,0 +1,158 @@
+{
+  "schemaVersion": "1.0.0",
+  "name": "reforma-tributaria-simulator-skills",
+  "description": "Skill set modular para pesquisa, análise e operação fiscal brasileira.",
+  "orchestrator": "tributario-orchestrator",
+  "loadingContract": {
+    "mode": "agent-skill-files",
+    "entrypoint": "skills/tributario-orchestrator/SKILL.md",
+    "moduleDirectory": "skills",
+    "dispatch": "Load the SKILL.md for each matched module before executing its task.",
+    "runtimeIntegration": "Documentation and routing manifest only; a host agent must implement skill discovery/loading and expose authorized tools."
+  },
+  "principles": [
+    "official-evidence-first",
+    "publication-date-is-not-effective-date",
+    "deterministic-calculation-only",
+    "no-automatic-ruleset-publication",
+    "declare-insufficient-evidence",
+    "preserve-versioned-history"
+  ],
+  "skills": [
+    {
+      "id": "tributario-orchestrator",
+      "path": "skills/tributario-orchestrator/SKILL.md",
+      "role": "orchestrator",
+      "triggers": [
+        "tributary question",
+        "multi-domain analysis",
+        "tax workflow"
+      ],
+      "modules": []
+    },
+    {
+      "id": "ibs-cbs-transicao",
+      "path": "skills/ibs-cbs-transicao/SKILL.md",
+      "role": "domain",
+      "triggers": [
+        "IBS",
+        "CBS",
+        "transition",
+        "tax credit",
+        "destination"
+      ],
+      "dependsOn": [
+        "evidencia-legislacao-rag",
+        "calculo-fiscal-deterministico"
+      ]
+    },
+    {
+      "id": "imposto-seletivo",
+      "path": "skills/imposto-seletivo/SKILL.md",
+      "role": "domain",
+      "triggers": [
+        "Imposto Seletivo",
+        "IS",
+        "selective tax"
+      ],
+      "dependsOn": [
+        "evidencia-legislacao-rag",
+        "calculo-fiscal-deterministico"
+      ]
+    },
+    {
+      "id": "simples-nacional-regimes",
+      "path": "skills/simples-nacional-regimes/SKILL.md",
+      "role": "domain",
+      "triggers": [
+        "Simples Nacional",
+        "MEI",
+        "tax regime",
+        "regime comparison"
+      ],
+      "dependsOn": [
+        "ibs-cbs-transicao",
+        "evidencia-legislacao-rag",
+        "calculo-fiscal-deterministico",
+        "obrigacoes-compliance"
+      ]
+    },
+    {
+      "id": "documentos-fiscais",
+      "path": "skills/documentos-fiscais/SKILL.md",
+      "role": "domain",
+      "triggers": [
+        "NF-e",
+        "NFC-e",
+        "CT-e",
+        "NFS-e",
+        "XML",
+        "XSD",
+        "tax document"
+      ],
+      "dependsOn": [
+        "evidencia-legislacao-rag"
+      ]
+    },
+    {
+      "id": "split-payment",
+      "path": "skills/split-payment/SKILL.md",
+      "role": "domain",
+      "triggers": [
+        "Split Payment",
+        "payment segregation",
+        "settlement",
+        "reconciliation"
+      ],
+      "dependsOn": [
+        "ibs-cbs-transicao",
+        "documentos-fiscais",
+        "evidencia-legislacao-rag",
+        "calculo-fiscal-deterministico"
+      ]
+    },
+    {
+      "id": "evidencia-legislacao-rag",
+      "path": "skills/evidencia-legislacao-rag/SKILL.md",
+      "role": "capability",
+      "triggers": [
+        "law",
+        "decree",
+        "normative act",
+        "effective date",
+        "official evidence",
+        "legal research"
+      ],
+      "dependsOn": []
+    },
+    {
+      "id": "calculo-fiscal-deterministico",
+      "path": "skills/calculo-fiscal-deterministico/SKILL.md",
+      "role": "capability",
+      "triggers": [
+        "tax calculation",
+        "tax simulation",
+        "RuleSet",
+        "calculation comparison"
+      ],
+      "dependsOn": [
+        "evidencia-legislacao-rag"
+      ]
+    },
+    {
+      "id": "obrigacoes-compliance",
+      "path": "skills/obrigacoes-compliance/SKILL.md",
+      "role": "domain",
+      "triggers": [
+        "tax obligations",
+        "accessory obligation",
+        "filing",
+        "deadline",
+        "compliance"
+      ],
+      "dependsOn": [
+        "evidencia-legislacao-rag"
+      ]
+    }
+  ]
+}
