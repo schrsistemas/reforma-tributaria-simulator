@@ -22,7 +22,7 @@ A associação de instância ERP à empresa usa chave estrangeira composta pelo 
 ## Limites atuais
 
 - O CRUD de usuários, convites, recuperação de senha e gestão de sessão ainda não está implementado.
-- A ingestão de documentos normativos, captura de arquivos, OCR e revisão ainda não está implementada.
+- A ingestão de documentos normativos, captura de arquivos, OCR e revisão ainda não está implementada. Foi criado um monitor de disponibilidade/hash de portais oficiais, sem crawling de documentos.
 - Fontes e documentos normativos são somente leitura pela API.
 - A migration não foi aplicada a um PostgreSQL real nesta etapa.
 - Testes de API atuais usam mocks; não substituem testes reais de PostgreSQL/RLS.
@@ -30,7 +30,7 @@ A associação de instância ERP à empresa usa chave estrangeira composta pelo 
 
 ## Banco
 
-Aplicar migrations em ordem numérica: 0001_fiscal_hub_core.sql, 0002_runtime_role.sql, 0003_integrity_constraints.sql e 0004_seed_normative_sources.sql. Use um usuário de migração separado. A API deve conectar como fiscal_hub_app, sem ownership, superuser ou BYPASSRLS.
+Aplicar migrations em ordem numérica: 0001_fiscal_hub_core.sql, 0002_runtime_role.sql, 0003_integrity_constraints.sql, 0004_seed_normative_sources.sql e 0005_normative_source_checks.sql. Use um usuário de migração separado. A API deve conectar como fiscal_hub_app, sem ownership, superuser ou BYPASSRLS.
 
 ## Execução local
 
@@ -44,3 +44,8 @@ Aplicar migrations em ordem numérica: 0001_fiscal_hub_core.sql, 0002_runtime_ro
 ## Política de publicação
 
 Os workflows de Cloudflare devem ser executados somente por workflow_dispatch. Commits e validações de CI não autorizam publicação automática em produção. A implantação do Hub na VPS exige aprovação operacional separada.
+
+
+## Monitor de fontes
+
+O serviço `services/fiscal-normative-collector` verifica URLs cadastradas, restritas a uma allowlist exata de hosts HTTPS. Bloqueia redirects, limita timeout e tamanho de resposta, calcula SHA-256 e registra histórico em `fiscal.normative_source_checks`. Status CHANGED significa apenas que o conteúdo da página consultada mudou; não classifica nem identifica automaticamente um ato normativo novo. O monitor ainda depende de execução manual ou cron externo e não está publicado na VPS.

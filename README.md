@@ -337,3 +337,10 @@ O repositório agora inclui a primeira estrutura do Fiscal Intelligence Hub, pre
 A API PostgreSQL é um núcleo separado do Worker/D1 existente. A migração dos dados e rotas atuais não está autorizada nem faz parte desta entrega. O serviço Python permanece auxiliar; regras e cálculos fiscais continuam sob o domínio determinístico e o fluxo de aprovação já existente.
 
 Consulte [Fiscal Hub — implementação](docs/FISCAL-HUB-IMPLEMENTATION.md) e [API Fiscal Hub](services/fiscal-hub-api/README.md).
+
+
+### Monitor de fontes normativas
+
+O serviço `services/fiscal-normative-collector` verifica disponibilidade e hash de conteúdo dos portais oficiais cadastrados. Usa allowlist estrita de hosts HTTPS, bloqueia redirects, limita resposta a 3 MiB e registra status/ETag/Last-Modified no PostgreSQL. Alteração de hash sinaliza mudança no portal, não confirma publicação de novo ato normativo.
+
+Consulte `services/fiscal-normative-collector/README.md`. O monitor é executado sob demanda ou por agendador externo configurado pelo operador; não há cron automático nem deploy VPS nesta etapa.

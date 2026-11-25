@@ -287,8 +287,7 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     if (!params.success) return reply.code(400).send({ error: "INVALID_DOCUMENT_ID" });
     try {
       const result = await options.pool.query(
-        `SELECT v.id, v.document_id, v.version_number, v.content_hash,
-                v.storage_key, v.extracted_text_key, v.captured_at
+        `SELECT v.id, v.document_id, v.version_number, v.content_hash, v.captured_at
            FROM fiscal.normative_document_versions v
           WHERE v.document_id = $1
           ORDER BY v.version_number DESC`,
