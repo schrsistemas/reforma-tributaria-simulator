@@ -203,6 +203,16 @@ Fonte oficial
 A superfície visual é somente a interface de operação/teste. O **Fiscal Domain permanece a fonte de verdade fiscal**.
 
 
+## Skills tributárias modulares
+
+O projeto mantém uma suíte de Skills compatíveis com diretórios `SKILL.md`, com uma Skill orquestradora e módulos para IBS/CBS, Imposto Seletivo, Simples Nacional, documentos fiscais, Split Payment, evidência normativa, cálculo determinístico e compliance.
+
+- [Arquitetura e integração das Skills](docs/SKILLS-TRIBUTARIAS.md)
+- [Catálogo de Skills](skills/README.md)
+- [Manifesto de roteamento](skills/registry.json)
+
+A definição das Skills está versionada. A descoberta/carregamento automático e a conexão com ferramentas dependem do host de agentes; não são ativadas apenas pela presença dos arquivos. O motor tributário atual também mantém as limitações documentadas em cada Skill.
+
 ## Portal Nacional de Fontes Governamentais
 
 O simulador está evoluindo para um portal de ligação com fontes oficiais federais, estaduais e municipais. A arquitetura agora separa:
