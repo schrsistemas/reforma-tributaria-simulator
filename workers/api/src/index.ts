@@ -14,6 +14,7 @@ import { listPaymentMethods, listPaymentRejectionScenarios, createPaymentRejecti
 import { resolveSkillPlan, SKILL_REGISTRY, SkillDispatchError } from './skill-dispatcher.js';
 import { prepareSkillRuntime, SkillRuntimeError } from './skill-runtime.js';
 import { FISCAL_MCP_TOOLS, getFiscalMcpToolCatalog, validateFiscalToolInput } from './fiscal-tool-catalog.js';
+import { executeFiscalTool } from './fiscal-tool-runner.js';
 
 export interface Env {
   VERSION: string;
@@ -353,45 +354,15 @@ export default {
         if (definition.requiresDatabase && !database) {
           return json({ requestId, correlationId, outcome: 'ERROR', errorCode: 'DATABASE_NOT_BOUND', warnings: [], finishedAt: new Date().toISOString() }, 503, request);
         }
-        if (toolName === 'fiscal.search_evidence') {
-          const query = String(input.query ?? '').trim();
-          if (!query) return json({ requestId, correlationId, outcome: 'ERROR', errorCode: 'RAG_QUERY_REQUIRED', warnings: [], finishedAt: new Date().toISOString() }, 400, request);
-          const result = await searchRag(database!, query, Number(input.limit ?? 5), input.asOf ? String(input.asOf) : undefined, input.sourceType ? String(input.sourceType) : undefined, input.jurisdiction ? String(input.jurisdiction) : undefined);
-          return json({ requestId, correlationId, outcome: 'SUCCESS', result, warnings: result.confidence === 'LOW' ? ['EVIDENCE_CONFIDENCE_LOW'] : [], finishedAt: new Date().toISOString() }, 200, request);
-        }
-        if (toolName === 'fiscal.get_document') {
-          const documentId = String(input.documentId ?? '').trim();
-          if (!documentId) return json({ requestId, correlationId, outcome: 'ERROR', errorCode: 'DOCUMENT_ID_REQUIRED', warnings: [], finishedAt: new Date().toISOString() }, 400, request);
-          const result = await getRagDocument(database!, documentId);
-          if (!result) return json({ requestId, correlationId, outcome: 'ERROR', errorCode: 'EVIDENCE_DOCUMENT_NOT_FOUND', warnings: [], finishedAt: new Date().toISOString() }, 404, request);
-          return json({ requestId, correlationId, outcome: 'SUCCESS', result, warnings: [], finishedAt: new Date().toISOString() }, 200, request);
-        }
-        if (toolName === 'fiscal.get_split_payment_rules') {
-          const query = String(input.query ?? 'Split Payment IBS CBS').trim() || 'Split Payment IBS CBS';
-          const result = await searchRag(database!, query, Number(input.limit ?? 5), input.asOf ? String(input.asOf) : undefined);
-          return json({ requestId, correlationId, outcome: 'SUCCESS', result, warnings: result.confidence === 'LOW' ? ['EVIDENCE_CONFIDENCE_LOW'] : [], finishedAt: new Date().toISOString() }, 200, request);
-        }
-        if (toolName === 'fiscal.get_credit_eligibility_rules') {
-          return json({
-            requestId,
-            correlationId,
-            outcome: 'SUCCESS',
-            result: { rules: CREDIT_ELIGIBILITY_RULE_MATRIX },
-            warnings: [],
-            finishedAt: new Date().toISOString(),
-          }, 200, request);
-        }
-        if (toolName === 'fiscal.evaluate_credit_eligibility') {
-          const eligibilityInput = inputFromCreditEligibility(input as Record<string, unknown>);
-          const result = evaluateCreditEligibility(eligibilityInput);
-          return json({ requestId, correlationId, outcome: 'SUCCESS', result, warnings: result.warnings, finishedAt: new Date().toISOString() }, 200, request);
-        }
-        if (toolName === 'fiscal.resolve_ruleset') {
-          const referenceDate = String(input.asOf ?? new Date().toISOString().slice(0, 10));
-          const result = await resolvePublishedRuleSet(env, referenceDate, input.rulesetId ? String(input.rulesetId) : undefined, input.version ? String(input.version) : undefined);
-          return json({ requestId, correlationId, outcome: 'SUCCESS', result, warnings: [], finishedAt: new Date().toISOString() }, 200, request);
-        }
-        return json({ requestId, correlationId, outcome: 'ERROR', errorCode: 'MCP_TOOL_NOT_IMPLEMENTED', warnings: ['Use /api/v1/mcp/tools for the current catalog.'], finishedAt: new Date().toISOString() }, 501, request);
+        const executed = await executeFiscalTool(env, toolName, input);
+        return json({
+          requestId,
+          correlationId,
+          outcome: 'SUCCESS',
+          result: executed.result,
+          warnings: executed.warnings,
+          finishedAt: new Date().toISOString(),
+        }, 200, request);
       } catch (error) {
         const status = Number((error as { status?: number }).status) || 500;
         return json({ ok: false, outcome: 'ERROR', errorCode: error instanceof Error ? error.message : 'MCP_CALL_FAILED', warnings: [], finishedAt: new Date().toISOString() }, status, request);
