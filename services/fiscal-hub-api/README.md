@@ -1,6 +1,6 @@
 # Fiscal Hub API
 
-Node.js 22+, TypeScript, Fastify and PostgreSQL.
+Node.js 22.x, pnpm 10.34.9 through Corepack, TypeScript, Fastify and PostgreSQL. The Vercel project uses `ENABLE_EXPERIMENTAL_COREPACK=1` so the root `packageManager` pin is honored.
 
 ## Local setup
 
