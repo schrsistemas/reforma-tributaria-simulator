@@ -9,6 +9,7 @@ import { z } from "zod";
 import type { Pool } from "pg";
 import { verifyPassword } from "./auth.js";
 import { createPool, withTenant } from "./db.js";
+import { evaluateCollectorIncidents } from "./collector-incidents.js";
 
 const loginSchema = z.object({
   tenantSlug: z.string().min(2).max(100),
@@ -58,6 +59,11 @@ const artifactCandidateReviewSchema = z.object({
 const collectorRunListSchema = z.object({
   worker: z.enum(["SOURCE_MONITOR", "ARTIFACT_DISCOVERY", "ARTIFACT_CAPTURE"]).optional(),
   status: z.enum(["RUNNING", "SUCCEEDED", "FAILED"]).optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50)
+});
+const collectorIncidentListSchema = z.object({
+  status: z.enum(["OPEN", "RESOLVED"]).optional(),
+  severity: z.enum(["WARNING", "CRITICAL"]).optional(),
   limit: z.coerce.number().int().min(1).max(100).default(50)
 });
 const collectorDiagnosticsSchema = z.object({
@@ -327,6 +333,80 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     } catch (error) {
       request.log.error({ err: error }, "normative collector run history failed");
       return reply.code(500).send({ error: "NORMATIVE_COLLECTOR_RUNS_LIST_FAILED" });
+    }
+  });
+
+  app.post("/v1/normative/incidents/evaluate", async (request, reply) => {
+    const claims = await authenticate(request, reply);
+    if (!claims) return;
+    if (!canManageTenant(claims) || !options.normativeReviewTenantId ||
+        claims.tenantId !== options.normativeReviewTenantId) {
+      return reply.code(403).send({ error: "FORBIDDEN" });
+    }
+    const parsed = collectorDiagnosticsSchema.safeParse(request.body ?? {});
+    if (!parsed.success) return reply.code(400).send({ error: "VALIDATION_ERROR" });
+    try {
+      const evaluation = await evaluateCollectorIncidents(
+        options.pool, parsed.data.staleRunMinutes, parsed.data.staleCaptureMinutes
+      );
+      return reply.send({ evaluation });
+    } catch (error) {
+      request.log.error({ err: error }, "normative collector incident evaluation failed");
+      return reply.code(500).send({ error: "NORMATIVE_COLLECTOR_INCIDENT_EVALUATION_FAILED" });
+    }
+  });
+
+  app.get("/v1/normative/incidents", async (request, reply) => {
+    const claims = await authenticate(request, reply);
+    if (!claims) return;
+    if (!canManageTenant(claims) || !options.normativeReviewTenantId ||
+        claims.tenantId !== options.normativeReviewTenantId) {
+      return reply.code(403).send({ error: "FORBIDDEN" });
+    }
+    const parsed = collectorIncidentListSchema.safeParse(request.query);
+    if (!parsed.success) return reply.code(400).send({ error: "VALIDATION_ERROR" });
+    try {
+      const result = await options.pool.query(
+        `SELECT id, incident_key, incident_type, severity, status, summary,
+                first_seen_at, last_seen_at, resolved_at, occurrence_count, metadata
+           FROM fiscal.normative_collector_incidents
+          WHERE ($1::varchar IS NULL OR status = $1)
+            AND ($2::varchar IS NULL OR severity = $2)
+          ORDER BY CASE WHEN status = 'OPEN' THEN 0 ELSE 1 END,
+                   last_seen_at DESC
+          LIMIT $3`,
+        [parsed.data.status ?? null, parsed.data.severity ?? null, parsed.data.limit]
+      );
+      return reply.send({ items: result.rows });
+    } catch (error) {
+      request.log.error({ err: error }, "normative collector incidents listing failed");
+      return reply.code(500).send({ error: "NORMATIVE_COLLECTOR_INCIDENTS_LIST_FAILED" });
+    }
+  });
+
+  app.get("/v1/normative/incidents/:incidentId/events", async (request, reply) => {
+    const claims = await authenticate(request, reply);
+    if (!claims) return;
+    if (!canManageTenant(claims) || !options.normativeReviewTenantId ||
+        claims.tenantId !== options.normativeReviewTenantId) {
+      return reply.code(403).send({ error: "FORBIDDEN" });
+    }
+    const params = z.object({ incidentId: z.string().uuid() }).safeParse(request.params);
+    if (!params.success) return reply.code(400).send({ error: "INVALID_INCIDENT_ID" });
+    try {
+      const result = await options.pool.query(
+        `SELECT event.id, event.event_type, event.occurred_at, event.metadata
+           FROM fiscal.normative_collector_incident_events event
+           JOIN fiscal.normative_collector_incidents incident ON incident.id = event.incident_id
+          WHERE incident.id = $1
+          ORDER BY event.occurred_at DESC
+          LIMIT 200`,
+        [params.data.incidentId]
+      );
+      return reply.send({ items: result.rows });
+    } catch (error) {
+      request.log.error({ err: error }, "normative collector incident history failed");
+      return reply.code(500).send({ error: "NORMATIVE_COLLECTOR_INCIDENT_EVENTS_LIST_FAILED" });
     }
   });
 
