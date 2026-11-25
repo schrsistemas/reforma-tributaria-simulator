@@ -6,6 +6,7 @@ import {
   sourceTypeOf,
   topicsOf,
   publishedAtSourceOf,
+  effectiveFromSourceOf,
   evidenceConfidence,
   type RagCandidate,
 } from '@rts/domain';
@@ -43,6 +44,7 @@ export async function searchRag(
       publishedAt: String(r.published_at ?? ''),
       publishedAtSource: publishedAtSourceOf(r.metadata_json ? String(r.metadata_json) : undefined),
       effectiveFrom: r.effective_from ? String(r.effective_from) : undefined,
+      effectiveFromSource: effectiveFromSourceOf(r.metadata_json ? String(r.metadata_json) : undefined),
       effectiveTo: r.effective_to ? String(r.effective_to) : undefined,
       authority: r.authority ? String(r.authority) : undefined,
       sourceType: sourceTypeOf(r.metadata_json ? String(r.metadata_json) : undefined),
