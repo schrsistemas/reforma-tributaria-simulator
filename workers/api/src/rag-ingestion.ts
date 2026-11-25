@@ -227,8 +227,7 @@ export function chunkLegalDocument(
   const alineaPattern = /^([a-z])\)\s+/i;
   const annexPattern = /^(ANEXO(?:\s+[IVXLCDM\d]+)?)(?:\s|$)/i;
   const hasLegalStructure = lines.some((line) =>
-    articlePattern.test(line) || annexPattern.test(line) ||
-    paragraphPattern.test(line) || itemPattern.test(line),
+    articlePattern.test(line) || annexPattern.test(line) || paragraphPattern.test(line),
   );
 
   if (!hasLegalStructure) {
