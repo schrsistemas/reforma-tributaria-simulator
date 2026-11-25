@@ -55,6 +55,11 @@ const artifactCandidateReviewSchema = z.object({
   decision: z.enum(["APPROVE", "REJECT"]),
   note: z.string().trim().max(1000).optional()
 });
+const collectorRunListSchema = z.object({
+  worker: z.enum(["SOURCE_MONITOR", "ARTIFACT_DISCOVERY", "ARTIFACT_CAPTURE"]).optional(),
+  status: z.enum(["RUNNING", "SUCCEEDED", "FAILED"]).optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50)
+});
 
 type Claims = { sub: string; tenantId: string; roles: string[] };
 
@@ -293,6 +298,33 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
   });
 
 
+
+  app.get("/v1/normative/collector-runs", async (request, reply) => {
+    const claims = await authenticate(request, reply);
+    if (!claims) return;
+    if (!canManageTenant(claims) || !options.normativeReviewTenantId ||
+        claims.tenantId !== options.normativeReviewTenantId) {
+      return reply.code(403).send({ error: "FORBIDDEN" });
+    }
+    const parsed = collectorRunListSchema.safeParse(request.query);
+    if (!parsed.success) return reply.code(400).send({ error: "VALIDATION_ERROR" });
+    try {
+      const result = await options.pool.query(
+        `SELECT id, worker_name, run_status, started_at, finished_at,
+                duration_ms, counters, failure_code
+           FROM fiscal.normative_collector_runs
+          WHERE ($1::varchar IS NULL OR worker_name = $1)
+            AND ($2::varchar IS NULL OR run_status = $2)
+          ORDER BY started_at DESC
+          LIMIT $3`,
+        [parsed.data.worker ?? null, parsed.data.status ?? null, parsed.data.limit]
+      );
+      return reply.send({ items: result.rows });
+    } catch (error) {
+      request.log.error({ err: error }, "normative collector run history failed");
+      return reply.code(500).send({ error: "NORMATIVE_COLLECTOR_RUNS_LIST_FAILED" });
+    }
+  });
 
   app.get("/v1/normative/artifact-candidates", async (request, reply) => {
     const claims = await authenticate(request, reply);
