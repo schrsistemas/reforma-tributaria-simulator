@@ -58,7 +58,7 @@ Aplicar migrations em ordem numérica: 0001_fiscal_hub_core.sql até 0016_normat
 3. Provisione o bucket S3-compatible e configure S3_BUCKET, S3_REGION, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY e, se necessário, S3_ENDPOINT/S3_FORCE_PATH_STYLE.
 4. Execute `pnpm --filter @rts/fiscal-hub-api migrate` com `MIGRATION_DATABASE_URL` apontando para um usuário migration-owner, inicialmente em PostgreSQL descartável.
 5. Defina a senha do fiscal_hub_app fora do repositório.
-6. Provisione tenant e administrador com provision:admin usando credenciais administrativas temporárias.
+6. Provisione tenant e administrador com provision:admin usando MIGRATION_DATABASE_URL e credenciais administrativas temporárias; o script não usa DATABASE_URL.
 7. Execute pnpm --filter @rts/fiscal-hub-api dev.
 8. Execute `pnpm --filter @rts/fiscal-normative-collector check:sources` e `discover:artifacts`; após revisão, execute `capture:approved`.
 
