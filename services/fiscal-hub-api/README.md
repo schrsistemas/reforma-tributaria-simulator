@@ -39,7 +39,7 @@ The normative source registry is global and read-only through this API version. 
 
 ## Initial administrator
 
-Use the provision:admin script only with a migration-owner connection in a controlled environment. Set DATABASE_URL, BOOTSTRAP_TENANT_NAME, BOOTSTRAP_TENANT_SLUG, BOOTSTRAP_ADMIN_EMAIL, BOOTSTRAP_ADMIN_NAME and BOOTSTRAP_ADMIN_PASSWORD. Passwords must have at least 12 characters. The script creates one tenant, one user and an OWNER/ADMIN membership in one transaction. It does not print credentials. Do not use the application DB role for provisioning.
+Use the provision:admin script only with a migration-owner connection in a controlled environment. Set MIGRATION_DATABASE_URL, BOOTSTRAP_TENANT_NAME, BOOTSTRAP_TENANT_SLUG, BOOTSTRAP_ADMIN_EMAIL, BOOTSTRAP_ADMIN_NAME and BOOTSTRAP_ADMIN_PASSWORD. Passwords must have at least 12 characters. The script creates one tenant, one user and an OWNER/ADMIN membership in one transaction. It does not print credentials. Do not use the application DB role for provisioning.
 
 ## Runtime database role
 
