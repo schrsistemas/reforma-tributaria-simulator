@@ -2,7 +2,7 @@
 
 ## Estado
 
-O módulo `workers/api/src/agent-host.ts` implementa o ciclo de execução independente de provedor. Ele é uma biblioteca interna, ainda não exposta por endpoint HTTP e ainda não conectada a um provedor LLM em produção.
+O módulo `workers/api/src/agent-host.ts` implementa o ciclo de execução independente de provedor. `workers/api/src/fiscal-agent-service.ts` compõe a preparação das Skills com o Agent Host e o runner fiscal real. Essa composição é uma biblioteca interna: ainda não existe endpoint HTTP de execução nem provider LLM registrado no Worker.
 
 Não existe configuração de modelo no `workers/api/wrangler.toml` nem adapter de provedor registrado no Worker. Por isso, o endpoint `POST /api/v1/skills/prepare` continua sendo apenas preparação de contexto e instruções; não se deve interpretar `PREPARED` como execução fiscal.
 
@@ -58,6 +58,10 @@ As ferramentas RAG/RuleSet exigem D1. A matriz e o avaliador determinístico nã
 4. Adicionar testes de integração com D1/RAG e as ferramentas fiscais reais em ambiente de teste.
 5. Configurar e verificar secrets/bindings no ambiente Cloudflare antes de habilitar execução remota.
 
+## Composição de Skills e Agent Host
+
+`runPreparedFiscalAgent` em `workers/api/src/fiscal-agent-service.ts` executa a sequência interna: prepara o plano, carrega instruções do bundle, filtra bindings para ferramentas presentes no catálogo MCP, cruza com a autorização efetiva fornecida pelo host e inicia o Agent Host. Pedidos sem Skill especializada retornam `NO_MATCH` sem invocar o modelo. A função exige um `AgentModelProvider` injetado; nenhum provider é presumido ou criado implicitamente.
+
 ## Testes
 
-Os testes em `workers/api/src/agent-host.test.ts` usam provider e tool runner falsos e cobrem autorização, sequência, erros, limites, timeout e rastreabilidade. Os testes em `workers/api/src/fiscal-tool-catalog.test.ts` e `workers/api/src/fiscal-tool-runner.test.ts` cobrem schemas, disponibilidade D1, resultados sem evidência, RuleSet ausente e propagação de metadados. A aprovação deve ser confirmada pela CI do commit correspondente.
+Os testes em `workers/api/src/agent-host.test.ts` usam provider e tool runner falsos e cobrem autorização, sequência, erros, limites, timeout e rastreabilidade. Os testes em `workers/api/src/fiscal-agent-service.test.ts` cobrem a composição com instruções reais do bundle e o avaliador determinístico. Os testes em `workers/api/src/fiscal-tool-catalog.test.ts` e `workers/api/src/fiscal-tool-runner.test.ts` cobrem schemas, disponibilidade D1, resultados sem evidência, RuleSet ausente e propagação de metadados. A aprovação deve ser confirmada pela CI do commit correspondente.
