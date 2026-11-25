@@ -45,6 +45,14 @@ const erpSchema = z.object({
   databaseEngine: z.enum(["FIREBIRD", "POSTGRESQL", "OTHER"]),
   connectorVersion: z.string().trim().max(50).nullable().optional()
 });
+const artifactCandidateListSchema = z.object({
+  status: z.enum(["PENDING_REVIEW", "APPROVED", "REJECTED"]).optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50)
+});
+const artifactCandidateReviewSchema = z.object({
+  decision: z.enum(["APPROVE", "REJECT"]),
+  note: z.string().trim().max(1000).optional()
+});
 
 type Claims = { sub: string; tenantId: string; roles: string[] };
 
@@ -280,6 +288,78 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     }
   });
 
+
+
+  app.get("/v1/normative/artifact-candidates", async (request, reply) => {
+    const claims = await authenticate(request, reply);
+    if (!claims) return;
+    const parsed = artifactCandidateListSchema.safeParse(request.query);
+    if (!parsed.success) return reply.code(400).send({ error: "VALIDATION_ERROR" });
+    try {
+      const result = await options.pool.query(
+        `SELECT c.id, c.source_id, s.name AS source_name, c.source_page_url,
+                c.candidate_url, c.link_text, c.resource_kind, c.review_status,
+                c.first_seen_at, c.last_seen_at, c.reviewed_at, c.reviewed_by,
+                c.review_note, c.capture_id
+           FROM fiscal.normative_artifact_candidates c
+           JOIN fiscal.normative_sources s ON s.id = c.source_id
+          WHERE ($1::varchar IS NULL OR c.review_status = $1)
+          ORDER BY c.first_seen_at DESC
+          LIMIT $2`,
+        [parsed.data.status ?? null, parsed.data.limit]
+      );
+      return reply.send({ items: result.rows });
+    } catch (error) {
+      request.log.error({ err: error }, "normative artifact candidate listing failed");
+      return reply.code(500).send({ error: "NORMATIVE_ARTIFACT_CANDIDATES_LIST_FAILED" });
+    }
+  });
+
+  app.post("/v1/normative/artifact-candidates/:candidateId/review", async (request, reply) => {
+    const claims = await authenticate(request, reply);
+    if (!claims) return;
+    if (!canManageTenant(claims)) return reply.code(403).send({ error: "FORBIDDEN" });
+    const params = z.object({ candidateId: z.string().uuid() }).safeParse(request.params);
+    if (!params.success) return reply.code(400).send({ error: "INVALID_CANDIDATE_ID" });
+    const parsed = artifactCandidateReviewSchema.safeParse(request.body);
+    if (!parsed.success) return reply.code(400).send({ error: "VALIDATION_ERROR" });
+    const decision = parsed.data.decision === "APPROVE" ? "APPROVED" : "REJECTED";
+    try {
+      const updated = await withTenant(options.pool, claims.tenantId, async client => {
+        const result = await client.query(
+          `UPDATE fiscal.normative_artifact_candidates
+              SET review_status = $2, reviewed_at = now(), reviewed_by = $3, review_note = $4
+            WHERE id = $1 AND review_status = 'PENDING_REVIEW'
+            RETURNING id, source_id, candidate_url, link_text, resource_kind,
+                      review_status, reviewed_at, reviewed_by, review_note`,
+          [params.data.candidateId, decision, claims.sub, parsed.data.note ?? null]
+        );
+        if (result.rows[0]) {
+          await client.query(
+            `INSERT INTO fiscal.audit_events
+               (tenant_id, actor_user_id, event_type, entity_type, entity_id, metadata)
+             VALUES ($1,$2,'NORMATIVE_ARTIFACT_CANDIDATE_REVIEWED',
+                     'NORMATIVE_ARTIFACT_CANDIDATE',$3,$4::jsonb)`,
+            [claims.tenantId, claims.sub, params.data.candidateId,
+             JSON.stringify({ decision, note: parsed.data.note ?? null })]
+          );
+        }
+        return result.rows;
+      });
+      if (!updated[0]) {
+        const existing = await options.pool.query<{ review_status: string }>(
+          "SELECT review_status FROM fiscal.normative_artifact_candidates WHERE id = $1",
+          [params.data.candidateId]
+        );
+        if (!existing.rows[0]) return reply.code(404).send({ error: "ARTIFACT_CANDIDATE_NOT_FOUND" });
+        return reply.code(409).send({ error: "ARTIFACT_CANDIDATE_ALREADY_REVIEWED", reviewStatus: existing.rows[0].review_status });
+      }
+      return reply.send({ item: updated[0] });
+    } catch (error) {
+      request.log.error({ err: error }, "normative artifact candidate review failed");
+      return reply.code(500).send({ error: "NORMATIVE_ARTIFACT_CANDIDATE_REVIEW_FAILED" });
+    }
+  });
 
   app.get("/v1/normative/sources/:sourceId/checks", async (request, reply) => {
     const claims = await authenticate(request, reply);

@@ -98,7 +98,8 @@ export async function captureOfficialArtifact(
   }
 
   const hostname = url.hostname.toLowerCase();
-  if (url.protocol !== "https:" || url.username || url.password || url.port ||
+  if (url.protocol !== "https:" || url.username || url.password ||
+      (url.port !== "" && !(hostname === "gnre.pe.gov.br" && url.port === "444")) ||
       !options.allowedHosts.has(hostname) || hostname === "localhost" ||
       /^\d{1,3}(\.\d{1,3}){3}$/.test(hostname) || hostname.includes(":")) {
     return failure("REJECTED", sourceUrl, "ARTIFACT_HOST_NOT_ALLOWED");

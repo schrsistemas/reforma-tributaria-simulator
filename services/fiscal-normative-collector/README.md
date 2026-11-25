@@ -15,6 +15,10 @@ Only HTTPS URLs whose hostname exactly matches the allowlist are requested. Redi
 
 `pnpm --filter @rts/fiscal-normative-collector check:sources`
 
+Discover candidate links from approved source landing pages with:
+
+`pnpm --filter @rts/fiscal-normative-collector discover:artifacts`
+
 Schedule from an external cron or VPS scheduler after configuring the runtime connection and allowlist. PostgreSQL session advisory lock (key pair 20261125/1) prevents overlapping runs across processes. The lock is held on the same checked-out database connection used for the full run and is released in a finally block.
 
 ## Registered source coverage

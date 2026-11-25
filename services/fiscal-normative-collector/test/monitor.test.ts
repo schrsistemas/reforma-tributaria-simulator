@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { withNormativeMonitorLock, type AdvisoryLockClient } from "../src/monitor.js";
+import { withNormativeMonitorLock, withArtifactDiscoveryLock, type AdvisoryLockClient } from "../src/monitor.js";
 
 function fakeClient(locked: boolean): {
   client: AdvisoryLockClient;
@@ -62,4 +62,18 @@ test("releases the advisory lock when the monitor task fails", async () => {
 
   assert.equal(fake.statements.length, 2);
   assert.match(fake.statements[1]!, /pg_advisory_unlock/);
+});
+
+test("uses an independent advisory lock for artifact discovery", async () => {
+  const statements: Array<{ sql: string; values?: unknown[] }> = [];
+  const client: AdvisoryLockClient = {
+    async query<T>(sql: string, values?: unknown[]) {
+      statements.push({ sql, values });
+      return { rows: [{ locked: true } as T], rowCount: 1 };
+    }
+  };
+  const result = await withArtifactDiscoveryLock(client, async () => "discovered");
+  assert.deepEqual(result, { acquired: true, value: "discovered" });
+  assert.deepEqual(statements[0]!.values, [20261125, 2]);
+  assert.deepEqual(statements[1]!.values, [20261125, 2]);
 });

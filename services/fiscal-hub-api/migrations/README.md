@@ -32,3 +32,5 @@ Migration 0010 stores allowlisted document-link candidates discovered from offic
 Migration 0009 expands the registry to the SPED official index and the CT-e/CT-e OS, MDF-e, NF-e/NFC-e, GNRE and ANTT CIOT portals. CIOT is registered as an ANTT transport-regulatory source, not as a fiscal document. GNRE is registered as a tax-collection portal. The SPED index also covers related DF-e families such as BP-e, BP-e TM, NFCom, NF3e, DC-e, GTV-e, NFAg, NFGas and DeRE. The migration is idempotent by official URL and updates the existing NF-e portal entry to include NFC-e.
 
 Always validate migrations against a disposable PostgreSQL database before production. There is no automatic migration execution at API startup.
+
+Migration 0010 creates the source-linked artifact discovery queue. Candidates are deduplicated by source and canonical URL, remain pending human review, and can be approved/rejected through the API with audit events. It does not trigger artifact capture or RuleSet publication.

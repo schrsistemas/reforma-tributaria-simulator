@@ -214,3 +214,71 @@ test("normative artifact history validates the source UUID", async () => {
   assert.equal(response.json().error, "INVALID_SOURCE_ID");
   await app.close();
 });
+
+
+function candidatePool(): Pool {
+  const candidate = {
+    id: "44444444-4444-4444-8444-444444444444",
+    source_id: "11111111-1111-4111-8111-111111111111",
+    candidate_url: "https://www.gov.br/ato.pdf",
+    link_text: "Ato normativo",
+    resource_kind: "PDF",
+    review_status: "APPROVED",
+    reviewed_by: USER_ID
+  };
+  const client = {
+    query: async (sql: string) => sql.includes("UPDATE fiscal.normative_artifact_candidates")
+      ? { rows: [candidate], rowCount: 1 } : { rows: [], rowCount: 0 },
+    release: () => undefined
+  };
+  return {
+    query: async (sql: string) => sql.includes("FROM fiscal.normative_artifact_candidates c")
+      ? { rows: [candidate], rowCount: 1 } : { rows: [], rowCount: 0 },
+    connect: async () => client,
+    end: async () => undefined
+  } as unknown as Pool;
+}
+
+test("artifact candidate queue requires authentication", async () => {
+  const app = await buildApp({ pool: fakePool(), jwtSecret: JWT_SECRET });
+  const response = await app.inject({ method: "GET", url: "/v1/normative/artifact-candidates" });
+  assert.equal(response.statusCode, 401);
+  await app.close();
+});
+test("artifact candidate queue validates status filters", async () => {
+  const app = await buildApp({ pool: candidatePool(), jwtSecret: JWT_SECRET });
+  const token = await tokenFor(app, ["VIEWER"]);
+  const response = await app.inject({ method: "GET", url: "/v1/normative/artifact-candidates?status=INVALID", headers: { authorization: "Bearer " + token } });
+  assert.equal(response.statusCode, 400);
+  await app.close();
+});
+test("artifact candidate queue lists candidates to authenticated users", async () => {
+  const app = await buildApp({ pool: candidatePool(), jwtSecret: JWT_SECRET });
+  const token = await tokenFor(app, ["VIEWER"]);
+  const response = await app.inject({ method: "GET", url: "/v1/normative/artifact-candidates?status=PENDING_REVIEW&limit=25", headers: { authorization: "Bearer " + token } });
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.json().items.length, 1);
+  await app.close();
+});
+test("artifact candidate review rejects viewer role", async () => {
+  const app = await buildApp({ pool: candidatePool(), jwtSecret: JWT_SECRET });
+  const token = await tokenFor(app, ["VIEWER"]);
+  const response = await app.inject({ method: "POST", url: "/v1/normative/artifact-candidates/44444444-4444-4444-8444-444444444444/review", headers: { authorization: "Bearer " + token }, payload: { decision: "APPROVE" } });
+  assert.equal(response.statusCode, 403);
+  await app.close();
+});
+test("artifact candidate review validates explicit decisions", async () => {
+  const app = await buildApp({ pool: candidatePool(), jwtSecret: JWT_SECRET });
+  const token = await tokenFor(app, ["ADMIN"]);
+  const response = await app.inject({ method: "POST", url: "/v1/normative/artifact-candidates/44444444-4444-4444-8444-444444444444/review", headers: { authorization: "Bearer " + token }, payload: { decision: "CAPTURE_NOW" } });
+  assert.equal(response.statusCode, 400);
+  await app.close();
+});
+test("artifact candidate review audits an administrator decision", async () => {
+  const app = await buildApp({ pool: candidatePool(), jwtSecret: JWT_SECRET });
+  const token = await tokenFor(app, ["ADMIN"]);
+  const response = await app.inject({ method: "POST", url: "/v1/normative/artifact-candidates/44444444-4444-4444-8444-444444444444/review", headers: { authorization: "Bearer " + token }, payload: { decision: "APPROVE", note: "Documento oficial conferido." } });
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.json().item.review_status, "APPROVED");
+  await app.close();
+});

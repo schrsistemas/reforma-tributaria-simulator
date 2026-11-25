@@ -107,3 +107,14 @@ test("rejects invalid source identifiers before making a request", async () => {
   assert.equal(called, false);
   assert.equal(objects.length, 0);
 });
+
+test("captures a GNRE PDF over its official HTTPS port 444", async () => {
+  const { storage, objects } = storageSpy();
+  const result = await captureOfficialArtifact(sourceId, "https://gnre.pe.gov.br:444/gnre/manual.pdf", {
+    allowedHosts: new Set(["gnre.pe.gov.br"]),
+    storage,
+    fetcher: async () => new Response("%PDF-1.7 GNRE", { status: 200, headers: { "content-type": "application/pdf" } })
+  });
+  assert.equal(result.status, "CAPTURED");
+  assert.equal(objects.length, 1);
+});

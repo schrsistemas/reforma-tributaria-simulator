@@ -3,12 +3,15 @@
   "version": "0.2.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "check:sources": "tsx src/runner.ts",
     "test": "tsx --test test/*.test.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "build": "tsc -p tsconfig.json"
+    "build": "tsc -p tsconfig.json",
+    "discover:artifacts": "tsx src/discovery-runner.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.750.0",
