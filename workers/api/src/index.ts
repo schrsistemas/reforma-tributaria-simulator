@@ -202,7 +202,7 @@ export default {
       return json({
         service: 'reforma-tributaria-simulator',
         apiVersion: 'v1',
-        capabilities: ['simulation', 'tax-engine', 'split-payment', 'tef', 'pix', 'fiscal-knowledge', 'government-source-registry', 'official-consumption-calculator', 'credit-eligibility', 'tax-skill-dispatcher'],
+        capabilities: ['simulation', 'tax-engine', 'split-payment', 'tef', 'pix', 'fiscal-knowledge', 'government-source-registry', 'official-consumption-calculator', 'credit-eligibility', 'tax-skill-dispatcher', 'tax-skill-runtime-preparation'],
         execution: { explicitScenario: true, durableWorkflow: Boolean(env.SIMULATION_WORKFLOW) },
         persistence: { database: Boolean(env.DB), evidenceArchive: Boolean(env.EVIDENCE_BUCKET) },
         authentication: { integrationTokenConfigured: Boolean(env.INTEGRATION_TOKEN), tenantBindingConfigured: Boolean(env.INTEGRATION_TENANT_ID?.trim()) },
@@ -222,7 +222,8 @@ export default {
         ok: true,
         registryVersion: SKILL_REGISTRY.schemaVersion,
         orchestrator: SKILL_REGISTRY.orchestrator,
-        instructionLoading: 'HOST_RUNTIME_REQUIRED',
+        instructionLoading: 'BUNDLED_IN_WORKER',
+        runtimePreparation: 'AVAILABLE',
         skills: SKILL_REGISTRY.skills.map(skill => ({
           id: skill.id,
           path: skill.path,
