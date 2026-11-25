@@ -1,4 +1,6 @@
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from "fastify";
+import type { IncomingMessage, ServerResponse } from "node:http";
+import { loadConfig } from "./config.js";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import jwt from "@fastify/jwt";
@@ -6,7 +8,7 @@ import rateLimit from "@fastify/rate-limit";
 import { z } from "zod";
 import type { Pool } from "pg";
 import { verifyPassword } from "./auth.js";
-import { withTenant } from "./db.js";
+import { createPool, withTenant } from "./db.js";
 
 const loginSchema = z.object({
   tenantSlug: z.string().min(2).max(100),
@@ -483,4 +485,44 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
   });
 
   return app;
+}
+
+
+/**
+ * Vercel Node.js function entrypoint.
+ *
+ * Fastify remains independently constructible through buildApp() for local
+ * execution and tests. On Vercel, the function instance and PostgreSQL pool
+ * are cached across warm invocations; no TCP listener is opened.
+ */
+let vercelAppPromise: Promise<FastifyInstance> | undefined;
+
+export default async function vercelHandler(
+  request: IncomingMessage,
+  response: ServerResponse
+): Promise<void> {
+  if (!vercelAppPromise) {
+    const config = loadConfig();
+    const pool = createPool(config.DATABASE_URL);
+    vercelAppPromise = buildApp({
+      pool,
+      jwtSecret: config.JWT_SECRET,
+      corsOrigin: config.CORS_ORIGIN,
+      logger: true,
+      normativeReviewTenantId: config.NORMATIVE_REVIEW_TENANT_ID
+    }).then(async app => {
+      app.addHook("onClose", async () => {
+        await pool.end();
+      });
+      await app.ready();
+      return app;
+    }).catch(async error => {
+      vercelAppPromise = undefined;
+      await pool.end();
+      throw error;
+    });
+  }
+
+  const app = await vercelAppPromise;
+  app.server.emit("request", request, response);
 }
