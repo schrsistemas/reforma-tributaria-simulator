@@ -4,13 +4,14 @@ export interface RunLedgerClient {
 
 /**
  * Persists one worker execution. A run is created before work starts and is
- * finalized on both success and failure. Error details are reduced to a
- * stable code so credentials, URLs and response bodies cannot leak.
+ * finalized on both success and failure. Error details are reduced to stable
+ * codes so credentials, URLs and response bodies cannot leak.
  */
 export async function withWorkerRun<T>(
   client: RunLedgerClient,
   workerName: "SOURCE_MONITOR" | "ARTIFACT_DISCOVERY" | "ARTIFACT_CAPTURE",
-  task: () => Promise<T>
+  task: () => Promise<T>,
+  isFailure: (result: T) => boolean = () => false
 ): Promise<T> {
   const started = await client.query<{ id: string }>(
     `INSERT INTO fiscal.normative_collector_runs (worker_name, run_status)
@@ -22,14 +23,15 @@ export async function withWorkerRun<T>(
 
   try {
     const result = await task();
+    const failed = isFailure(result);
     await client.query(
       `UPDATE fiscal.normative_collector_runs
-          SET run_status = 'SUCCEEDED',
+          SET run_status = $2,
               finished_at = now(),
-              counters = $2::jsonb,
-              failure_code = NULL
+              counters = $3::jsonb,
+              failure_code = CASE WHEN $2 = 'FAILED' THEN 'WORKER_REPORTED_ERRORS' ELSE NULL END
         WHERE id = $1 AND run_status = 'RUNNING'`,
-      [runId, JSON.stringify(result ?? {})]
+      [runId, failed ? "FAILED" : "SUCCEEDED", JSON.stringify(result ?? {})]
     );
     return result;
   } catch (error) {
