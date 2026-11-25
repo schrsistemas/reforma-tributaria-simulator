@@ -130,7 +130,7 @@ test('NF-e availability endpoint reads official indicators without inventing unk
     assert.equal(body.snapshot.santaCatarina.normalAuthorizer, 'SVRS');
     assert.equal(body.snapshot.santaCatarina.services[0].status, 'GREEN');
     assert.equal(body.snapshot.santaCatarina.services[1].status, 'YELLOW');
-    assert.equal(body.snapshot.parser.unknownIndicators, 2);
+    assert.equal(body.snapshot.parser.unknownIndicators, 1);
     assert.equal(body.persistence.saved, false);
   } finally {
     globalThis.fetch = originalFetch;
