@@ -15,7 +15,10 @@
       "catalog": "GET /api/v1/skills",
       "resolve": "POST /api/v1/skills/resolve",
       "authentication": "Integration token bound to X-Zynkronyx-Tenant"
-    }
+    },
+    "instructionBundle": "skills/instructions.json",
+    "runtimePreparationEndpoint": "POST /api/v1/skills/prepare",
+    "runtimePreparation": "Returns the selected Markdown instruction bodies, shared fiscal context, dependency order, source blob SHAs, and deduplicated tool names. It does not invoke an LLM or execute tools."
   },
   "principles": [
     "official-evidence-first",
