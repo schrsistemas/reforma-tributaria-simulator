@@ -136,3 +136,51 @@ test('NF-e availability endpoint reads official indicators without inventing unk
     globalThis.fetch = originalFetch;
   }
 });
+
+test('NF-e scheduled monitor does not fetch when D1 is not configured', async () => {
+  const originalFetch = globalThis.fetch;
+  let called = false;
+  globalThis.fetch = async () => {
+    called = true;
+    return new Response('<table><tr><td>SVRS</td><td><img alt="verde"></td></tr></table>', {
+      headers: { 'content-type': 'text/html' },
+    });
+  };
+  try {
+    await worker.scheduled({ cron: '*/15 * * * *' } as never, env as never, {} as never);
+    assert.equal(called, false);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('NF-e scheduled monitor persists its snapshot on the dedicated cron', async () => {
+  const originalFetch = globalThis.fetch;
+  let fetched = false;
+  let inserted = false;
+  globalThis.fetch = async () => {
+    fetched = true;
+    return new Response('<table><tr><td>SVRS</td><td><img alt="verde"></td></tr></table>', {
+      status: 200,
+      headers: { 'content-type': 'text/html' },
+    });
+  };
+  const db = {
+    prepare(sql: string) {
+      assert.match(sql, /INSERT INTO nfe_availability_checks/);
+      return {
+        bind(...values: unknown[]) {
+          assert.equal(values.length, 9);
+          return { async run() { inserted = true; return { success: true }; } };
+        },
+      };
+    },
+  };
+  try {
+    await worker.scheduled({ cron: '*/15 * * * *' } as never, { ...env, DB: db } as never, {} as never);
+    assert.equal(fetched, true);
+    assert.equal(inserted, true);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
