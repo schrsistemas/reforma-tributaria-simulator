@@ -12,6 +12,7 @@ import { searchRag, getRagDocument } from './rag-repository.js';
 import { evaluateCreditEligibility, CREDIT_ELIGIBILITY_RULE_MATRIX } from '@rts/domain';
 import { listPaymentMethods, listPaymentRejectionScenarios, createPaymentRejectionSimulation, getPaymentRejectionSimulation, listPaymentRejectionSimulations } from './payment-rejection-repository.js';
 import { resolveSkillPlan, SKILL_REGISTRY, SkillDispatchError } from './skill-dispatcher.js';
+import { prepareSkillRuntime, SkillRuntimeError } from './skill-runtime.js';
 
 export interface Env {
   VERSION: string;
@@ -264,6 +265,58 @@ export default {
         return json({
           ok: false,
           error: error instanceof Error ? error.message : 'SKILL_DISPATCH_FAILED',
+        }, status, request);
+      }
+    }
+
+    if (request.method === 'POST' && url.pathname === '/api/v1/skills/prepare') {
+      try {
+        const headers = integrationHeaders(request);
+        const body = await readJson(request) as {
+          query?: string;
+          requestedSkillIds?: string[];
+          maxSkills?: number;
+          requestId?: string;
+          context?: Record<string, unknown>;
+        };
+
+        if (typeof body.query !== 'string' || !body.query.trim()) {
+          return json({ ok: false, error: 'SKILL_QUERY_REQUIRED' }, 400, request);
+        }
+        if (body.requestedSkillIds !== undefined &&
+            (!Array.isArray(body.requestedSkillIds) || body.requestedSkillIds.some(id => typeof id !== 'string'))) {
+          return json({ ok: false, error: 'SKILL_IDS_INVALID' }, 400, request);
+        }
+        if (body.context !== undefined &&
+            (body.context === null || typeof body.context !== 'object' || Array.isArray(body.context))) {
+          return json({ ok: false, error: 'SKILL_CONTEXT_MUST_BE_OBJECT' }, 400, request);
+        }
+        if (body.requestId !== undefined &&
+            (typeof body.requestId !== 'string' || body.requestId.trim().length === 0 || body.requestId.length > 128)) {
+          return json({ ok: false, error: 'SKILL_REQUEST_ID_INVALID' }, 400, request);
+        }
+
+        const prepared = prepareSkillRuntime({
+          query: body.query,
+          requestedSkillIds: body.requestedSkillIds,
+          maxSkills: body.maxSkills,
+          context: body.context,
+        }, {
+          requestId: body.requestId?.trim() || crypto.randomUUID(),
+          correlationId: headers.correlationId,
+        });
+
+        return json({
+          ok: true,
+          ...prepared,
+          tenantId: headers.tenantId,
+        }, 200, request);
+      } catch (error) {
+        const known = error instanceof SkillRuntimeError || error instanceof SkillDispatchError;
+        const status = known ? 400 : Number((error as { status?: number }).status) || 500;
+        return json({
+          ok: false,
+          error: error instanceof Error ? error.message : 'SKILL_RUNTIME_PREPARATION_FAILED',
         }, status, request);
       }
     }
