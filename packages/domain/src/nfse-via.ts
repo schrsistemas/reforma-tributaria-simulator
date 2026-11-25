@@ -20,7 +20,9 @@ export interface NfseViaTechnicalProfile {
   readonly rnAdnLayoutVersion: '1.00.05';
   readonly municipalityApiGuideVersion: '1.02';
   readonly buyerManifestationGuideVersion: '1.02';
-  readonly transportProtocol: 'HTTPS_TLS_1_2_OR_HIGHER_MUTUAL_TLS';
+  readonly transportProtocol: 'HTTPS_MUTUAL_TLS';
+  readonly tlsVersionPolicy: 'MANUAL_CONFLICT_TLS_1_2_PLUS_VS_TLS_1_0_TO_1_2';
+  readonly runtimeTlsMinimum: 'NOT_VERIFIED';
   readonly apiMessageFormat: 'JSON';
   readonly documentFormat: 'XML_1_0_UTF8';
   readonly documentSignature: 'XMLDSIG_ENVELOPED';
@@ -55,7 +57,9 @@ export const NFSE_VIA_TECHNICAL_PROFILE: NfseViaTechnicalProfile = {
   rnAdnLayoutVersion: '1.00.05',
   municipalityApiGuideVersion: '1.02',
   buyerManifestationGuideVersion: '1.02',
-  transportProtocol: 'HTTPS_TLS_1_2_OR_HIGHER_MUTUAL_TLS',
+  transportProtocol: 'HTTPS_MUTUAL_TLS',
+  tlsVersionPolicy: 'MANUAL_CONFLICT_TLS_1_2_PLUS_VS_TLS_1_0_TO_1_2',
+  runtimeTlsMinimum: 'NOT_VERIFIED',
   apiMessageFormat: 'JSON',
   documentFormat: 'XML_1_0_UTF8',
   documentSignature: 'XMLDSIG_ENVELOPED',
