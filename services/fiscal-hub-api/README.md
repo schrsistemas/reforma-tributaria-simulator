@@ -24,6 +24,9 @@ Node.js 22.x, pnpm 10.34.9 through Corepack, TypeScript, Fastify and PostgreSQL.
 - GET /v1/normative/sources
 - GET /v1/normative/collector-runs (OWNER/ADMIN of NORMATIVE_REVIEW_TENANT_ID)
 - GET /v1/normative/diagnostics (OWNER/ADMIN of NORMATIVE_REVIEW_TENANT_ID)
+- POST /v1/normative/incidents/evaluate (OWNER/ADMIN of NORMATIVE_REVIEW_TENANT_ID; evaluates and persists the current incident snapshot)
+- GET /v1/normative/incidents (OWNER/ADMIN of NORMATIVE_REVIEW_TENANT_ID; filter by OPEN/RESOLVED and WARNING/CRITICAL)
+- GET /v1/normative/incidents/:incidentId/events (append-only incident lifecycle history)
 - GET /v1/normative/artifact-candidates
 - POST /v1/normative/artifact-candidates/:candidateId/review (OWNER or ADMIN of NORMATIVE_REVIEW_TENANT_ID)
 - GET /v1/normative/artifact-candidates/:candidateId/reviews (OWNER or ADMIN of NORMATIVE_REVIEW_TENANT_ID)
@@ -65,3 +68,19 @@ Optional query parameters:
 - `staleCaptureMinutes`: 1–1440, default 15; PENDING capture metadata older than this threshold is counted as stale.
 
 The response is `DEGRADED` when a worker has failed or never run, there are consecutive failures, stale runs/captures, capture errors, or candidate/capture metadata inconsistencies. The endpoint explicitly reports `storageObjectVerification: NOT_CHECKED`: it checks PostgreSQL relationships only and does not claim that an S3/R2 object physically exists. Object verification remains the capture reconciliation worker's responsibility through `HeadObject`.
+
+
+## Collector incidents
+
+The operator can invoke `POST /v1/normative/incidents/evaluate` with optional JSON body
+`{"staleRunMinutes":30,"staleCaptureMinutes":15}`. Evaluation is serialized with a PostgreSQL
+transaction advisory lock and reconciles the active incident snapshot: identical conditions
+reuse the same incident key, recurring observations increment the occurrence counter, cleared
+conditions transition to RESOLVED, and a later recurrence reopens the same incident. Every
+OPENED, UPDATED, REOPENED and RESOLVED transition is appended to
+`fiscal.normative_collector_incident_events`.
+
+Use `GET /v1/normative/incidents?status=OPEN&limit=50` to inspect current incidents and
+`GET /v1/normative/incidents/:incidentId/events` for lifecycle history. Both routes and
+evaluation are restricted to OWNER/ADMIN of `NORMATIVE_REVIEW_TENANT_ID`. Evaluation is
+explicitly triggered; no scheduled evaluator or external notification channel is configured.
