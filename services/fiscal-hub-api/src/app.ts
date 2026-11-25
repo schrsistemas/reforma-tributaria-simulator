@@ -32,7 +32,7 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
   await app.register(rateLimit, { max: 100, timeWindow: "1 minute" });
   await app.register(jwt, {
     secret: options.jwtSecret,
-    sign: { issuer: "fiscal-intelligence-hub", audience: "fiscal-hub-api", expiresIn: "15m" },
+    sign: { iss: "fiscal-intelligence-hub", aud: "fiscal-hub-api", expiresIn: "15m" },
     verify: { allowedIss: "fiscal-intelligence-hub", allowedAud: "fiscal-hub-api" }
   });
 

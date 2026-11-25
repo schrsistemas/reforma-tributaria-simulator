@@ -16,7 +16,7 @@ A superfície visual está publicada em Cloudflare Pages e serve como ponto de t
 
 O endereço acima é o endereço estável de produção do projeto. Deployments individuais do Cloudflare podem possuir URLs próprias de preview, mas não substituem o endereço de produção.
 
-A publicação é automatizada por GitHub Actions. O workflow cria o projeto Pages quando necessário, publica `docs/` e verifica automaticamente o endpoint de produção antes de considerar o deploy bem-sucedido.
+A publicação em produção é manual via workflow_dispatch do GitHub Actions; um push em main não autoriza deploy por si só. O workflow cria o projeto Pages quando necessário, publica `docs/` e verifica automaticamente o endpoint de produção antes de considerar o deploy bem-sucedido.
 
 ## Arquitetura do monorepo
 
