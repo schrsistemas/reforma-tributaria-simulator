@@ -31,7 +31,7 @@ Diferencie:
 
 ## Integração
 
-Delegue cálculo à Skill \`calculo-fiscal-deterministico\`; documentos à \`documentos-fiscais\`; busca temporal à \`evidencia-legislacao-rag\`; Split Payment à \`split-payment\`.
+Para comparação com a implementação oficial da Receita, carregue também a Skill \`calculadora-oficial-receita\`. Delegue cálculo local à Skill \`calculo-fiscal-deterministico\`; documentos à \`documentos-fiscais\`; busca temporal à \`evidencia-legislacao-rag\`; Split Payment à \`split-payment\`.
 
 ## Limites
 
