@@ -38,7 +38,7 @@ Os endpoints do regime regular agora exigem configuração explícita:
 - `OFFICIAL_REGULAR_CALCULATOR_URL`: URL HTTPS completa para o endpoint oficial de cálculo do regime geral.
 - `OFFICIAL_REGULAR_OBSERVABILITY_URL`: URL HTTPS completa para observabilidade do regime geral.
 
-Os endpoints do Simples já exigem URLs HTTPS configuradas. Não há fallback automático para o host `piloto-cbs.tributos.gov.br`: endpoints de piloto/homologação não devem ser presumidos como produção. O serviço DANFSe ainda requer implantação externa e proxy dedicado com transporte XML/PDF binário; não reutilizar o proxy JSON atual.
+Os endpoints do Simples já exigem URLs HTTPS configuradas. Não há fallback automático para o host `piloto-cbs.tributos.gov.br`: endpoints de piloto/homologação não devem ser presumidos como produção. O serviço DANFSe ainda requer implantação externa e configuração de `OFFICIAL_DANFSE_ENDPOINT_URL`; o proxy dedicado XML/PDF binário já existe e não reutiliza o proxy JSON.
 
 ## Separação obrigatória por regime
 
@@ -76,8 +76,9 @@ O Worker disponibiliza os seguintes caminhos, todos exigindo autenticação Bear
 | `/api/v1/official-calculator/regime-geral/observabilidade` | POST | URL HTTPS explícita em `OFFICIAL_REGULAR_OBSERVABILITY_URL` |
 | `/api/v1/official-calculator/simples-nacional/observabilidade` | POST | URL oficial configurada para observabilidade do Simples |
 | `/api/v1/official-calculator/simples-nacional/atividades?data=AAAA-MM-DD` | GET | URL oficial configurada para consulta de atividades |
+| `/api/v1/official-calculator/danfse?stc=0&canhoto=true` | POST XML | Serviço DANFSe Go configurado em `OFFICIAL_DANFSE_ENDPOINT_URL`; resposta PDF em streaming |
 
-Os adaptadores são proxies HTTP: não recalculam nem transformam o JSON fiscal. Preservam o corpo e o status HTTP devolvidos pelo motor oficial, não armazenam respostas em cache e propagam os headers de alerta de dados simulados e de versão quando fornecidos pelo upstream. O timeout de chamada é de 20 segundos.
+Os adaptadores são proxies HTTP: não recalculam nem transformam o JSON fiscal. Preservam o corpo e o status HTTP devolvidos pelo motor oficial, não armazenam respostas em cache e propagam os headers de alerta de dados simulados e de versão quando fornecidos pelo upstream. O timeout de chamada é de 20 segundos. O proxy DANFSe aceita somente `application/xml`, limita o XML de entrada a 5 MiB e preserva o corpo PDF em streaming; exige implantação externa do serviço Go e configuração HTTPS explícita.
 
 ### Configuração do Simples Nacional
 
