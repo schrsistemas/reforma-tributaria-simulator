@@ -3,6 +3,8 @@ export interface OfficialDates {
   publishedAtSource: 'JSON_LD' | 'HTML_META' | 'EXPLICIT_TEXT' | 'RETRIEVAL_FALLBACK';
   effectiveFrom?: string;
   effectiveFromSource: 'EXPLICIT_TEXT' | 'PUBLICATION_DATE_CLAUSE' | 'UNKNOWN';
+  effectiveTo?: string;
+  effectiveToSource: 'EXPLICIT_TEXT' | 'UNKNOWN';
 }
 
 function validIsoDate(year: number, month: number, day: number): string | undefined {
@@ -41,7 +43,7 @@ export function extractOfficialDates(htmlOrText: string): OfficialDates {
         if (Array.isArray(value)) { value.forEach(visit); return; }
         if (!value || typeof value !== 'object') return;
         for (const [key, child] of Object.entries(value)) {
-          if (typeof child === 'string' && ['datePublished', 'dateCreated'].includes(key)) metadata.JSON_LD = child;
+          if (typeof child === 'string' && key === 'datePublished') metadata.JSON_LD = child;
           else if (child && typeof child === 'object') visit(child);
         }
       };
@@ -80,12 +82,15 @@ export function extractOfficialDates(htmlOrText: string): OfficialDates {
 
   const explicitEffective = plain.match(/(?:entra\s+em\s+vigor|produz\s+efeitos|vig[eê]ncia\s+(?:inicia|in[ií]cio)\s+em)\s*(?:a\s+partir\s+de\s*)?(?:no\s+dia\s*)?(\d{1,2}[\/.]\d{1,2}[\/.]\d{4}|\d{4}-\d{2}-\d{2})/i)?.[1];
   const effectiveFrom = parseOfficialDate(explicitEffective);
-  if (effectiveFrom) return { publishedAt, publishedAtSource, effectiveFrom, effectiveFromSource: 'EXPLICIT_TEXT' };
+  const explicitEnd = plain.match(/(?:vig[eê]ncia\\s+(?:at[eé]|vai\\s+at[eé])|vigora\\s+at[eé]|produz\\s+efeitos\\s+at[eé])\\s*(\\d{1,2}[\\/.]\\d{1,2}[\\/.]\\d{4}|\\d{4}-\\d{2}-\\d{2})/i)?.[1];
+  const effectiveTo = parseOfficialDate(explicitEnd);
+  const effectiveToSource = effectiveTo ? 'EXPLICIT_TEXT' : 'UNKNOWN';
+  if (effectiveFrom) return { publishedAt, publishedAtSource, effectiveFrom, effectiveFromSource: 'EXPLICIT_TEXT', effectiveTo, effectiveToSource };
 
-  if (publishedAt && /entra\s+em\s+vigor\s+na\s+data\s+de\s+sua\s+publica[cç][aã]o/i.test(plain)) {
-    return { publishedAt, publishedAtSource, effectiveFrom: publishedAt, effectiveFromSource: 'PUBLICATION_DATE_CLAUSE' };
+  if (publishedAt && /entra\\s+em\\s+vigor\\s+na\\s+data\\s+de\\s+sua\\s+publica[cç][aã]o/i.test(plain)) {
+    return { publishedAt, publishedAtSource, effectiveFrom: publishedAt, effectiveFromSource: 'PUBLICATION_DATE_CLAUSE', effectiveTo, effectiveToSource };
   }
-  return { publishedAt, publishedAtSource, effectiveFromSource: 'UNKNOWN' };
+  return { publishedAt, publishedAtSource, effectiveFromSource: 'UNKNOWN', effectiveTo, effectiveToSource };
 }
 
 export interface IngestInput {
