@@ -166,3 +166,28 @@ test('splits oversized legal devices without crossing their article boundary', (
   assert.equal(articleEight.length, 1);
   assert.ok(chunks.every((chunk) => chunk.text.length <= 50));
 });
+
+
+test('parses HTML block tags and preserves table row boundaries', () => {
+  const html = [
+    '<html><body>',
+    '<h2>CAPÍTULO I</h2>',
+    '<p><strong>Art. 1º</strong> Texto inicial.</p>',
+    '<p>&sect; 1º Texto do parágrafo.</p>',
+    '<table><tr><th>Código</th><th>Descrição</th></tr>',
+    '<tr><td>001</td><td>Serviço A</td></tr></table>',
+    '</body></html>',
+  ].join('');
+  const chunks = chunkLegalDocument(html);
+  assert.ok(chunks.some((chunk) => chunk.units[0].type === 'ARTICLE_CAPUT'));
+  assert.ok(chunks.some((chunk) => chunk.units[0].type === 'PARAGRAPH'));
+  const table = chunks.find((chunk) => chunk.units[0].type === 'TABLE');
+  assert.ok(table);
+  assert.match(table.text, /Código\s+\|\s+Descrição/);
+  assert.match(table.text, /001\s+\|\s+Serviço A/);
+});
+
+test('does not treat isolated roman numbering as sufficient legal structure', () => {
+  const chunks = chunkLegalDocument('I - Introdução\nII - Procedimento\nIII - Encerramento');
+  assert.ok(chunks.every((chunk) => chunk.structure === 'FALLBACK'));
+});
