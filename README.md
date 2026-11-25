@@ -147,18 +147,24 @@ A ingestão deve priorizar fontes primárias, especialmente Receita Federal, Com
 - Quando houver divergência entre fontes, manter as evidências e marcar o caso para revisão.
 - O sistema deve poder responder: **"qual regra, de qual fonte e de qual versão produziu este resultado?"**
 
-## Infraestrutura zero-cost-first
+## Infraestrutura por domínio
 
-O projeto é desenhado para permanecer executável sem depender de infraestrutura paga:
+O simulador/portal existente mantém a estratégia Cloudflare-first:
 
-- GitHub + GitHub Actions;
+- GitHub + GitHub Actions para versionamento e CI;
 - Cloudflare Pages para a superfície visual;
-- Cloudflare Workers para APIs;
-- Cloudflare D1 para persistência transacional;
-- Cloudflare R2 para evidências;
-- Cloudflare Queues para processamento assíncrono;
-- Cloudflare Workflows para processamento durável;
-- equivalentes locais/open source quando necessários para desenvolvimento.
+- Cloudflare Workers para APIs e adaptadores existentes;
+- Cloudflare D1 para persistência do domínio já hospedado em Workers;
+- Cloudflare Queues/Workflows quando ativados para processamento assíncrono.
+
+O Fiscal Intelligence Hub é um serviço SaaS separado desse runtime e segue a decisão arquitetural documentada em `docs/FISCAL-HUB-IMPLEMENTATION.md`:
+
+- PostgreSQL dedicado em VPS para persistência transacional do Hub;
+- API Node.js/Fastify publicada na Vercel;
+- Cloudflare R2 ou storage S3-compatible para documentos e evidências;
+- collector Node.js executado em VPS/cron ou scheduler externo, separado da API web.
+
+Não presumir que D1 substitui PostgreSQL no Hub, nem que a API Vercel está operacional enquanto PostgreSQL e variáveis de runtime não estiverem configurados. Provisionamento de VPS, banco e storage depende de decisão operacional e autorização de custo; nenhum recurso pago deve ser criado automaticamente.
 
 Credenciais e IDs específicos de conta **não** pertencem ao repositório. Secrets de CI devem permanecer no mecanismo de secrets do GitHub.
 
