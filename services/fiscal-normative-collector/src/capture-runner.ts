@@ -3,6 +3,7 @@ import { S3ArtifactStorage } from "./s3-storage.js";
 import { captureApprovedArtifacts } from "./capture-approved.js";
 import { withArtifactCaptureLock } from "./monitor.js";
 import { reconcilePendingCaptures } from "./reconciliation.js";
+import { withWorkerRun } from "./run-ledger.js";
 
 function required(name: string): string {
   const value = process.env[name]?.trim();
@@ -48,7 +49,7 @@ const storage = new S3ArtifactStorage({
   ...(forcePathStyleRaw ? { forcePathStyle: forcePathStyleRaw === "true" } : {})
 });
 
-async function run(client: PoolClient): Promise<void> {
+async function run(client: PoolClient): Promise<{ reconciliation: unknown; summary: unknown }> {
   const reconciliation = await reconcilePendingCaptures(client, storage, {
     staleMinutes: reconciliationStaleMinutes,
     batchSize: Math.min(500, batchSize * 4)
@@ -60,12 +61,15 @@ async function run(client: PoolClient): Promise<void> {
   });
   process.stdout.write(JSON.stringify({ reconciliation, summary }) + "\n");
   if (summary.failed > 0 || reconciliation.failed > 0) process.exitCode = 1;
+  return { reconciliation, summary };
 }
 
 async function main(): Promise<void> {
   const client = await pool.connect();
   try {
-    const lock = await withArtifactCaptureLock(client, () => run(client));
+    const lock = await withArtifactCaptureLock(client, () =>
+      withWorkerRun(client, "ARTIFACT_CAPTURE", () => run(client))
+    );
     if (!lock.acquired) {
       process.stdout.write(JSON.stringify({ skipped: true, reason: "ARTIFACT_CAPTURE_ALREADY_RUNNING" }) + "\n");
     }
